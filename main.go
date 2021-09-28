@@ -4,7 +4,6 @@ import (
 	"log"
 
 	"github.com/labstack/echo/v4"
-	"gitlab.com/Bananenpro05/hbank2-api/handlers"
 	"gitlab.com/Bananenpro05/hbank2-api/models"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -24,7 +23,7 @@ func main() {
 		}
 	})
 
-	e.GET("/v1/health-check", handlers.HealthCheck)
+	registerV1Routes(e)
 
 	e.Logger.Fatal(e.Start(":8080"))
 }

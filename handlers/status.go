@@ -7,9 +7,9 @@ import (
 	"gitlab.com/Bananenpro05/hbank2-api/responses"
 )
 
-func HealthCheck(c echo.Context) error {
-	resp := responses.HealthCheck{
-		ApiActive: true,
+func Status(c echo.Context) error {
+	resp := responses.Status{
+		Api: true,
 	}
 	return c.JSON(http.StatusOK, resp)
 }
