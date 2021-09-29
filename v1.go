@@ -8,8 +8,15 @@ import (
 func registerV1Routes(e *echo.Echo) {
 	v1 := e.Group("/v1")
 	v1StatusRoute(v1)
+
+	auth := v1.Group("/auth")
+	v1AuthRoutes(auth)
 }
 
 func v1StatusRoute(e *echo.Group) {
 	e.GET("/status", handlers.Status)
+}
+
+func v1AuthRoutes(e *echo.Group) {
+	e.POST("/register", handlers.Register)
 }
