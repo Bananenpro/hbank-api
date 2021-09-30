@@ -25,7 +25,7 @@ var (
 // /v1/auth/register (POST)
 func Register(c echo.Context) error {
 	var body bindings.Register
-	if err := (&echo.DefaultBinder{}).BindBody(c, &body); err != nil {
+	if err := c.Bind(&body); err != nil {
 		return c.JSON(http.StatusBadRequest, responses.Generic{
 			Message: "Invalid request body",
 		})

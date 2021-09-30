@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -29,28 +31,55 @@ func TestRegister(t *testing.T) {
 	db.Create(&user)
 
 	tests := []struct {
+		tName       string
 		name        string
-		jsonBody    string
+		email       string
+		password    string
 		wantCode    int
 		wantMessage string
 	}{
-		{name: "Successful register", jsonBody: `{"name": "bob", "email": "bob@gmail.com", "password": "123456"}`, wantCode: http.StatusCreated, wantMessage: "Successfully registered new user"},
-		{name: "User does already exist", jsonBody: `{"name": "bob", "email": "exists@gmail.com", "password": "123456"}`, wantCode: http.StatusForbidden, wantMessage: "The user with this email does already exist"},
-		{name: "Name too short", jsonBody: `{"name": "bo", "email": "bob@gmail.com", "password": "123456"}`, wantCode: http.StatusBadRequest, wantMessage: "Name too short"},
-		{name: "Password too short", jsonBody: `{"name": "bob", "email": "bob@gmail.com", "password": "12345"}`, wantCode: http.StatusBadRequest, wantMessage: "Password too short"},
-		{name: "Invalid email (wrong format)", jsonBody: `{"name": "bob", "email": "bob.gmail.com", "password": "123456"}`, wantCode: http.StatusBadRequest, wantMessage: "Invalid email"},
-		{name: "Invalid email (no such provider)", jsonBody: `{"name": "bob", "email": "bob@bla.bla", "password": "123456"}`, wantCode: http.StatusBadRequest, wantMessage: "Invalid email"},
-		{name: "Invalid request body", jsonBody: `hehe`, wantCode: http.StatusBadRequest, wantMessage: "Invalid request body"},
+		{tName: "Successful register", name: "bob", email: "bob@gmail.com", password: "123456", wantCode: http.StatusCreated, wantMessage: "Successfully registered new user"},
+		{tName: "User does already exist", name: "bob", email: "exists@gmail.com", password: "123456", wantCode: http.StatusForbidden, wantMessage: "The user with this email does already exist"},
+		{tName: "Name too short", name: "bo", email: "bob@gmail.com", password: "123456", wantCode: http.StatusBadRequest, wantMessage: "Name too short"},
+		{tName: "Password too short", name: "bob", email: "bob@gmail.com", password: "12345", wantCode: http.StatusBadRequest, wantMessage: "Password too short"},
+		{tName: "Invalid email (wrong format)", name: "bob", email: "bob.gmail.com", password: "123456", wantCode: http.StatusBadRequest, wantMessage: "Invalid email"},
+		{tName: "Invalid email (no such provider)", name: "bob", email: "bob@bla.bla", password: "123456", wantCode: http.StatusBadRequest, wantMessage: "Invalid email"},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.jsonBody))
+		t.Run(tt.tName, func(t *testing.T) {
+			// JSON
+			jsonBody := fmt.Sprintf(`{"name":"%s","email": "%s","password":"%s"}`, tt.name, tt.email, tt.password)
+
+			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
 			c.Set(models.DBContextKey, db)
 
 			err := Register(c)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantCode, rec.Code)
+			assert.Contains(t, rec.Body.String(), `"message":"`+tt.wantMessage+`"`)
+
+			// Reset db
+			if rec.Code == http.StatusCreated {
+				db.Delete(models.User{}, "email = ?", tt.email)
+			}
+
+			// FORM
+			formValues := make(url.Values)
+			formValues.Set("name", tt.name)
+			formValues.Set("email", tt.email)
+			formValues.Set("password", tt.password)
+
+			req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(formValues.Encode()))
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationForm)
+			rec = httptest.NewRecorder()
+			c = e.NewContext(req, rec)
+			c.Set(models.DBContextKey, db)
+
+			err = Register(c)
 
 			assert.NoError(t, err)
 			assert.Equal(t, tt.wantCode, rec.Code)
