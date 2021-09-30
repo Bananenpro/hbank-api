@@ -7,11 +7,15 @@ import (
 )
 
 type ConfigData struct {
-	ServerPort int `json:"server_port"`
+	ServerPort      int    `json:"server_port"`
+	CaptchaEnabled  bool   `json:"captcha_enabled"`
+	HCaptchaSecret  string `json:"h_captcha_secret"`
+	HCaptchaSiteKey string `json:"h_captcha_site_key"`
 }
 
 var defaultData = ConfigData{
-	ServerPort: 8080,
+	ServerPort:     8080,
+	CaptchaEnabled: false,
 }
 
 var Data = defaultData
@@ -43,5 +47,16 @@ func verifyData() {
 	if Data.ServerPort <= 1023 || Data.ServerPort > 65353 {
 		log.Println("Invalid port number. Using default port: ", defaultData.ServerPort)
 		Data.ServerPort = defaultData.ServerPort
+	}
+
+	if Data.CaptchaEnabled {
+		if Data.HCaptchaSecret == "" {
+			log.Println("No captcha secret specified. Disabling captcha.")
+			Data.CaptchaEnabled = false
+		}
+		if Data.HCaptchaSiteKey == "" {
+			log.Println("No captcha site key specified. Disabling captcha.")
+			Data.CaptchaEnabled = false
+		}
 	}
 }

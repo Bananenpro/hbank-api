@@ -31,6 +31,19 @@ func Register(c echo.Context) error {
 		})
 	}
 
+	if err := services.VerifyCaptcha(body.CaptchaToken); err != nil {
+		switch err {
+		case services.ErrInvalidCaptchaToken:
+			return c.JSON(http.StatusForbidden, responses.Generic{
+				Message: "Invalid captcha token",
+			})
+		default:
+			return c.JSON(http.StatusInternalServerError, responses.Generic{
+				Message: "Due to an unexpected error the user couldn't be registered",
+			})
+		}
+	}
+
 	body.Name = strings.TrimSpace(body.Name)
 	body.Email = strings.ToLower(strings.TrimSpace(body.Email))
 

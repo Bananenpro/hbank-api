@@ -3,24 +3,31 @@ package services
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"math/big"
+	"net/http"
+	"net/url"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"gitlab.com/Bananenpro05/hbank2-api/config"
 	"gitlab.com/Bananenpro05/hbank2-api/models"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
 const (
-	bcryptCost = 10
+	bcryptCost        = 10
+	hCaptchaVerifyUrl = "https://hcaptcha.com/siteverify"
 )
 
 var (
-	ErrAuthEmailExists = errors.New("email-exists")
+	ErrAuthEmailExists     = errors.New("email-exists")
+	ErrInvalidCaptchaToken = errors.New("invalid-captcha-token")
 )
 
 func Register(ctx echo.Context, email, name, password string) (uuid.UUID, error) {
@@ -50,6 +57,40 @@ func Register(ctx echo.Context, email, name, password string) (uuid.UUID, error)
 	db.Create(&user)
 
 	return user.Id, nil
+}
+
+func VerifyCaptcha(token string) error {
+	if config.Data.CaptchaEnabled {
+		formValues := make(url.Values)
+		formValues.Set("secret", config.Data.HCaptchaSecret)
+		formValues.Set("response", token)
+		formValues.Set("sitekey", config.Data.HCaptchaSiteKey)
+		resp, err := http.PostForm(hCaptchaVerifyUrl, formValues)
+		if err != nil {
+			log.Printf("Failed to contact '%s': %s\n", hCaptchaVerifyUrl, err)
+			return err
+		}
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			log.Println("Failed to read verify captcha response: ", err)
+			return err
+		}
+
+		type response struct {
+			success bool
+		}
+		var jsonResp response
+		json.Unmarshal(body, &jsonResp)
+
+		if jsonResp.success {
+			return nil
+		} else {
+			return ErrInvalidCaptchaToken
+		}
+	}
+	return nil
 }
 
 // ========== Helper functions ==========
