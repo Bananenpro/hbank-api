@@ -2,13 +2,16 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
+	"github.com/adrg/xdg"
 	"github.com/labstack/echo/v4"
+	"gitlab.com/Bananenpro05/hbank2-api/config"
 	"gitlab.com/Bananenpro05/hbank2-api/models"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -16,6 +19,8 @@ import (
 )
 
 func main() {
+	config.Load([]string{"config.json", xdg.ConfigHome + "/hbank/config.json"})
+
 	e := echo.New()
 
 	db, err := gorm.Open(sqlite.Open("database.sqlite"), &gorm.Config{
@@ -45,7 +50,7 @@ func main() {
 	registerV1Routes(e)
 
 	go func() {
-		if err := e.Start(":8080"); err != nil && err != http.ErrServerClosed {
+		if err := e.Start(fmt.Sprintf(":%d", config.Data.ServerPort)); err != nil && err != http.ErrServerClosed {
 			e.Logger.Fatal("shutting down the server")
 		}
 	}()

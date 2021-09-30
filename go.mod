@@ -3,6 +3,7 @@ module gitlab.com/Bananenpro05/hbank2-api
 go 1.17
 
 require (
+	github.com/adrg/xdg v0.3.4
 	github.com/google/uuid v1.3.0
 	github.com/labstack/echo/v4 v4.6.0
 	github.com/stretchr/testify v1.7.0
