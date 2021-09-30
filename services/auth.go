@@ -78,13 +78,13 @@ func VerifyCaptcha(token string) error {
 			return err
 		}
 
-		type response struct {
-			success bool
+		type Response struct {
+			Success bool
 		}
-		var jsonResp response
+		var jsonResp Response
 		json.Unmarshal(body, &jsonResp)
 
-		if jsonResp.success {
+		if jsonResp.Success {
 			return nil
 		} else {
 			return ErrInvalidCaptchaToken
