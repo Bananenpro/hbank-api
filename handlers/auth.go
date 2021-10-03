@@ -76,7 +76,7 @@ func Register(c echo.Context) error {
 	userId, err := services.Register(c, body.Email, body.Name, body.Password)
 	if err != nil {
 		switch err {
-		case services.ErrAuthEmailExists:
+		case services.ErrEmailExists:
 			return c.JSON(http.StatusForbidden, responses.Generic{
 				Message: "The user with this email does already exist",
 			})
@@ -94,6 +94,48 @@ func Register(c echo.Context) error {
 		UserId:    userId.String(),
 		UserEmail: body.Email,
 	})
+}
+
+// /v1/auth/confirmEmail?email=string (GET)
+func SendConfirmEmail(c echo.Context) error {
+	email := c.QueryParam("email")
+	if !isValidEmail(email) {
+		return c.JSON(http.StatusBadRequest, responses.Generic{
+			Message: "Missing or invalid email query parameter",
+		})
+	}
+
+	err := services.SendConfirmEmail(c, email)
+	if err != nil && err != services.ErrNotFound && err != services.ErrEmailAlreadyConfirmed {
+		return c.JSON(http.StatusInternalServerError, responses.Generic{
+			Message: "An unexpected error occurred: " + err.Error(),
+		})
+	}
+
+	return c.JSON(http.StatusOK, responses.Generic{
+		Message: "If the email adress is bound to a user, a code was sent to the adress specified",
+	})
+}
+
+// /v1/auth/confirmEmail (POST)
+func VerifyConfirmEmailCode(c echo.Context) error {
+	var body bindings.ConfirmEmail
+	err := c.Bind(&body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.Generic{
+			Message: "Invalid request body",
+		})
+	}
+
+	if services.VerifyConfirmEmailCode(c, body.Email, body.Code) {
+		return c.JSON(http.StatusOK, responses.Generic{
+			Message: "Successfully confirmed email address",
+		})
+	} else {
+		return c.JSON(http.StatusForbidden, responses.Generic{
+			Message: "Email was not confirmed",
+		})
+	}
 }
 
 func isValidEmail(email string) bool {

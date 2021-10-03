@@ -13,6 +13,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"gitlab.com/Bananenpro05/hbank2-api/config"
 	"gitlab.com/Bananenpro05/hbank2-api/models"
+	"gitlab.com/Bananenpro05/hbank2-api/services"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -20,6 +21,8 @@ import (
 
 func main() {
 	config.Load([]string{"config.json", xdg.ConfigHome + "/hbank/config.json"})
+
+	services.EmailAuthenticate()
 
 	e := echo.New()
 

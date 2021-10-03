@@ -19,4 +19,6 @@ func v1StatusRoute(e *echo.Group) {
 
 func v1AuthRoutes(e *echo.Group) {
 	e.POST("/register", handlers.Register)
+	e.GET("/confirmEmail", handlers.SendConfirmEmail)
+	e.POST("/confirmEmail", handlers.VerifyConfirmEmailCode)
 }
