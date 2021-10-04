@@ -41,9 +41,11 @@ func TestRegister(t *testing.T) {
 		{tName: "Successful register", name: "bob", email: "bob@gmail.com", password: "123456", wantCode: http.StatusCreated, wantMessage: "Successfully registered new user"},
 		{tName: "User does already exist", name: "bob", email: "exists@gmail.com", password: "123456", wantCode: http.StatusForbidden, wantMessage: "The user with this email does already exist"},
 		{tName: "Name too short", name: "bo", email: "bob@gmail.com", password: "123456", wantCode: http.StatusBadRequest, wantMessage: "Name too short"},
+		{tName: "Name too long", name: "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata ",
+			email: "bob@gmail.com", password: "123456", wantCode: http.StatusBadRequest, wantMessage: "Name too long"},
 		{tName: "Password too short", name: "bob", email: "bob@gmail.com", password: "12345", wantCode: http.StatusBadRequest, wantMessage: "Password too short"},
-		{tName: "Invalid email (wrong format)", name: "bob", email: "bob.gmail.com", password: "123456", wantCode: http.StatusBadRequest, wantMessage: "Invalid email"},
-		{tName: "Invalid email (no such provider)", name: "bob", email: "bob@bla.bla", password: "123456", wantCode: http.StatusBadRequest, wantMessage: "Invalid email"},
+		{tName: "Password too long", name: "bob", email: "bob@gmail.com", password: "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata ",
+			wantCode: http.StatusBadRequest, wantMessage: "Password too long"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.tName, func(t *testing.T) {
@@ -84,6 +86,11 @@ func TestRegister(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, tt.wantCode, rec.Code)
 			assert.Contains(t, rec.Body.String(), `"message":"`+tt.wantMessage+`"`)
+
+			// Reset db
+			if rec.Code == http.StatusCreated {
+				db.Delete(models.User{}, "email = ?", tt.email)
+			}
 		})
 	}
 }
@@ -104,6 +111,8 @@ func Test_isValidEmail(t *testing.T) {
 		{"Missing domain", "test@com", false},
 		{"Non-existant domain", "test@foomail.abc", false},
 		{"Two @ signs", "test@foomail@abc", false},
+		{"Too long", "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata ",
+			false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

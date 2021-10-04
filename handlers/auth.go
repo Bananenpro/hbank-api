@@ -14,8 +14,11 @@ import (
 )
 
 const (
-	minNameLenght     = 3
-	minPasswordLenght = 6
+	minNameLength     = 3
+	minPasswordLength = 6
+	maxNameLength     = 254
+	maxPasswordLength = 254
+	maxEmailLength    = 254
 )
 
 var (
@@ -53,23 +56,51 @@ func Register(c echo.Context) error {
 		})
 	}
 
-	if utf8.RuneCountInString(body.Name) < minNameLenght {
+	if len(body.Name) > maxNameLength {
+		return c.JSON(http.StatusBadRequest, responses.RegisterInvalid{
+			Generic: responses.Generic{
+				Message: "Name too long",
+			},
+			MinNameLength:     minNameLength,
+			MinPasswordLength: minPasswordLength,
+			MaxNameLength:     maxNameLength,
+			MaxPasswordLength: maxPasswordLength,
+		})
+	}
+
+	if utf8.RuneCountInString(body.Name) < minNameLength {
 		return c.JSON(http.StatusBadRequest, responses.RegisterInvalid{
 			Generic: responses.Generic{
 				Message: "Name too short",
 			},
-			MinNameLength:     minNameLenght,
-			MinPasswordLength: minPasswordLenght,
+			MinNameLength:     minNameLength,
+			MinPasswordLength: minPasswordLength,
+			MaxNameLength:     maxNameLength,
+			MaxPasswordLength: maxPasswordLength,
 		})
 	}
 
-	if utf8.RuneCountInString(body.Password) < minPasswordLenght {
+	if len(body.Password) > maxPasswordLength {
+		return c.JSON(http.StatusBadRequest, responses.RegisterInvalid{
+			Generic: responses.Generic{
+				Message: "Password too long",
+			},
+			MinNameLength:     minNameLength,
+			MinPasswordLength: minPasswordLength,
+			MaxNameLength:     maxNameLength,
+			MaxPasswordLength: maxPasswordLength,
+		})
+	}
+
+	if utf8.RuneCountInString(body.Password) < minPasswordLength {
 		return c.JSON(http.StatusBadRequest, responses.RegisterInvalid{
 			Generic: responses.Generic{
 				Message: "Password too short",
 			},
-			MinNameLength:     minNameLenght,
-			MinPasswordLength: minPasswordLenght,
+			MinNameLength:     minNameLength,
+			MinPasswordLength: minPasswordLength,
+			MaxNameLength:     maxNameLength,
+			MaxPasswordLength: maxPasswordLength,
 		})
 	}
 
@@ -194,7 +225,7 @@ func VerifyOTPCode(c echo.Context) error {
 }
 
 func isValidEmail(email string) bool {
-	if utf8.RuneCountInString(email) < 3 || utf8.RuneCountInString(email) > 254 {
+	if len(email) > maxEmailLength || utf8.RuneCountInString(email) < 3 {
 		return false
 	}
 
