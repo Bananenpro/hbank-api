@@ -36,16 +36,17 @@ func TestRegister(t *testing.T) {
 		email       string
 		password    string
 		wantCode    int
+		wantSuccess bool
 		wantMessage string
 	}{
-		{tName: "Successful register", name: "bob", email: "bob@gmail.com", password: "123456", wantCode: http.StatusCreated, wantMessage: "Successfully registered new user"},
-		{tName: "User does already exist", name: "bob", email: "exists@gmail.com", password: "123456", wantCode: http.StatusForbidden, wantMessage: "The user with this email does already exist"},
-		{tName: "Name too short", name: "bo", email: "bob@gmail.com", password: "123456", wantCode: http.StatusBadRequest, wantMessage: "Name too short"},
+		{tName: "Successful register", name: "bob", email: "bob@gmail.com", password: "123456", wantCode: http.StatusCreated, wantSuccess: true, wantMessage: "Successfully registered new user"},
+		{tName: "User does already exist", name: "bob", email: "exists@gmail.com", password: "123456", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "The user with this email does already exist"},
+		{tName: "Name too short", name: "bo", email: "bob@gmail.com", password: "123456", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Name too short"},
 		{tName: "Name too long", name: "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata ",
-			email: "bob@gmail.com", password: "123456", wantCode: http.StatusBadRequest, wantMessage: "Name too long"},
-		{tName: "Password too short", name: "bob", email: "bob@gmail.com", password: "12345", wantCode: http.StatusBadRequest, wantMessage: "Password too short"},
+			email: "bob@gmail.com", password: "123456", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Name too long"},
+		{tName: "Password too short", name: "bob", email: "bob@gmail.com", password: "12345", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Password too short"},
 		{tName: "Password too long", name: "bob", email: "bob@gmail.com", password: "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata ",
-			wantCode: http.StatusBadRequest, wantMessage: "Password too long"},
+			wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Password too long"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.tName, func(t *testing.T) {
@@ -62,7 +63,8 @@ func TestRegister(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, tt.wantCode, rec.Code)
-			assert.Contains(t, rec.Body.String(), `"message":"`+tt.wantMessage+`"`)
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"success":%t`, tt.wantSuccess))
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
 
 			// Reset db
 			if rec.Code == http.StatusCreated {
@@ -85,7 +87,8 @@ func TestRegister(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, tt.wantCode, rec.Code)
-			assert.Contains(t, rec.Body.String(), `"message":"`+tt.wantMessage+`"`)
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"success":%t`, tt.wantSuccess))
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
 
 			// Reset db
 			if rec.Code == http.StatusCreated {
@@ -116,9 +119,7 @@ func Test_isValidEmail(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := isValidEmail(tt.email); got != tt.want {
-				t.Errorf("isValidEmail() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.want, isValidEmail(tt.email))
 		})
 	}
 }

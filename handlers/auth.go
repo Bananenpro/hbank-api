@@ -30,6 +30,7 @@ func Register(c echo.Context) error {
 	var body bindings.Register
 	if err := c.Bind(&body); err != nil {
 		return c.JSON(http.StatusBadRequest, responses.Generic{
+			Success: false,
 			Message: "Invalid request body",
 		})
 	}
@@ -37,11 +38,13 @@ func Register(c echo.Context) error {
 	if err := services.VerifyCaptcha(body.CaptchaToken); err != nil {
 		switch err {
 		case services.ErrInvalidCaptchaToken:
-			return c.JSON(http.StatusForbidden, responses.Generic{
+			return c.JSON(http.StatusOK, responses.Generic{
+				Success: false,
 				Message: "Invalid captcha token",
 			})
 		default:
 			return c.JSON(http.StatusInternalServerError, responses.Generic{
+				Success: false,
 				Message: "Due to an unexpected error the user couldn't be registered",
 			})
 		}
@@ -51,14 +54,16 @@ func Register(c echo.Context) error {
 	body.Email = strings.ToLower(strings.TrimSpace(body.Email))
 
 	if !isValidEmail(body.Email) {
-		return c.JSON(http.StatusBadRequest, responses.Generic{
+		return c.JSON(http.StatusOK, responses.Generic{
+			Success: false,
 			Message: "Invalid email",
 		})
 	}
 
 	if len(body.Name) > maxNameLength {
-		return c.JSON(http.StatusBadRequest, responses.RegisterInvalid{
+		return c.JSON(http.StatusOK, responses.RegisterInvalid{
 			Generic: responses.Generic{
+				Success: false,
 				Message: "Name too long",
 			},
 			MinNameLength:     minNameLength,
@@ -69,8 +74,9 @@ func Register(c echo.Context) error {
 	}
 
 	if utf8.RuneCountInString(body.Name) < minNameLength {
-		return c.JSON(http.StatusBadRequest, responses.RegisterInvalid{
+		return c.JSON(http.StatusOK, responses.RegisterInvalid{
 			Generic: responses.Generic{
+				Success: false,
 				Message: "Name too short",
 			},
 			MinNameLength:     minNameLength,
@@ -81,8 +87,9 @@ func Register(c echo.Context) error {
 	}
 
 	if len(body.Password) > maxPasswordLength {
-		return c.JSON(http.StatusBadRequest, responses.RegisterInvalid{
+		return c.JSON(http.StatusOK, responses.RegisterInvalid{
 			Generic: responses.Generic{
+				Success: false,
 				Message: "Password too long",
 			},
 			MinNameLength:     minNameLength,
@@ -93,8 +100,9 @@ func Register(c echo.Context) error {
 	}
 
 	if utf8.RuneCountInString(body.Password) < minPasswordLength {
-		return c.JSON(http.StatusBadRequest, responses.RegisterInvalid{
+		return c.JSON(http.StatusOK, responses.RegisterInvalid{
 			Generic: responses.Generic{
+				Success: false,
 				Message: "Password too short",
 			},
 			MinNameLength:     minNameLength,
@@ -108,11 +116,13 @@ func Register(c echo.Context) error {
 	if err != nil {
 		switch err {
 		case services.ErrEmailExists:
-			return c.JSON(http.StatusForbidden, responses.Generic{
+			return c.JSON(http.StatusOK, responses.Generic{
+				Success: false,
 				Message: "The user with this email does already exist",
 			})
 		default:
 			return c.JSON(http.StatusInternalServerError, responses.Generic{
+				Success: false,
 				Message: "Due to an unexpected error the user couldn't be registered",
 			})
 		}
@@ -120,6 +130,7 @@ func Register(c echo.Context) error {
 
 	return c.JSON(http.StatusCreated, responses.RegisterSuccess{
 		Generic: responses.Generic{
+			Success: true,
 			Message: "Successfully registered new user",
 		},
 		UserId:    userId.String(),
@@ -132,6 +143,7 @@ func SendConfirmEmail(c echo.Context) error {
 	email := c.QueryParam("email")
 	if !isValidEmail(email) {
 		return c.JSON(http.StatusBadRequest, responses.Generic{
+			Success: false,
 			Message: "Missing or invalid email query parameter",
 		})
 	}
@@ -139,15 +151,18 @@ func SendConfirmEmail(c echo.Context) error {
 	err := services.SendConfirmEmail(c, email)
 	if err == services.ErrTimeout {
 		return c.JSON(http.StatusTooManyRequests, responses.Generic{
+			Success: false,
 			Message: "Please wait at least 2 minutes between confirm email requests",
 		})
 	} else if err != nil && err != services.ErrNotFound && err != services.ErrEmailAlreadyConfirmed {
 		return c.JSON(http.StatusInternalServerError, responses.Generic{
-			Message: "An unexpected error occurred: " + err.Error(),
+			Success: false,
+			Message: "An unexpected error occurred",
 		})
 	}
 
 	return c.JSON(http.StatusOK, responses.Generic{
+		Success: true,
 		Message: "If the email address is linked to a user whose email has not yet been confirmed, a code has been sent to the specified address",
 	})
 }
@@ -158,16 +173,19 @@ func VerifyConfirmEmailCode(c echo.Context) error {
 	err := c.Bind(&body)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, responses.Generic{
+			Success: false,
 			Message: "Invalid request body",
 		})
 	}
 
 	if services.VerifyConfirmEmailCode(c, body.Email, body.Code) {
 		return c.JSON(http.StatusOK, responses.Generic{
+			Success: true,
 			Message: "Successfully confirmed email address",
 		})
 	} else {
-		return c.JSON(http.StatusForbidden, responses.Generic{
+		return c.JSON(http.StatusOK, responses.Generic{
+			Success: false,
 			Message: "Email was not confirmed",
 		})
 	}
@@ -179,6 +197,7 @@ func Activate2FAOTP(c echo.Context) error {
 	err := c.Bind(&body)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, responses.Generic{
+			Success: false,
 			Message: "Invalid request body",
 		})
 	}
@@ -188,10 +207,12 @@ func Activate2FAOTP(c echo.Context) error {
 		switch err {
 		case services.ErrInvalidCredentials:
 			return c.JSON(http.StatusUnauthorized, responses.Generic{
+				Success: false,
 				Message: "Invalid credentials",
 			})
 		default:
 			return c.JSON(http.StatusInternalServerError, responses.Generic{
+				Success: false,
 				Message: "An unexpected error occurred",
 			})
 		}
@@ -206,6 +227,7 @@ func VerifyOTPCode(c echo.Context) error {
 	err := c.Bind(&body)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, responses.Generic{
+			Success: false,
 			Message: "Invalid request body",
 		})
 	}
@@ -213,16 +235,19 @@ func VerifyOTPCode(c echo.Context) error {
 	if body.LoginToken == "" {
 		if services.VerifyOTPCode(c, body.Email, body.OTPCode) {
 			return c.JSON(http.StatusOK, responses.Generic{
+				Success: true,
 				Message: "Correct code",
 			})
 		} else {
 			return c.JSON(http.StatusUnauthorized, responses.Generic{
+				Success: false,
 				Message: "Invalid credentials",
 			})
 		}
 	} else {
 		// TODO: login
-		return c.JSON(http.StatusInternalServerError, responses.Generic{
+		return c.JSON(http.StatusNotImplemented, responses.Generic{
+			Success: false,
 			Message: "Not yet implemented",
 		})
 	}

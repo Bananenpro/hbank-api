@@ -8,8 +8,8 @@ import (
 )
 
 func Status(c echo.Context) error {
-	resp := responses.Status{
-		Api: true,
-	}
-	return c.JSON(http.StatusOK, resp)
+	return c.JSON(http.StatusOK, responses.Generic{
+		Success: true,
+		Message: "active",
+	})
 }
