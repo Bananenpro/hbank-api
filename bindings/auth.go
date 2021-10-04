@@ -22,3 +22,8 @@ type VerifyOTPCode struct {
 	OTPCode    string `json:"otp_code" form:"otp_code"`
 	LoginToken string `json:"login_token" form:"login_token"`
 }
+
+type Login struct {
+	Email    string `json:"email" form:"email"`
+	Password string `json:"password" form:"password"`
+}

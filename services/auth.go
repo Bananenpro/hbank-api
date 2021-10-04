@@ -3,7 +3,6 @@ package services
 import (
 	"bytes"
 	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,10 +24,11 @@ import (
 )
 
 var (
-	bcryptCost              = 10
-	hCaptchaVerifyUrl       = "https://hcaptcha.com/siteverify"
-	emailCodeLifetimeMillis = time.Minute.Milliseconds() * 5
-	confirmEmailTimeout     = time.Minute.Milliseconds() * 2
+	bcryptCost          = 10
+	hCaptchaVerifyUrl   = "https://hcaptcha.com/siteverify"
+	emailCodeLifetime   = time.Minute.Milliseconds() * 5
+	confirmEmailTimeout = time.Minute.Milliseconds() * 2
+	loginTokenLifetime  = time.Minute.Milliseconds() * 5
 )
 
 func Register(ctx echo.Context, email, name, password string) (uuid.UUID, error) {
@@ -133,7 +133,7 @@ func SendConfirmEmail(ctx echo.Context, email string) error {
 		db.Delete(&user.EmailCode)
 		err = db.Model(&user).Association("EmailCode").Replace(&models.EmailCode{
 			Code:           code,
-			ExpirationTime: time.Now().UnixMilli() + emailCodeLifetimeMillis,
+			ExpirationTime: time.Now().UnixMilli() + emailCodeLifetime,
 		})
 		if err != nil {
 			return err
@@ -244,6 +244,37 @@ func VerifyOTPCode(ctx echo.Context, email, code string) bool {
 	return false
 }
 
+func Login(ctx echo.Context, email, password string) (string, error) {
+	db := dbFromCtx(ctx)
+	var user models.User
+	err := db.First(&user, "email = ?", email).Error
+	if err != nil {
+		fmt.Println(err)
+		return "", ErrInvalidCredentials
+	}
+
+	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(password)) != nil {
+		return "", ErrInvalidCredentials
+	}
+
+	var code string
+	existingLoginToken := models.LoginToken{}
+	for code == "" || db.First(&existingLoginToken, "code = ?", code).Error != gorm.ErrRecordNotFound {
+		code, err = generateRandomString(64)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	user.LoginTokens = append(user.LoginTokens, models.LoginToken{
+		Code:           code,
+		ExpirationTime: time.Now().UnixMilli() + loginTokenLifetime,
+	})
+	db.Updates(&user)
+
+	return code, nil
+}
+
 // ========== Helper functions ==========
 
 func generateRecoveryCodes() ([]models.RecoveryCode, error) {
@@ -251,7 +282,7 @@ func generateRecoveryCodes() ([]models.RecoveryCode, error) {
 
 	var err error
 	for i := range codes {
-		codes[i].Code, err = generateRandomStringURLSafe(64)
+		codes[i].Code, err = generateRandomString(64)
 		if err != nil {
 			return []models.RecoveryCode{}, errors.New("Couldn't generate recovery codes")
 		}
@@ -299,9 +330,4 @@ func generateRandomString(length int) (string, error) {
 	}
 
 	return string(ret), nil
-}
-
-func generateRandomStringURLSafe(length int) (string, error) {
-	b, err := generateRandomBytes(length)
-	return base64.URLEncoding.EncodeToString(b), err
 }

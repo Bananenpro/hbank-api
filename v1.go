@@ -21,6 +21,7 @@ func v1AuthRoutes(e *echo.Group) {
 	e.POST("/register", handlers.Register)
 	e.GET("/confirmEmail", handlers.SendConfirmEmail)
 	e.POST("/confirmEmail", handlers.VerifyConfirmEmailCode)
+	e.POST("/login", handlers.Login)
 
 	twoFactor := e.Group("/twoFactor")
 	v1AuthTwoFactorRoutes(twoFactor)

@@ -7,6 +7,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"gitlab.com/Bananenpro05/hbank2-api/models"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -93,6 +94,58 @@ func TestVerifyConfirmEmailCode(t *testing.T) {
 			assert.Equal(t, tt.want, VerifyConfirmEmailCode(ctx, tt.email, tt.code))
 
 			db.Delete(&tt.user)
+		})
+	}
+}
+
+func TestLogin(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"))
+	models.AutoMigrate(db)
+	if err != nil {
+		t.Fatal("Unable to connect to in-memory database")
+	}
+	password, err := bcrypt.GenerateFromPassword([]byte("123456"), bcryptCost)
+	if err != nil {
+		t.Fatal("Unable to generate password hash")
+	}
+	db.Create(&models.User{
+		Email:        "bob@gmail.com",
+		PasswordHash: password,
+	})
+
+	ctx := ContextMock{
+		db: db,
+	}
+
+	tests := []struct {
+		testName       string
+		email          string
+		password       string
+		wantErr        error
+		wantTokenEmpty bool
+	}{
+		{testName: "Successful login", email: "bob@gmail.com", password: "123456", wantErr: nil, wantTokenEmpty: false},
+		{testName: "Wrong email", email: "boo@gmail.com", password: "123456", wantErr: ErrInvalidCredentials, wantTokenEmpty: true},
+		{testName: "Wrong password", email: "bob@gmail.com", password: "123455", wantErr: ErrInvalidCredentials, wantTokenEmpty: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.testName, func(t *testing.T) {
+			token, err := Login(ctx, tt.email, tt.password)
+			assert.Equal(t, tt.wantErr, err)
+			assert.Equal(t, tt.wantTokenEmpty, token == "")
+
+			var loginTokens []models.LoginToken
+			db.Find(&loginTokens)
+
+			if tt.wantTokenEmpty {
+				assert.Equal(t, 0, len(loginTokens))
+			} else {
+				assert.Equal(t, 1, len(loginTokens))
+			}
+
+			for _, lT := range loginTokens {
+				db.Delete(&lT)
+			}
 		})
 	}
 }

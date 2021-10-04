@@ -253,6 +253,42 @@ func VerifyOTPCode(c echo.Context) error {
 	}
 }
 
+// /v1/auth/login (POST)
+func Login(c echo.Context) error {
+	var body bindings.Login
+	err := c.Bind(&body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.Generic{
+			Success: false,
+			Message: "Invalid request body",
+		})
+	}
+
+	token, err := services.Login(c, body.Email, body.Password)
+	if err != nil {
+		switch err {
+		case services.ErrInvalidCredentials:
+			return c.JSON(http.StatusUnauthorized, responses.Generic{
+				Success: false,
+				Message: "Invalid credentials",
+			})
+		default:
+			return c.JSON(http.StatusInternalServerError, responses.Generic{
+				Success: false,
+				Message: "An unexpected error occurred",
+			})
+		}
+	}
+
+	return c.JSON(http.StatusOK, responses.Login{
+		Generic: responses.Generic{
+			Success: true,
+			Message: "Successfully signed in",
+		},
+		LoginToken: token,
+	})
+}
+
 func isValidEmail(email string) bool {
 	if len(email) > maxEmailLength || utf8.RuneCountInString(email) < 3 {
 		return false

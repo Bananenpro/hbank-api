@@ -13,3 +13,8 @@ type RegisterInvalid struct {
 	MaxNameLength     int `json:"max_name_length"`
 	MaxPasswordLength int `json:"max_password_length"`
 }
+
+type Login struct {
+	Generic
+	LoginToken string `json:"login_token"`
+}
