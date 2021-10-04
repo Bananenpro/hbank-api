@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"strings"
 )
 
 type ConfigData struct {
 	ServerPort      int    `json:"server_port"`
+	DomainName      string `json:"domain_name"`
 	CaptchaEnabled  bool   `json:"captcha_enabled"`
 	HCaptchaSecret  string `json:"h_captcha_secret"`
 	HCaptchaSiteKey string `json:"h_captcha_site_key"`
@@ -20,6 +22,7 @@ type ConfigData struct {
 
 var defaultData = ConfigData{
 	ServerPort: 8080,
+	DomainName: "hbank",
 }
 
 var Data = defaultData
@@ -82,5 +85,9 @@ func verifyData() {
 		}
 	} else {
 		log.Println("WARNING: Email disabled")
+	}
+
+	if strings.TrimSpace(Data.DomainName) == "" {
+		log.Println("WARNING: Empty domain name. Using default: hbank")
 	}
 }

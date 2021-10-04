@@ -21,4 +21,12 @@ func v1AuthRoutes(e *echo.Group) {
 	e.POST("/register", handlers.Register)
 	e.GET("/confirmEmail", handlers.SendConfirmEmail)
 	e.POST("/confirmEmail", handlers.VerifyConfirmEmailCode)
+
+	twoFactor := e.Group("/twoFactor")
+	v1AuthTwoFactorRoutes(twoFactor)
+}
+
+func v1AuthTwoFactorRoutes(e *echo.Group) {
+	e.POST("/otp/activate", handlers.Activate2FAOTP)
+	e.POST("/otp/verify", handlers.VerifyOTPCode)
 }

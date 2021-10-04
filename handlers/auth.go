@@ -138,6 +138,61 @@ func VerifyConfirmEmailCode(c echo.Context) error {
 	}
 }
 
+// /v1/auth/twoFactor/otp/activate (POST)
+func Activate2FAOTP(c echo.Context) error {
+	var body bindings.Activate2FAOTP
+	err := c.Bind(&body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.Generic{
+			Message: "Invalid request body",
+		})
+	}
+
+	qr, err := services.Activate2FAOTP(c, body.Email, body.Password)
+	if err != nil {
+		switch err {
+		case services.ErrInvalidCredentials:
+			return c.JSON(http.StatusUnauthorized, responses.Generic{
+				Message: "Invalid credentials",
+			})
+		default:
+			return c.JSON(http.StatusInternalServerError, responses.Generic{
+				Message: "An unexpected error occurred",
+			})
+		}
+	}
+
+	return c.Blob(http.StatusOK, "image/png", qr)
+}
+
+// /v1/auth/twoFactor/otp/verify (POST)
+func VerifyOTPCode(c echo.Context) error {
+	var body bindings.VerifyOTPCode
+	err := c.Bind(&body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.Generic{
+			Message: "Invalid request body",
+		})
+	}
+
+	if body.LoginToken == "" {
+		if services.VerifyOTPCode(c, body.Email, body.OTPCode) {
+			return c.JSON(http.StatusOK, responses.Generic{
+				Message: "Correct code",
+			})
+		} else {
+			return c.JSON(http.StatusUnauthorized, responses.Generic{
+				Message: "Invalid credentials",
+			})
+		}
+	} else {
+		// TODO: login
+		return c.JSON(http.StatusInternalServerError, responses.Generic{
+			Message: "Not yet implemented",
+		})
+	}
+}
+
 func isValidEmail(email string) bool {
 	if utf8.RuneCountInString(email) < 3 || utf8.RuneCountInString(email) > 254 {
 		return false

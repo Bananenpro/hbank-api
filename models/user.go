@@ -14,8 +14,8 @@ type User struct {
 	ProfilePictureId uuid.UUID `gorm:"type:uuid"`
 	EmailConfirmed   bool
 	TwoFaOTPEnabled  bool
+	OtpSecret        string
 	OtpQrCode        []byte
-	Enabled          bool
 	EmailCode        EmailCode `gorm:"constraint:OnDelete:CASCADE"`
 	TokenKey         []byte
 	RefreshTokens    []RefreshToken `gorm:"constraint:OnDelete:CASCADE"`

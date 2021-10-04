@@ -6,6 +6,7 @@ require (
 	github.com/adrg/xdg v0.3.4
 	github.com/google/uuid v1.3.0
 	github.com/labstack/echo/v4 v4.6.0
+	github.com/pquerna/otp v1.3.0
 	github.com/stretchr/testify v1.7.0
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
 	gorm.io/driver/sqlite v1.1.5
@@ -13,6 +14,7 @@ require (
 )
 
 require (
+	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
 	github.com/davecgh/go-spew v1.1.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.2 // indirect

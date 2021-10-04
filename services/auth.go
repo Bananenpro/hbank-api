@@ -1,11 +1,13 @@
 package services
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"image/png"
 	"io"
 	"log"
 	"math/big"
@@ -15,6 +17,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/pquerna/otp/totp"
 	"gitlab.com/Bananenpro05/hbank2-api/config"
 	"gitlab.com/Bananenpro05/hbank2-api/models"
 	"golang.org/x/crypto/bcrypt"
@@ -162,6 +165,65 @@ func VerifyConfirmEmailCode(ctx echo.Context, email string, code string) bool {
 	}
 
 	return success
+}
+
+func Activate2FAOTP(ctx echo.Context, email, password string) ([]byte, error) {
+	db := dbFromCtx(ctx)
+
+	var user models.User
+	err := db.First(&user, "email = ?", email).Error
+	if err != nil {
+		return []byte{}, ErrInvalidCredentials
+	}
+
+	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(password)) != nil {
+		return []byte{}, ErrInvalidCredentials
+	}
+
+	if !user.TwoFaOTPEnabled {
+		key, err := totp.Generate(totp.GenerateOpts{
+			Issuer:      config.Data.DomainName,
+			AccountName: user.Email,
+		})
+		if err != nil {
+			return []byte{}, errors.New("Failed to generate OTP")
+		}
+
+		img, err := key.Image(200, 200)
+		if err != nil {
+			return []byte{}, errors.New("Failed to generate OTP QR code")
+		}
+
+		var qr bytes.Buffer
+
+		png.Encode(&qr, img)
+
+		secret := key.Secret()
+
+		user.OtpSecret = secret
+		user.OtpQrCode = qr.Bytes()
+
+		return qr.Bytes(), db.Model(&user).Select([]string{"two_fa_otp_enabled", "otp_secret", "otp_qr_code"}).Updates(&user).Error
+	}
+
+	return user.OtpQrCode, nil
+}
+
+func VerifyOTPCode(ctx echo.Context, email, code string) bool {
+	db := dbFromCtx(ctx)
+	var user models.User
+	err := db.First(&user, "email = ?", email).Error
+	if err != nil {
+		return false
+	}
+
+	if totp.Validate(code, user.OtpSecret) {
+		user.TwoFaOTPEnabled = true
+		db.Model(&user).Select("two_fa_otp_enabled").Updates(&user)
+		return true
+	}
+
+	return false
 }
 
 // ========== Helper functions ==========
