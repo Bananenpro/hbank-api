@@ -24,10 +24,11 @@ import (
 	"gorm.io/gorm"
 )
 
-const (
+var (
 	bcryptCost              = 10
 	hCaptchaVerifyUrl       = "https://hcaptcha.com/siteverify"
-	emailCodeLifetimeMillis = 300000 // 5 min
+	emailCodeLifetimeMillis = time.Minute.Milliseconds() * 5
+	confirmEmailTimeout     = time.Minute.Milliseconds() * 2
 )
 
 func Register(ctx echo.Context, email, name, password string) (uuid.UUID, error) {
@@ -96,8 +97,24 @@ func VerifyCaptcha(token string) error {
 func SendConfirmEmail(ctx echo.Context, email string) error {
 	db := dbFromCtx(ctx)
 
+	var confirmEmailLastSent models.ConfirmEmailLastSent
+	err := db.First(&confirmEmailLastSent, "email = ?", email).Error
+	if err == gorm.ErrRecordNotFound {
+		confirmEmailLastSent := models.ConfirmEmailLastSent{
+			Email:    email,
+			LastSent: time.Now().UnixMilli(),
+		}
+		db.Create(&confirmEmailLastSent)
+	} else {
+		if time.Now().UnixMilli()-confirmEmailLastSent.LastSent < confirmEmailTimeout {
+			return ErrTimeout
+		}
+		confirmEmailLastSent.LastSent = time.Now().UnixMilli()
+		db.Updates(&confirmEmailLastSent)
+	}
+
 	var user models.User
-	err := db.Joins("EmailCode").First(&user, "email = ?", email).Error
+	err = db.Joins("EmailCode").First(&user, "email = ?", email).Error
 	if err != nil {
 		switch err {
 		case gorm.ErrRecordNotFound:
@@ -106,6 +123,7 @@ func SendConfirmEmail(ctx echo.Context, email string) error {
 			return err
 		}
 	}
+
 	if !user.EmailConfirmed {
 		code, err := generateRandomString(6)
 		if err != nil {

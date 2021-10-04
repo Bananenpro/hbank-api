@@ -8,4 +8,5 @@ var (
 	ErrNotFound              = errors.New("not-found")
 	ErrEmailAlreadyConfirmed = errors.New("email-already-confirmed")
 	ErrInvalidCredentials    = errors.New("invalid-credentials")
+	ErrTimeout               = errors.New("timeout")
 )

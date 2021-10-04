@@ -23,8 +23,19 @@ type User struct {
 	RecoveryCodes    []RecoveryCode `gorm:"constraint:OnDelete:CASCADE"`
 }
 
+type ConfirmEmailLastSent struct {
+	Base
+	Email    string `gorm:"unique"`
+	LastSent int64
+}
+
 func userAutoMigrate(db *gorm.DB) (errs []error) {
 	err := db.AutoMigrate(User{})
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	err = db.AutoMigrate(ConfirmEmailLastSent{})
 	if err != nil {
 		errs = append(errs, err)
 	}

@@ -57,6 +57,9 @@ func TestSendConfirmEmail(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
 			assert.Equal(t, tt.wantErr, SendConfirmEmail(ctx, tt.email))
+			if tt.wantErr == nil {
+				assert.Equal(t, ErrTimeout, SendConfirmEmail(ctx, tt.email))
+			}
 		})
 	}
 }

@@ -137,14 +137,18 @@ func SendConfirmEmail(c echo.Context) error {
 	}
 
 	err := services.SendConfirmEmail(c, email)
-	if err != nil && err != services.ErrNotFound && err != services.ErrEmailAlreadyConfirmed {
+	if err == services.ErrTimeout {
+		return c.JSON(http.StatusTooManyRequests, responses.Generic{
+			Message: "Please wait at least 2 minutes between confirm email requests",
+		})
+	} else if err != nil && err != services.ErrNotFound && err != services.ErrEmailAlreadyConfirmed {
 		return c.JSON(http.StatusInternalServerError, responses.Generic{
 			Message: "An unexpected error occurred: " + err.Error(),
 		})
 	}
 
 	return c.JSON(http.StatusOK, responses.Generic{
-		Message: "If the email adress is bound to a user, a code was sent to the adress specified",
+		Message: "If the email address is linked to a user whose email has not yet been confirmed, a code has been sent to the specified address",
 	})
 }
 
