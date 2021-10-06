@@ -1,16 +1,25 @@
 package handlers
 
 import (
+	"bytes"
+	"fmt"
+	"image/png"
 	"net"
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 	"unicode/utf8"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/pquerna/otp/totp"
 	"gitlab.com/Bananenpro05/hbank2-api/bindings"
+	"gitlab.com/Bananenpro05/hbank2-api/config"
+	"gitlab.com/Bananenpro05/hbank2-api/models"
 	"gitlab.com/Bananenpro05/hbank2-api/responses"
 	"gitlab.com/Bananenpro05/hbank2-api/services"
+	"golang.org/x/crypto/bcrypt"
 )
 
 const (
@@ -26,165 +35,196 @@ var (
 )
 
 // /v1/auth/register (POST)
-func Register(c echo.Context) error {
+func (h *Handler) Register(c echo.Context) error {
 	var body bindings.Register
 	if err := c.Bind(&body); err != nil {
-		return c.JSON(http.StatusBadRequest, responses.Generic{
+		return c.JSON(http.StatusBadRequest, responses.Base{
 			Success: false,
 			Message: "Invalid request body",
 		})
 	}
 
-	if err := services.VerifyCaptcha(body.CaptchaToken); err != nil {
-		switch err {
-		case services.ErrInvalidCaptchaToken:
-			return c.JSON(http.StatusOK, responses.Generic{
-				Success: false,
-				Message: "Invalid captcha token",
-			})
-		default:
-			return c.JSON(http.StatusInternalServerError, responses.Generic{
-				Success: false,
-				Message: "Due to an unexpected error the user couldn't be registered",
-			})
-		}
+	if !services.VerifyCaptcha(body.CaptchaToken) {
+		return c.JSON(http.StatusOK, responses.Base{
+			Success: false,
+			Message: "Invalid captcha token",
+		})
 	}
 
-	body.Name = strings.TrimSpace(body.Name)
-	body.Email = strings.ToLower(strings.TrimSpace(body.Email))
+	body.Email = strings.ToLower(body.Email)
 
 	if !isValidEmail(body.Email) {
-		return c.JSON(http.StatusOK, responses.Generic{
+		return c.JSON(http.StatusOK, responses.Base{
 			Success: false,
 			Message: "Invalid email",
 		})
 	}
 
 	if len(body.Name) > maxNameLength {
-		return c.JSON(http.StatusOK, responses.RegisterInvalid{
-			Generic: responses.Generic{
-				Success: false,
-				Message: "Name too long",
-			},
-			MinNameLength:     minNameLength,
-			MinPasswordLength: minPasswordLength,
-			MaxNameLength:     maxNameLength,
-			MaxPasswordLength: maxPasswordLength,
-		})
+		return c.JSON(http.StatusOK, responses.NewRegisterInvalid("Name too long"))
 	}
 
 	if utf8.RuneCountInString(body.Name) < minNameLength {
-		return c.JSON(http.StatusOK, responses.RegisterInvalid{
-			Generic: responses.Generic{
-				Success: false,
-				Message: "Name too short",
-			},
-			MinNameLength:     minNameLength,
-			MinPasswordLength: minPasswordLength,
-			MaxNameLength:     maxNameLength,
-			MaxPasswordLength: maxPasswordLength,
-		})
+		return c.JSON(http.StatusOK, responses.NewRegisterInvalid("Name too short"))
 	}
 
 	if len(body.Password) > maxPasswordLength {
-		return c.JSON(http.StatusOK, responses.RegisterInvalid{
-			Generic: responses.Generic{
-				Success: false,
-				Message: "Password too long",
-			},
-			MinNameLength:     minNameLength,
-			MinPasswordLength: minPasswordLength,
-			MaxNameLength:     maxNameLength,
-			MaxPasswordLength: maxPasswordLength,
-		})
+		return c.JSON(http.StatusOK, responses.NewRegisterInvalid("Password too long"))
 	}
 
 	if utf8.RuneCountInString(body.Password) < minPasswordLength {
-		return c.JSON(http.StatusOK, responses.RegisterInvalid{
-			Generic: responses.Generic{
-				Success: false,
-				Message: "Password too short",
-			},
-			MinNameLength:     minNameLength,
-			MinPasswordLength: minPasswordLength,
-			MaxNameLength:     maxNameLength,
-			MaxPasswordLength: maxPasswordLength,
+		return c.JSON(http.StatusOK, responses.NewRegisterInvalid("Password too short"))
+	}
+
+	if u, _ := h.userStore.GetByEmail(body.Email); u != nil {
+		return c.JSON(http.StatusOK, responses.Base{
+			Success: false,
+			Message: "The user with this email does already exist",
 		})
 	}
 
-	userId, err := services.Register(c, body.Email, body.Name, body.Password)
+	user := &models.User{
+		Name:             body.Name,
+		Email:            body.Email,
+		ProfilePictureId: uuid.New(),
+	}
+
+	var err error
+	user.PasswordHash, err = bcrypt.GenerateFromPassword([]byte(body.Password), config.Data.BcryptCost)
 	if err != nil {
-		switch err {
-		case services.ErrEmailExists:
-			return c.JSON(http.StatusOK, responses.Generic{
-				Success: false,
-				Message: "The user with this email does already exist",
-			})
-		default:
-			return c.JSON(http.StatusInternalServerError, responses.Generic{
-				Success: false,
-				Message: "Due to an unexpected error the user couldn't be registered",
-			})
-		}
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+
+	err = h.userStore.Create(user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+
+	_, err = h.userStore.NewRecoveryCodes(user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 	}
 
 	return c.JSON(http.StatusCreated, responses.RegisterSuccess{
-		Generic: responses.Generic{
+		Base: responses.Base{
 			Success: true,
 			Message: "Successfully registered new user",
 		},
-		UserId:    userId.String(),
+		UserId:    user.Id.String(),
 		UserEmail: body.Email,
 	})
 }
 
 // /v1/auth/confirmEmail?email=string (GET)
-func SendConfirmEmail(c echo.Context) error {
+func (h *Handler) SendConfirmEmail(c echo.Context) error {
 	email := c.QueryParam("email")
 	if !isValidEmail(email) {
-		return c.JSON(http.StatusBadRequest, responses.Generic{
+		return c.JSON(http.StatusBadRequest, responses.Base{
 			Success: false,
 			Message: "Missing or invalid email query parameter",
 		})
 	}
 
-	err := services.SendConfirmEmail(c, email)
-	if err == services.ErrTimeout {
-		return c.JSON(http.StatusTooManyRequests, responses.Generic{
+	lastSend, err := h.userStore.GetConfirmEmailLastSent(email)
+	if lastSend+config.Data.SendEmailTimeout > time.Now().UnixMilli() {
+		return c.JSON(http.StatusTooManyRequests, responses.Base{
 			Success: false,
-			Message: "Please wait at least 2 minutes between confirm email requests",
-		})
-	} else if err != nil && err != services.ErrNotFound && err != services.ErrEmailAlreadyConfirmed {
-		return c.JSON(http.StatusInternalServerError, responses.Generic{
-			Success: false,
-			Message: "An unexpected error occurred",
+			Message: fmt.Sprintf("Please wait at least %d minutes between confirm email requests", config.Data.SendEmailTimeout/time.Minute.Milliseconds()),
 		})
 	}
+	h.userStore.SetConfirmEmailLastSent(email, time.Now().UnixMilli())
 
-	return c.JSON(http.StatusOK, responses.Generic{
+	user, err := h.userStore.GetByEmail(email)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+	if user != nil {
+		emailCode, err := h.userStore.GetEmailCode(user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		}
+
+		if !user.EmailConfirmed {
+			h.userStore.DeleteEmailCode(emailCode)
+			user.EmailCode = models.EmailCode{
+				Code:           services.GenerateRandomString(6),
+				ExpirationTime: time.Now().UnixMilli() + config.Data.EmailCodeLifetime,
+			}
+			err = h.userStore.Update(user)
+			if err != nil {
+				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			}
+
+			if config.Data.EmailEnabled {
+				type templateData struct {
+					Name    string
+					Content string
+				}
+				body, err := services.ParseEmailTemplate("email.html", templateData{
+					Name:    user.Name,
+					Content: "der Code lautet: " + user.EmailCode.Code,
+				})
+				if err != nil {
+					return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+				}
+				go services.SendEmail([]string{user.Email}, "H-Bank Bestätigungscode", body)
+			}
+		}
+	}
+
+	return c.JSON(http.StatusOK, responses.Base{
 		Success: true,
 		Message: "If the email address is linked to a user whose email has not yet been confirmed, a code has been sent to the specified address",
 	})
 }
 
 // /v1/auth/confirmEmail (POST)
-func VerifyConfirmEmailCode(c echo.Context) error {
+func (h *Handler) VerifyConfirmEmailCode(c echo.Context) error {
 	var body bindings.ConfirmEmail
 	err := c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.Generic{
+		return c.JSON(http.StatusBadRequest, responses.Base{
 			Success: false,
 			Message: "Invalid request body",
 		})
 	}
 
-	if services.VerifyConfirmEmailCode(c, body.Email, body.Code) {
-		return c.JSON(http.StatusOK, responses.Generic{
+	user, err := h.userStore.GetByEmail(body.Email)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+
+	success := false
+
+	if user != nil {
+		emailCode, err := h.userStore.GetEmailCode(user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		}
+		if emailCode != nil {
+			if emailCode.Code == body.Code {
+				if emailCode.ExpirationTime > time.Now().UnixMilli() {
+					user.EmailConfirmed = true
+					err = h.userStore.Update(user)
+					if err != nil {
+						return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+					}
+
+					success = true
+				}
+
+				h.userStore.DeleteEmailCode(emailCode)
+			}
+		}
+	}
+
+	if success {
+		return c.JSON(http.StatusOK, responses.Base{
 			Success: true,
 			Message: "Successfully confirmed email address",
 		})
 	} else {
-		return c.JSON(http.StatusOK, responses.Generic{
+		return c.JSON(http.StatusOK, responses.Base{
 			Success: false,
 			Message: "Email was not confirmed",
 		})
@@ -192,61 +232,101 @@ func VerifyConfirmEmailCode(c echo.Context) error {
 }
 
 // /v1/auth/twoFactor/otp/activate (POST)
-func Activate2FAOTP(c echo.Context) error {
+func (h *Handler) Activate2FAOTP(c echo.Context) error {
 	var body bindings.Activate2FAOTP
 	err := c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.Generic{
+		return c.JSON(http.StatusBadRequest, responses.Base{
 			Success: false,
 			Message: "Invalid request body",
 		})
 	}
 
-	qr, err := services.Activate2FAOTP(c, body.Email, body.Password)
+	user, err := h.userStore.GetByEmail(body.Email)
 	if err != nil {
-		switch err {
-		case services.ErrInvalidCredentials:
-			return c.JSON(http.StatusUnauthorized, responses.Generic{
-				Success: false,
-				Message: "Invalid credentials",
-			})
-		default:
-			return c.JSON(http.StatusInternalServerError, responses.Generic{
-				Success: false,
-				Message: "An unexpected error occurred",
-			})
-		}
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
 	}
 
-	return c.Blob(http.StatusOK, "image/png", qr)
+	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.Password)) != nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+	}
+
+	if !user.TwoFaOTPEnabled {
+		key, err := totp.Generate(totp.GenerateOpts{
+			Issuer:      config.Data.DomainName,
+			AccountName: user.Email,
+		})
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		}
+
+		img, err := key.Image(200, 200)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		}
+
+		var qr bytes.Buffer
+
+		png.Encode(&qr, img)
+
+		secret := key.Secret()
+
+		user.OtpSecret = secret
+		user.OtpQrCode = qr.Bytes()
+
+		err = h.userStore.Update(user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		}
+
+		return c.Blob(http.StatusOK, "image/png", user.OtpQrCode)
+	}
+
+	return c.JSON(http.StatusOK, responses.Base{
+		Success: false,
+		Message: "TwoFaOTP is already activated",
+	})
 }
 
 // /v1/auth/twoFactor/otp/verify (POST)
-func VerifyOTPCode(c echo.Context) error {
+func (h *Handler) VerifyOTPCode(c echo.Context) error {
 	var body bindings.VerifyOTPCode
 	err := c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.Generic{
+		return c.JSON(http.StatusBadRequest, responses.Base{
 			Success: false,
 			Message: "Invalid request body",
 		})
 	}
 
 	if body.LoginToken == "" {
-		if services.VerifyOTPCode(c, body.Email, body.OTPCode) {
-			return c.JSON(http.StatusOK, responses.Generic{
+		user, err := h.userStore.GetByEmail(body.Email)
+		if err != nil {
+			return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+		}
+
+		if totp.Validate(body.OTPCode, user.OtpSecret) {
+			user.TwoFaOTPEnabled = true
+			err = h.userStore.Update(user)
+			if err != nil {
+				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			}
+			return c.JSON(http.StatusOK, responses.Base{
 				Success: true,
 				Message: "Correct code",
 			})
-		} else {
-			return c.JSON(http.StatusUnauthorized, responses.Generic{
-				Success: false,
-				Message: "Invalid credentials",
-			})
 		}
+
+		return c.JSON(http.StatusUnauthorized, responses.Base{
+			Success: false,
+			Message: "Invalid credentials",
+		})
 	} else {
 		// TODO: login
-		return c.JSON(http.StatusNotImplemented, responses.Generic{
+		return c.JSON(http.StatusNotImplemented, responses.Base{
 			Success: false,
 			Message: "Not yet implemented",
 		})
@@ -254,40 +334,73 @@ func VerifyOTPCode(c echo.Context) error {
 }
 
 // /v1/auth/login (POST)
-func Login(c echo.Context) error {
+func (h *Handler) Login(c echo.Context) error {
 	var body bindings.Login
 	err := c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.Generic{
+		return c.JSON(http.StatusBadRequest, responses.Base{
 			Success: false,
 			Message: "Invalid request body",
 		})
 	}
 
-	token, err := services.Login(c, body.Email, body.Password)
+	user, err := h.userStore.GetByEmail(body.Email)
 	if err != nil {
-		switch err {
-		case services.ErrInvalidCredentials:
-			return c.JSON(http.StatusUnauthorized, responses.Generic{
-				Success: false,
-				Message: "Invalid credentials",
-			})
-		default:
-			return c.JSON(http.StatusInternalServerError, responses.Generic{
-				Success: false,
-				Message: "An unexpected error occurred",
-			})
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+	}
+
+	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.Password)) != nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+	}
+
+	if !user.EmailConfirmed {
+		return c.JSON(http.StatusOK, responses.Base{
+			Success: false,
+			Message: "Email is not confirmed",
+		})
+	}
+
+	if !user.TwoFaOTPEnabled {
+		return c.JSON(http.StatusOK, responses.Base{
+			Success: false,
+			Message: "2FA is not enabled",
+		})
+	}
+
+	code := ""
+	exists := true
+
+	for exists {
+		code = services.GenerateRandomString(64)
+		t, err := h.userStore.GetLoginTokenByCode(user, code)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 		}
+		exists = t != nil
+	}
+
+	user.LoginTokens = append(user.LoginTokens, models.LoginToken{
+		Code:           code,
+		ExpirationTime: time.Now().UnixMilli() + config.Data.LoginTokenLifetime,
+	})
+	err = h.userStore.Update(user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 	}
 
 	return c.JSON(http.StatusOK, responses.Login{
-		Generic: responses.Generic{
+		Base: responses.Base{
 			Success: true,
 			Message: "Successfully signed in",
 		},
-		LoginToken: token,
+		LoginToken: code,
 	})
 }
+
+// Helper functions
 
 func isValidEmail(email string) bool {
 	if len(email) > maxEmailLength || utf8.RuneCountInString(email) < 3 {

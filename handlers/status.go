@@ -7,8 +7,8 @@ import (
 	"gitlab.com/Bananenpro05/hbank2-api/responses"
 )
 
-func Status(c echo.Context) error {
-	return c.JSON(http.StatusOK, responses.Generic{
+func (h *Handler) Status(c echo.Context) error {
+	return c.JSON(http.StatusOK, responses.Base{
 		Success: true,
 		Message: "active",
 	})

@@ -14,10 +14,3 @@ func (b *Base) BeforeCreate(tx *gorm.DB) (err error) {
 	b.Id = uuid.New()
 	return
 }
-
-func AutoMigrate(db *gorm.DB) (errs []error) {
-	errs = append(errs, authAutoMigrate(db)...)
-	errs = append(errs, userAutoMigrate(db)...)
-
-	return
-}

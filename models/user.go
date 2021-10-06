@@ -2,8 +2,31 @@ package models
 
 import (
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
+
+type UserStore interface {
+	GetById(id uuid.UUID) (*User, error)
+	GetByEmail(email string) (*User, error)
+	Create(user *User) error
+	Update(user *User) error
+
+	GetEmailCode(user *User) (*EmailCode, error)
+	DeleteEmailCode(code *EmailCode) error
+
+	GetRefreshToken(user *User, code string) (*RefreshToken, error)
+	RotateRefreshToken(user *User, oldRefreshToken *RefreshToken) (*RefreshToken, error)
+
+	GetLoginTokenByCode(user *User, code string) (*LoginToken, error)
+	GetLoginTokens(user *User) ([]LoginToken, error)
+	DeleteLoginToken(token *LoginToken) error
+
+	GetRecoveryCodeByCode(user *User, code string) (*RecoveryCode, error)
+	GetRecoveryCodes(user *User) ([]RecoveryCode, error)
+	NewRecoveryCodes(user *User) ([]RecoveryCode, error)
+
+	GetConfirmEmailLastSent(email string) (int64, error)
+	SetConfirmEmailLastSent(email string, time int64) error
+}
 
 type User struct {
 	Base
@@ -16,8 +39,7 @@ type User struct {
 	TwoFaOTPEnabled  bool
 	OtpSecret        string
 	OtpQrCode        []byte
-	EmailCode        EmailCode `gorm:"constraint:OnDelete:CASCADE"`
-	TokenKey         []byte
+	EmailCode        EmailCode      `gorm:"constraint:OnDelete:CASCADE"`
 	RefreshTokens    []RefreshToken `gorm:"constraint:OnDelete:CASCADE"`
 	LoginTokens      []LoginToken   `gorm:"constraint:OnDelete:CASCADE"`
 	RecoveryCodes    []RecoveryCode `gorm:"constraint:OnDelete:CASCADE"`
@@ -29,16 +51,30 @@ type ConfirmEmailLastSent struct {
 	LastSent int64
 }
 
-func userAutoMigrate(db *gorm.DB) (errs []error) {
-	err := db.AutoMigrate(User{})
-	if err != nil {
-		errs = append(errs, err)
-	}
+type EmailCode struct {
+	Base
+	Code           string
+	ExpirationTime int64
+	UserId         uuid.UUID `gorm:"type:uuid"`
+}
 
-	err = db.AutoMigrate(ConfirmEmailLastSent{})
-	if err != nil {
-		errs = append(errs, err)
-	}
+type RefreshToken struct {
+	Base
+	Code           string
+	ExpirationTime int64
+	Used           bool
+	UserId         uuid.UUID `gorm:"type:uuid"`
+}
 
-	return
+type LoginToken struct {
+	Base
+	Code           string
+	ExpirationTime int64
+	UserId         uuid.UUID `gorm:"type:uuid"`
+}
+
+type RecoveryCode struct {
+	Base
+	Code   string
+	UserId uuid.UUID `gorm:"type:uuid"`
 }

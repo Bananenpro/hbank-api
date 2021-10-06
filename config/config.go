@@ -5,24 +5,51 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 )
 
 type ConfigData struct {
-	ServerPort      int    `json:"server_port"`
-	DomainName      string `json:"domain_name"`
-	CaptchaEnabled  bool   `json:"captcha_enabled"`
-	HCaptchaSecret  string `json:"h_captcha_secret"`
-	HCaptchaSiteKey string `json:"h_captcha_site_key"`
-	EmailEnabled    bool   `json:"email_enabled"`
-	EmailHost       string `json:"email_host"`
-	EmailPort       int    `json:"email_port"`
-	EmailUsername   string `json:"email_username"`
-	EmailPassword   string `json:"email_password"`
+	Debug                 bool   `json:"debug"`
+	ServerPort            int    `json:"server_port"`
+	DomainName            string `json:"domain_name"`
+	CaptchaEnabled        bool   `json:"captcha_enabled"`
+	CaptchaVerifyUrl      string `json:"captcha_verify_url"`
+	CaptchaSecret         string `json:"captcha_secret"`
+	CaptchaSiteKey        string `json:"captcha_site_key"`
+	EmailEnabled          bool   `json:"email_enabled"`
+	EmailHost             string `json:"email_host"`
+	EmailPort             int    `json:"email_port"`
+	EmailUsername         string `json:"email_username"`
+	EmailPassword         string `json:"email_password"`
+	UserMinNameLength     int    `json:"user_min_name_length"`
+	UserMinPasswordLength int    `json:"user_min_password_length"`
+	UserMinEmailLength    int    `json:"user_min_email_length"`
+	UserMaxNameLength     int    `json:"user_max_name_length"`
+	UserMaxPasswordLength int    `json:"user_max_password_length"`
+	UserMaxEmailLength    int    `json:"user_max_email_length"`
+	BcryptCost            int    `json:"bcrypt_cost"`
+	LoginTokenLifetime    int64  `json:"login_token_lifetime"`
+	EmailCodeLifetime     int64  `json:"email_code_lifetime"`
+	AuthTokenLifetime     int64  `json:"auth_token_lifetime"`
+	RefreshTokenLifetime  int64  `json:"refresh_token_lifetime"`
+	SendEmailTimeout      int64  `json:"send_email_timeout"`
 }
 
 var defaultData = ConfigData{
-	ServerPort: 8080,
-	DomainName: "hbank",
+	ServerPort:            8080,
+	DomainName:            "hbank",
+	UserMinNameLength:     3,
+	UserMinPasswordLength: 6,
+	UserMinEmailLength:    3,
+	UserMaxNameLength:     255,
+	UserMaxPasswordLength: 255,
+	UserMaxEmailLength:    255,
+	BcryptCost:            10,
+	LoginTokenLifetime:    time.Minute.Milliseconds() * 5,
+	EmailCodeLifetime:     time.Minute.Milliseconds() * 5,
+	AuthTokenLifetime:     time.Minute.Milliseconds() * 10,
+	RefreshTokenLifetime:  31557600000, // 1 year
+	SendEmailTimeout:      time.Minute.Milliseconds() * 2,
 }
 
 var Data = defaultData
@@ -57,11 +84,11 @@ func verifyData() {
 	}
 
 	if Data.CaptchaEnabled {
-		if Data.HCaptchaSecret == "" {
+		if Data.CaptchaSecret == "" {
 			log.Println("WARNING: No captcha secret specified. Disabling captcha.")
 			Data.CaptchaEnabled = false
 		}
-		if Data.HCaptchaSiteKey == "" {
+		if Data.CaptchaSiteKey == "" {
 			log.Println("WARNING: No captcha site key specified. Disabling captcha.")
 			Data.CaptchaEnabled = false
 		}
