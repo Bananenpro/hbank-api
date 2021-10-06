@@ -1,6 +1,6 @@
 package responses
 
-import "gitlab.com/Bananenpro05/hbank2-api/config"
+import "github.com/Bananenpro/hbank2-api/config"
 
 type Base struct {
 	Success bool   `json:"success"`

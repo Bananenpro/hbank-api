@@ -4,10 +4,10 @@ import (
 	"errors"
 	"time"
 
+	"github.com/Bananenpro/hbank2-api/config"
+	"github.com/Bananenpro/hbank2-api/models"
+	"github.com/Bananenpro/hbank2-api/services"
 	"github.com/google/uuid"
-	"gitlab.com/Bananenpro05/hbank2-api/config"
-	"gitlab.com/Bananenpro05/hbank2-api/models"
-	"gitlab.com/Bananenpro05/hbank2-api/services"
 	"gorm.io/gorm"
 )
 
@@ -55,6 +55,18 @@ func (us *UserStore) Create(user *models.User) error {
 
 func (us *UserStore) Update(user *models.User) error {
 	return us.db.Updates(user).Error
+}
+
+func (us *UserStore) Delete(user *models.User) error {
+	return us.db.Delete(user).Error
+}
+
+func (us *UserStore) DeleteById(id uuid.UUID) error {
+	return us.db.Delete(models.User{}, id).Error
+}
+
+func (us *UserStore) DeleteByEmail(email string) error {
+	return us.db.Delete(models.User{}, "email = ?", email).Error
 }
 
 func (us *UserStore) GetEmailCode(user *models.User) (*models.EmailCode, error) {

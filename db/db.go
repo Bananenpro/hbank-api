@@ -1,7 +1,7 @@
 package db
 
 import (
-	"gitlab.com/Bananenpro05/hbank2-api/models"
+	"github.com/Bananenpro/hbank2-api/models"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"

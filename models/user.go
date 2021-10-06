@@ -9,6 +9,9 @@ type UserStore interface {
 	GetByEmail(email string) (*User, error)
 	Create(user *User) error
 	Update(user *User) error
+	Delete(user *User) error
+	DeleteById(id uuid.UUID) error
+	DeleteByEmail(email string) error
 
 	GetEmailCode(user *User) (*EmailCode, error)
 	DeleteEmailCode(code *EmailCode) error

@@ -11,14 +11,14 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/Bananenpro/hbank2-api/bindings"
+	"github.com/Bananenpro/hbank2-api/config"
+	"github.com/Bananenpro/hbank2-api/models"
+	"github.com/Bananenpro/hbank2-api/responses"
+	"github.com/Bananenpro/hbank2-api/services"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/pquerna/otp/totp"
-	"gitlab.com/Bananenpro05/hbank2-api/bindings"
-	"gitlab.com/Bananenpro05/hbank2-api/config"
-	"gitlab.com/Bananenpro05/hbank2-api/models"
-	"gitlab.com/Bananenpro05/hbank2-api/responses"
-	"gitlab.com/Bananenpro05/hbank2-api/services"
 	"golang.org/x/crypto/bcrypt"
 )
 

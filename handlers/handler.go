@@ -1,6 +1,6 @@
 package handlers
 
-import "gitlab.com/Bananenpro05/hbank2-api/models"
+import "github.com/Bananenpro/hbank2-api/models"
 
 type Handler struct {
 	userStore models.UserStore

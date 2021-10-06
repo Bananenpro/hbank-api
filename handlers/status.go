@@ -3,8 +3,8 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/Bananenpro/hbank2-api/responses"
 	"github.com/labstack/echo/v4"
-	"gitlab.com/Bananenpro05/hbank2-api/responses"
 )
 
 func (h *Handler) Status(c echo.Context) error {

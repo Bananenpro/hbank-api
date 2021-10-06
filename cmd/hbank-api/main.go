@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/Bananenpro/hbank2-api/config"
+	"github.com/Bananenpro/hbank2-api/db"
+	"github.com/Bananenpro/hbank2-api/handlers"
+	"github.com/Bananenpro/hbank2-api/router"
+	"github.com/Bananenpro/hbank2-api/services"
 	"github.com/adrg/xdg"
-	"gitlab.com/Bananenpro05/hbank2-api/config"
-	"gitlab.com/Bananenpro05/hbank2-api/db"
-	"gitlab.com/Bananenpro05/hbank2-api/handlers"
-	"gitlab.com/Bananenpro05/hbank2-api/router"
-	"gitlab.com/Bananenpro05/hbank2-api/services"
 )
 
 func main() {

@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"gitlab.com/Bananenpro05/hbank2-api/config"
+	"github.com/Bananenpro/hbank2-api/config"
 )
 
 func VerifyCaptcha(token string) bool {
