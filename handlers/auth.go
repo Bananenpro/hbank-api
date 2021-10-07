@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"image/png"
-	"net"
 	"net/http"
-	"regexp"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -20,18 +18,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
-)
-
-const (
-	minNameLength     = 3
-	minPasswordLength = 6
-	maxNameLength     = 254
-	maxPasswordLength = 254
-	maxEmailLength    = 254
-)
-
-var (
-	emailRegex = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 )
 
 // /v1/auth/register (POST)
@@ -53,26 +39,26 @@ func (h *Handler) Register(c echo.Context) error {
 
 	body.Email = strings.ToLower(body.Email)
 
-	if !isValidEmail(body.Email) {
+	if !services.IsValidEmail(body.Email) {
 		return c.JSON(http.StatusOK, responses.Base{
 			Success: false,
 			Message: "Invalid email",
 		})
 	}
 
-	if len(body.Name) > maxNameLength {
+	if len(body.Name) > config.Data.UserMaxNameLength {
 		return c.JSON(http.StatusOK, responses.NewRegisterInvalid("Name too long"))
 	}
 
-	if utf8.RuneCountInString(body.Name) < minNameLength {
+	if utf8.RuneCountInString(body.Name) < config.Data.UserMinNameLength {
 		return c.JSON(http.StatusOK, responses.NewRegisterInvalid("Name too short"))
 	}
 
-	if len(body.Password) > maxPasswordLength {
+	if len(body.Password) > config.Data.UserMaxPasswordLength {
 		return c.JSON(http.StatusOK, responses.NewRegisterInvalid("Password too long"))
 	}
 
-	if utf8.RuneCountInString(body.Password) < minPasswordLength {
+	if utf8.RuneCountInString(body.Password) < config.Data.UserMinPasswordLength {
 		return c.JSON(http.StatusOK, responses.NewRegisterInvalid("Password too short"))
 	}
 
@@ -115,13 +101,13 @@ func (h *Handler) Register(c echo.Context) error {
 	})
 }
 
-// /v1/auth/confirmEmail?email=string (GET)
+// /v1/auth/confirmEmail/:email (GET)
 func (h *Handler) SendConfirmEmail(c echo.Context) error {
-	email := c.QueryParam("email")
-	if !isValidEmail(email) {
+	email := c.Param("email")
+	if !services.IsValidEmail(email) {
 		return c.JSON(http.StatusBadRequest, responses.Base{
 			Success: false,
-			Message: "Missing or invalid email query parameter",
+			Message: "Missing or invalid email parameter",
 		})
 	}
 
@@ -305,6 +291,9 @@ func (h *Handler) VerifyOTPCode(c echo.Context) error {
 	if body.LoginToken == "" {
 		user, err := h.userStore.GetByEmail(body.Email)
 		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		}
+		if user == nil {
 			return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
 		}
 
@@ -398,23 +387,4 @@ func (h *Handler) Login(c echo.Context) error {
 		},
 		LoginToken: code,
 	})
-}
-
-// Helper functions
-
-func isValidEmail(email string) bool {
-	if len(email) > maxEmailLength || utf8.RuneCountInString(email) < 3 {
-		return false
-	}
-
-	if !emailRegex.MatchString(email) {
-		return false
-	}
-
-	mx, err := net.LookupMX(strings.Split(email, "@")[1])
-	if err != nil || len(mx) == 0 {
-		return false
-	}
-
-	return true
 }

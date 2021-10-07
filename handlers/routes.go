@@ -7,7 +7,7 @@ func (h *Handler) RegisterV1(v1 *echo.Group) {
 
 	auth := v1.Group("/auth")
 	auth.POST("/register", h.Register)
-	auth.GET("/confirmEmail", h.SendConfirmEmail)
+	auth.GET("/confirmEmail/:email", h.SendConfirmEmail)
 	auth.POST("/confirmEmail", h.VerifyConfirmEmailCode)
 	auth.POST("/login", h.Login)
 

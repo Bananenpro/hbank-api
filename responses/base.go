@@ -16,7 +16,7 @@ func NewUnexpectedError(err error) Base {
 	} else {
 		return Base{
 			Success: false,
-			Message: "Due to an unexpected error the user couldn't be registered",
+			Message: "An unexpected error occurred",
 		}
 	}
 }

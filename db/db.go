@@ -29,3 +29,18 @@ func AutoMigrate(db *gorm.DB) error {
 		&models.RecoveryCode{},
 	)
 }
+
+func Clear(db *gorm.DB) error {
+	var users []models.User
+	err := db.Find(&users).Error
+	if err != nil {
+		return err
+	}
+
+	err = db.Delete(&users).Error
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

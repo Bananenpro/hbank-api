@@ -7,10 +7,18 @@ import (
 	"io"
 	"log"
 	"math/big"
+	"net"
 	"net/http"
 	"net/url"
+	"regexp"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/Bananenpro/hbank2-api/config"
+)
+
+var (
+	emailRegex = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 )
 
 func VerifyCaptcha(token string) bool {
@@ -74,4 +82,21 @@ func GenerateRandomString(length int) string {
 	}
 
 	return string(ret)
+}
+
+func IsValidEmail(email string) bool {
+	if len(email) > config.Data.UserMaxEmailLength || utf8.RuneCountInString(email) < config.Data.UserMinEmailLength {
+		return false
+	}
+
+	if !emailRegex.MatchString(email) {
+		return false
+	}
+
+	mx, err := net.LookupMX(strings.Split(email, "@")[1])
+	if err != nil || len(mx) == 0 {
+		return false
+	}
+
+	return true
 }
