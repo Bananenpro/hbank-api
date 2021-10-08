@@ -533,6 +533,13 @@ func (h *Handler) Login(c echo.Context) error {
 		})
 	}
 
+	if !user.TwoFaOTPEnabled {
+		return c.JSON(http.StatusOK, responses.Base{
+			Success: false,
+			Message: "Two factor authentication is not enabled",
+		})
+	}
+
 	refreshToken := &models.RefreshToken{
 		Code:           services.GenerateRandomString(64),
 		ExpirationTime: time.Now().Unix() + config.Data.RefreshTokenLifetime,
