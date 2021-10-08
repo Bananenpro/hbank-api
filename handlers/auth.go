@@ -469,7 +469,7 @@ func (h *Handler) Login(c echo.Context) error {
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
-		Path:     "/v1/auth/refresh",
+		Path:     "/v1/auth",
 	})
 
 	c.SetCookie(&http.Cookie{
