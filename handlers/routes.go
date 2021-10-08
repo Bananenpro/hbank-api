@@ -17,7 +17,9 @@ func (h *Handler) RegisterV1(v1 *echo.Group) {
 
 	twoFactor := auth.Group("/twoFactor")
 	twoFactor.POST("/otp/activate", h.Activate2FAOTP)
+	twoFactor.POST("/otp/get", h.GetOTPQRCode, middlewares.JWT)
 	twoFactor.POST("/otp/verify", h.VerifyOTPCode)
+
 	twoFactor.POST("/recovery/get", h.GetRecoveryCodes, middlewares.JWT)
 	twoFactor.POST("/recovery/verify", h.VerifyRecoveryCode)
 	twoFactor.POST("/recovery/new", h.NewRecoveryCodes, middlewares.JWT)

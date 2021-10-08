@@ -283,6 +283,29 @@ func (h *Handler) Activate2FAOTP(c echo.Context) error {
 	})
 }
 
+// /v1/auth/twoFactor/otp/get (POST)
+func (h *Handler) GetOTPQRCode(c echo.Context) error {
+	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
+	if err != nil || user == nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+
+	var body bindings.Password
+	err = c.Bind(&body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.Base{
+			Success: false,
+			Message: "Invalid request body",
+		})
+	}
+
+	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.Password)) != nil {
+		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+	}
+
+	return c.Blob(http.StatusOK, "image/png", user.OtpQrCode)
+}
+
 // /v1/auth/twoFactor/otp/verify (POST)
 func (h *Handler) VerifyOTPCode(c echo.Context) error {
 	var body bindings.VerifyCode
