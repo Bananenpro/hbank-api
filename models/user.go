@@ -21,6 +21,7 @@ type UserStore interface {
 	AddRefreshToken(user *User, refreshToken *RefreshToken) error
 	RotateRefreshToken(user *User, oldRefreshToken *RefreshToken) (*RefreshToken, error)
 	DeleteRefreshToken(refreshToken *RefreshToken) error
+	DeleteRefreshTokens(user *User) error
 
 	GetPasswordTokenByCode(user *User, code string) (*PasswordToken, error)
 	GetPasswordTokens(user *User) ([]PasswordToken, error)

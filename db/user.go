@@ -137,6 +137,10 @@ func (us *UserStore) DeleteRefreshToken(refreshToken *models.RefreshToken) error
 	return us.db.Delete(&refreshToken).Error
 }
 
+func (us *UserStore) DeleteRefreshTokens(user *models.User) error {
+	return us.db.Delete(models.RefreshToken{}, "user_id = ?", user.Id).Error
+}
+
 func (us *UserStore) GetPasswordTokenByCode(user *models.User, code string) (*models.PasswordToken, error) {
 	var token models.PasswordToken
 	err := us.db.First(&token, "user_id = ? AND code = ?", user.Id, code).Error

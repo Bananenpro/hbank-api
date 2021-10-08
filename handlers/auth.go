@@ -582,6 +582,41 @@ func (h *Handler) Login(c echo.Context) error {
 	})
 }
 
+// /v1/auth/logout?all=bool (POST)
+func (h *Handler) Logout(c echo.Context) error {
+	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
+	if err != nil || user == nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+
+	all := c.QueryParam("all")
+	if strings.EqualFold(all, "true") || strings.EqualFold(all, "on") || strings.EqualFold(all, "yes") {
+		err = h.userStore.DeleteRefreshTokens(user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		}
+	} else {
+		refreshCookie, err := c.Cookie("Refresh-Token")
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		}
+		refreshToken, err := h.userStore.GetRefreshTokenByCode(user, refreshCookie.Value)
+		if err != nil || refreshToken == nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		}
+
+		err = h.userStore.DeleteRefreshToken(refreshToken)
+		if err != nil || refreshToken == nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		}
+	}
+
+	return c.JSON(http.StatusOK, responses.Base{
+		Success: true,
+		Message: "Successfully signed out",
+	})
+}
+
 // /v1/auth/twoFactor/recovery/get (POST)
 func (h *Handler) GetRecoveryCodes(c echo.Context) error {
 	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))

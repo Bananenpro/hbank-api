@@ -939,3 +939,81 @@ func TestHandler_NewOTP(t *testing.T) {
 		})
 	}
 }
+
+func TestHandler_Logout(t *testing.T) {
+	config.Data.Debug = true
+	r := router.New()
+
+	database, err := db.NewInMemory()
+	if err != nil {
+		t.Fatalf("Couldn't create in memory database")
+	}
+	err = db.AutoMigrate(database)
+	if err != nil {
+		t.Fatalf("Couldn't auto migrate database")
+	}
+	db.Clear(database)
+
+	us := db.NewUserStore(database)
+
+	user1 := &models.User{
+		Name:  "bob",
+		Email: "bob@gmail.com",
+		RefreshTokens: []models.RefreshToken{
+			{Code: "sadhfasdhfasdhjfsaliudlhfaskjfdhlasid"},
+			{Code: "sadijfghurhglasdghsoirehgslkghseirghs"},
+		},
+	}
+	us.Create(user1)
+
+	user2 := &models.User{
+		Name:  "peter",
+		Email: "peter@gmail.com",
+		RefreshTokens: []models.RefreshToken{
+			{Code: "sadhfasdhfasdhjfsaliudlhfaskjfdhlasid"},
+			{Code: "sadnjfghurhglasdghsoirehgslkghseirghs"},
+		},
+	}
+	us.Create(user2)
+
+	handler := New(us)
+
+	tests := []struct {
+		tName       string
+		user        *models.User
+		all         bool
+		wantCode    int
+		wantSuccess bool
+		wantMessage string
+	}{
+		{tName: "Not all", user: user1, all: false, wantCode: http.StatusOK, wantSuccess: true, wantMessage: "Successfully signed out"},
+		{tName: "All", user: user1, all: true, wantCode: http.StatusOK, wantSuccess: true, wantMessage: "Successfully signed out"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.tName, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/?all=%t", tt.all), nil)
+			req.AddCookie(&http.Cookie{
+				Name:  "Refresh-Token",
+				Value: "sadhfasdhfasdhjfsaliudlhfaskjfdhlasid",
+			})
+			rec := httptest.NewRecorder()
+			c := r.NewContext(req, rec)
+
+			c.Set("userId", tt.user.Id)
+
+			err := handler.Logout(c)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantCode, rec.Code)
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"success":%t`, tt.wantSuccess))
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
+
+			refreshTokens, _ := us.GetRefreshTokens(tt.user)
+			if tt.all {
+				assert.Empty(t, refreshTokens)
+			} else {
+				assert.Equal(t, 1, len(refreshTokens))
+			}
+		})
+	}
+}
