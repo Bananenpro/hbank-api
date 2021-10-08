@@ -220,13 +220,17 @@ func (us *UserStore) NewRecoveryCodes(user *models.User) ([]models.RecoveryCode,
 	codes := make([]models.RecoveryCode, 10)
 
 	for i := range codes {
-		codes[i].Code = services.GenerateRandomString(64)
+		codes[i].Code = services.GenerateRandomString(32)
 	}
 
 	user.RecoveryCodes = codes
 	err = us.Update(user)
 
 	return codes, err
+}
+
+func (us *UserStore) DeleteRecoveryCode(code *models.RecoveryCode) error {
+	return us.db.Delete(code).Error
 }
 
 func (us *UserStore) GetConfirmEmailLastSent(email string) (int64, error) {

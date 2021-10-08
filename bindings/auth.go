@@ -17,9 +17,9 @@ type Activate2FAOTP struct {
 	Password string `json:"password" form:"password"`
 }
 
-type VerifyOTPCode struct {
-	Email   string `json:"email" form:"email"`
-	OTPCode string `json:"otp_code" form:"otp_code"`
+type VerifyCode struct {
+	Email string `json:"email" form:"email"`
+	Code  string `json:"code" form:"code"`
 }
 
 type PasswordAuth struct {
@@ -31,4 +31,8 @@ type Login struct {
 	Email         string `json:"email" form:"email"`
 	PasswordToken string `json:"password_token" form:"password_token"`
 	TwoFAToken    string `json:"two_fa_token" form:"two_fa_token"`
+}
+
+type Password struct {
+	Password string `json:"password" form:"password"`
 }

@@ -86,9 +86,14 @@ func (h *Handler) Register(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 	}
 
-	_, err = h.userStore.NewRecoveryCodes(user)
+	codes, err := h.userStore.NewRecoveryCodes(user)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+
+	strCodes := make([]string, len(codes))
+	for i, c := range codes {
+		strCodes[i] = c.Code
 	}
 
 	return c.JSON(http.StatusCreated, responses.RegisterSuccess{
@@ -98,6 +103,7 @@ func (h *Handler) Register(c echo.Context) error {
 		},
 		UserId:    user.Id.String(),
 		UserEmail: body.Email,
+		Codes:     strCodes,
 	})
 }
 
@@ -279,7 +285,7 @@ func (h *Handler) Activate2FAOTP(c echo.Context) error {
 
 // /v1/auth/twoFactor/otp/verify (POST)
 func (h *Handler) VerifyOTPCode(c echo.Context) error {
-	var body bindings.VerifyOTPCode
+	var body bindings.VerifyCode
 	err := c.Bind(&body)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, responses.Base{
@@ -296,7 +302,7 @@ func (h *Handler) VerifyOTPCode(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
 	}
 
-	if totp.Validate(body.OTPCode, user.OtpSecret) {
+	if totp.Validate(body.Code, user.OtpSecret) {
 		user.TwoFaOTPEnabled = true
 		err = h.userStore.Update(user)
 		if err != nil {
@@ -494,4 +500,122 @@ func (h *Handler) Login(c echo.Context) error {
 		Success: true,
 		Message: "Successfully signed in",
 	})
+}
+
+// /v1/auth/twoFactor/recovery/get (POST)
+func (h *Handler) GetRecoveryCodes(c echo.Context) error {
+	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
+	if err != nil || user == nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+
+	var body bindings.Password
+	err = c.Bind(&body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.Base{
+			Success: false,
+			Message: "Invalid request body",
+		})
+	}
+
+	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.Password)) != nil {
+		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+	}
+
+	codes, err := h.userStore.GetRecoveryCodes(user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+
+	return c.JSON(http.StatusOK, responses.NewRecoveryCodes(codes))
+}
+
+// /v1/auth/twoFactor/recovery/verify (POST)
+func (h *Handler) VerifyRecoveryCode(c echo.Context) error {
+	var body bindings.VerifyCode
+	err := c.Bind(&body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.Base{
+			Success: false,
+			Message: "Invalid request body",
+		})
+	}
+
+	user, err := h.userStore.GetByEmail(body.Email)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+	}
+
+	code, err := h.userStore.GetRecoveryCodeByCode(user, body.Code)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+	if code == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+	}
+
+	token := ""
+	exists := true
+
+	for exists {
+		token = services.GenerateRandomString(64)
+		t, err := h.userStore.GetTwoFATokenByCode(user, token)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		}
+		exists = t != nil
+	}
+
+	err = h.userStore.DeleteRecoveryCode(code)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+
+	user.TwoFATokens = append(user.TwoFATokens, models.TwoFAToken{
+		Code:           token,
+		ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime,
+	})
+	err = h.userStore.Update(user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+
+	return c.JSON(http.StatusOK, responses.Token{
+		Base: responses.Base{
+			Success: true,
+			Message: "Successfully aquired two factor token",
+		},
+		Token: token,
+	})
+}
+
+// /v1/auth/twoFactor/recovery/new (POST)
+func (h *Handler) NewRecoveryCodes(c echo.Context) error {
+	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
+	if err != nil || user == nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+
+	var body bindings.Password
+	err = c.Bind(&body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.Base{
+			Success: false,
+			Message: "Invalid request body",
+		})
+	}
+
+	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.Password)) != nil {
+		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+	}
+
+	codes, err := h.userStore.NewRecoveryCodes(user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+
+	return c.JSON(http.StatusOK, responses.NewRecoveryCodes(codes))
 }

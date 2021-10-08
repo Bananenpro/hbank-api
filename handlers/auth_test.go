@@ -378,7 +378,7 @@ func TestHandler_VerifyOTPCode(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.tName, func(t *testing.T) {
-			jsonBody := fmt.Sprintf(`{"email": "%s", "otp_code": "%s"}`, tt.email, tt.otp)
+			jsonBody := fmt.Sprintf(`{"email": "%s", "code": "%s"}`, tt.email, tt.otp)
 
 			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -582,6 +582,223 @@ func TestHandler_Login(t *testing.T) {
 					tFATokens, _ := us.GetTwoFATokens(user)
 					if len(tFATokens) == 1 {
 						assert.True(t, tFATokens[0].ExpirationTime > time.Now().Unix())
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestHandler_GetRecoveryCodes(t *testing.T) {
+	config.Data.Debug = true
+	r := router.New()
+
+	database, err := db.NewInMemory()
+	if err != nil {
+		t.Fatalf("Couldn't create in memory database")
+	}
+	err = db.AutoMigrate(database)
+	if err != nil {
+		t.Fatalf("Couldn't auto migrate database")
+	}
+	db.Clear(database)
+
+	us := db.NewUserStore(database)
+
+	hash, _ := bcrypt.GenerateFromPassword([]byte("123456"), config.Data.BcryptCost)
+	user := &models.User{
+		PasswordHash: hash,
+		RecoveryCodes: []models.RecoveryCode{
+			{Code: "öareoghöaorwenhgöareohgoaöwrhgaeorgha"},
+			{Code: "askfjaösdhfgoöasdhfoöasdhföasdhfökjas"},
+			{Code: "aslkfjöasdjfjasbdviusadhföalsjdhföasd"},
+			{Code: "öasdfhsuighösafnöasjdföashdgoaösdfkjd"},
+			{Code: "öalskfsaoghskfnöosauhgpisejfäsgjösadd"},
+		},
+	}
+	us.Create(user)
+
+	handler := New(us)
+
+	tests := []struct {
+		tName       string
+		password    string
+		wantCode    int
+		wantSuccess bool
+		wantMessage string
+	}{
+		{tName: "Success", password: "123456", wantCode: http.StatusOK, wantSuccess: true},
+		{tName: "Wrong password", password: "654321", wantCode: http.StatusForbidden, wantSuccess: false, wantMessage: "Invalid credentials"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.tName, func(t *testing.T) {
+			jsonBody := fmt.Sprintf(`{"password": "%s"}`, tt.password)
+			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := r.NewContext(req, rec)
+
+			c.Set("userId", user.Id)
+
+			err := handler.GetRecoveryCodes(c)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantCode, rec.Code)
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"success":%t`, tt.wantSuccess))
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
+
+			if tt.wantSuccess {
+				codes := user.RecoveryCodes
+				for _, c := range codes {
+					assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"%s"`, c.Code))
+				}
+			}
+		})
+	}
+}
+
+func TestHandler_VerifyRecoveryCode(t *testing.T) {
+	config.Data.Debug = true
+	r := router.New()
+
+	database, err := db.NewInMemory()
+	if err != nil {
+		t.Fatalf("Couldn't create in memory database")
+	}
+	err = db.AutoMigrate(database)
+	if err != nil {
+		t.Fatalf("Couldn't auto migrate database")
+	}
+	db.Clear(database)
+
+	us := db.NewUserStore(database)
+
+	us.Create(&models.User{
+		Name:  "bob",
+		Email: "bob@gmail.com",
+		RecoveryCodes: []models.RecoveryCode{
+			{Code: "1234567890"},
+		},
+	})
+
+	handler := New(us)
+
+	tests := []struct {
+		tName       string
+		email       string
+		code        string
+		wantCode    int
+		wantSuccess bool
+		wantMessage string
+	}{
+		{tName: "Success", email: "bob@gmail.com", code: "1234567890", wantCode: http.StatusOK, wantSuccess: true, wantMessage: "Successfully aquired two factor token"},
+		{tName: "Wrong email", email: "bobo@gmail.com", code: "1234567890", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
+		{tName: "Wrong recovery code", email: "bob@gmail.com", code: "0987654321", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.tName, func(t *testing.T) {
+			jsonBody := fmt.Sprintf(`{"email": "%s", "code": "%s"}`, tt.email, tt.code)
+
+			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := r.NewContext(req, rec)
+
+			err := handler.VerifyRecoveryCode(c)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantCode, rec.Code)
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"success":%t`, tt.wantSuccess))
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
+
+			if tt.wantSuccess {
+				assert.Contains(t, rec.Body.String(), `"token":`)
+
+				user, _ := us.GetByEmail(tt.email)
+
+				tokens, _ := us.GetTwoFATokens(user)
+				assert.Equal(t, 1, len(tokens), "A two factor token was stored in the database")
+
+				rCodes, _ := us.GetRecoveryCodes(user)
+				assert.Empty(t, rCodes, "The recovery code was deleted from the database")
+			}
+		})
+	}
+}
+
+func TestHandler_NewRecoveryCodes(t *testing.T) {
+	config.Data.Debug = true
+	r := router.New()
+
+	database, err := db.NewInMemory()
+	if err != nil {
+		t.Fatalf("Couldn't create in memory database")
+	}
+	err = db.AutoMigrate(database)
+	if err != nil {
+		t.Fatalf("Couldn't auto migrate database")
+	}
+	db.Clear(database)
+
+	us := db.NewUserStore(database)
+
+	hash, _ := bcrypt.GenerateFromPassword([]byte("123456"), config.Data.BcryptCost)
+	user := &models.User{
+		PasswordHash: hash,
+		RecoveryCodes: []models.RecoveryCode{
+			{Code: "öareoghöaorwenhgöareohgoaöwrhgaeorgha"},
+			{Code: "askfjaösdhfgoöasdhfoöasdhföasdhfökjas"},
+			{Code: "aslkfjöasdjfjasbdviusadhföalsjdhföasd"},
+			{Code: "öasdfhsuighösafnöasjdföashdgoaösdfkjd"},
+			{Code: "lalskfsaoghskfnöosauhgpisejfäsgjösadd"},
+			{Code: "zalskfsaoghskfnöosauhgpisejfäsgjösadd"},
+			{Code: "oalskfsaoghskfnöosauhgpisejfäsgjösadd"},
+			{Code: "aalskfsaoghskfnöosauhgpisejfäsgjösadd"},
+			{Code: "üalskfsaoghskfnöosauhgpisejfäsgjösadd"},
+			{Code: "jalskfsaoghskfnöosauhgpisejfäsgjösadd"},
+		},
+	}
+	us.Create(user)
+
+	handler := New(us)
+
+	tests := []struct {
+		tName       string
+		password    string
+		wantCode    int
+		wantSuccess bool
+		wantMessage string
+	}{
+		{tName: "Success", password: "123456", wantCode: http.StatusOK, wantSuccess: true},
+		{tName: "Wrong password", password: "654321", wantCode: http.StatusForbidden, wantSuccess: false, wantMessage: "Invalid credentials"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.tName, func(t *testing.T) {
+			jsonBody := fmt.Sprintf(`{"password": "%s"}`, tt.password)
+			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := r.NewContext(req, rec)
+
+			c.Set("userId", user.Id)
+
+			err := handler.NewRecoveryCodes(c)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantCode, rec.Code)
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"success":%t`, tt.wantSuccess))
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
+
+			if tt.wantSuccess {
+				prevCodes := user.RecoveryCodes
+				codes, _ := us.GetRecoveryCodes(user)
+
+				for i, c := range codes {
+					assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"%s"`, c.Code))
+					assert.NotContains(t, rec.Body.String(), fmt.Sprintf(`"%s"`, prevCodes[i].Code))
+
+					for _, c2 := range prevCodes {
+						assert.NotEqual(t, c.Code, c2.Code)
 					}
 				}
 			}

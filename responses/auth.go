@@ -1,11 +1,15 @@
 package responses
 
-import "github.com/Bananenpro/hbank2-api/config"
+import (
+	"github.com/Bananenpro/hbank2-api/config"
+	"github.com/Bananenpro/hbank2-api/models"
+)
 
 type RegisterSuccess struct {
 	Base
-	UserId    string `json:"user_id"`
-	UserEmail string `json:"user_email"`
+	UserId    string   `json:"user_id"`
+	UserEmail string   `json:"user_email"`
+	Codes     []string `json:"recovery_codes"`
 }
 
 type RegisterInvalid struct {
@@ -19,6 +23,11 @@ type RegisterInvalid struct {
 type Token struct {
 	Base
 	Token string `json:"token"`
+}
+
+type RecoveryCodes struct {
+	Base
+	Codes []string `json:"recovery_codes"`
 }
 
 func NewRegisterInvalid(message string) RegisterInvalid {
@@ -38,5 +47,19 @@ func NewInvalidCredentials() Base {
 	return Base{
 		Success: false,
 		Message: "Invalid credentials",
+	}
+}
+
+func NewRecoveryCodes(codes []models.RecoveryCode) RecoveryCodes {
+	strCodes := make([]string, len(codes))
+	for i, c := range codes {
+		strCodes[i] = c.Code
+	}
+
+	return RecoveryCodes{
+		Base: Base{
+			Success: true,
+		},
+		Codes: strCodes,
 	}
 }

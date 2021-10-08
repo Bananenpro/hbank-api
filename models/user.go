@@ -33,6 +33,7 @@ type UserStore interface {
 	GetRecoveryCodeByCode(user *User, code string) (*RecoveryCode, error)
 	GetRecoveryCodes(user *User) ([]RecoveryCode, error)
 	NewRecoveryCodes(user *User) ([]RecoveryCode, error)
+	DeleteRecoveryCode(code *RecoveryCode) error
 
 	GetConfirmEmailLastSent(email string) (int64, error)
 	SetConfirmEmailLastSent(email string, time int64) error
