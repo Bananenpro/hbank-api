@@ -368,6 +368,63 @@ func (h *Handler) VerifyOTPCode(c echo.Context) error {
 	})
 }
 
+// /v1/auth/twoFactor/otp/new
+func (h *Handler) NewOTP(c echo.Context) error {
+	var body bindings.Password
+	err := c.Bind(&body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.Base{
+			Success: false,
+			Message: "Invalid request body",
+		})
+	}
+
+	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
+	if err != nil || user == nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+
+	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.Password)) != nil {
+		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+	}
+
+	if user.TwoFaOTPEnabled {
+		key, err := totp.Generate(totp.GenerateOpts{
+			Issuer:      config.Data.DomainName,
+			AccountName: user.Email,
+		})
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		}
+
+		img, err := key.Image(200, 200)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		}
+
+		var qr bytes.Buffer
+
+		png.Encode(&qr, img)
+
+		secret := key.Secret()
+
+		user.OtpSecret = secret
+		user.OtpQrCode = qr.Bytes()
+
+		err = h.userStore.Update(user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		}
+
+		return c.Blob(http.StatusOK, "image/png", user.OtpQrCode)
+	}
+
+	return c.JSON(http.StatusOK, responses.Base{
+		Success: false,
+		Message: "Please enable otp first",
+	})
+}
+
 // /v1/auth/login (POST)
 func (h *Handler) PasswordAuth(c echo.Context) error {
 	var body bindings.PasswordAuth

@@ -864,3 +864,78 @@ func TestHandler_NewRecoveryCodes(t *testing.T) {
 		})
 	}
 }
+
+func TestHandler_NewOTP(t *testing.T) {
+	config.Data.Debug = true
+	r := router.New()
+
+	database, err := db.NewInMemory()
+	if err != nil {
+		t.Fatalf("Couldn't create in memory database")
+	}
+	err = db.AutoMigrate(database)
+	if err != nil {
+		t.Fatalf("Couldn't auto migrate database")
+	}
+	db.Clear(database)
+
+	us := db.NewUserStore(database)
+
+	hash, _ := bcrypt.GenerateFromPassword([]byte("123456"), config.Data.BcryptCost)
+	user1 := &models.User{
+		Name:            "bob",
+		Email:           "bob@gmail.com",
+		PasswordHash:    hash,
+		OtpQrCode:       []byte("png_qr_code"),
+		TwoFaOTPEnabled: true,
+	}
+	us.Create(user1)
+
+	user2 := &models.User{
+		Name:            "peter",
+		Email:           "peter@gmail.com",
+		PasswordHash:    hash,
+		TwoFaOTPEnabled: false,
+		OtpQrCode:       []byte("png_qr_code"),
+	}
+	us.Create(user2)
+
+	handler := New(us)
+
+	tests := []struct {
+		tName       string
+		user        *models.User
+		password    string
+		wantCode    int
+		wantSuccess bool
+		wantMessage string
+	}{
+		{tName: "Success", user: user1, password: "123456", wantCode: http.StatusOK, wantSuccess: true},
+		{tName: "Wrong password", user: user1, password: "654321", wantCode: http.StatusForbidden, wantSuccess: false, wantMessage: "Invalid credentials"},
+		{tName: "OTP not enabled", user: user2, password: "123456", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Please enable otp first"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.tName, func(t *testing.T) {
+			jsonBody := fmt.Sprintf(`{"password": "%s"}`, tt.password)
+			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := r.NewContext(req, rec)
+
+			c.Set("userId", tt.user.Id)
+
+			err := handler.NewOTP(c)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantCode, rec.Code)
+			if !tt.wantSuccess {
+				assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"success":%t`, tt.wantSuccess))
+				assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
+			} else {
+				assert.Equal(t, "image/png", rec.HeaderMap.Get("Content-Type"))
+				assert.NotEmpty(t, rec.Body)
+				assert.NotEqual(t, "png_qr_code", rec.Body.String())
+			}
+		})
+	}
+}
