@@ -16,12 +16,19 @@ type UserStore interface {
 	GetEmailCode(user *User) (*EmailCode, error)
 	DeleteEmailCode(code *EmailCode) error
 
-	GetRefreshToken(user *User, code string) (*RefreshToken, error)
+	GetRefreshTokenByCode(user *User, code string) (*RefreshToken, error)
+	GetRefreshTokens(user *User) ([]RefreshToken, error)
+	AddRefreshToken(user *User, refreshToken *RefreshToken) error
 	RotateRefreshToken(user *User, oldRefreshToken *RefreshToken) (*RefreshToken, error)
+	DeleteRefreshToken(refreshToken *RefreshToken) error
 
-	GetLoginTokenByCode(user *User, code string) (*LoginToken, error)
-	GetLoginTokens(user *User) ([]LoginToken, error)
-	DeleteLoginToken(token *LoginToken) error
+	GetPasswordTokenByCode(user *User, code string) (*PasswordToken, error)
+	GetPasswordTokens(user *User) ([]PasswordToken, error)
+	DeletePasswordToken(token *PasswordToken) error
+
+	GetTwoFATokenByCode(user *User, code string) (*TwoFAToken, error)
+	GetTwoFATokens(user *User) ([]TwoFAToken, error)
+	DeleteTwoFAToken(token *TwoFAToken) error
 
 	GetRecoveryCodeByCode(user *User, code string) (*RecoveryCode, error)
 	GetRecoveryCodes(user *User) ([]RecoveryCode, error)
@@ -42,10 +49,11 @@ type User struct {
 	TwoFaOTPEnabled  bool
 	OtpSecret        string
 	OtpQrCode        []byte
-	EmailCode        EmailCode      `gorm:"constraint:OnDelete:CASCADE"`
-	RefreshTokens    []RefreshToken `gorm:"constraint:OnDelete:CASCADE"`
-	LoginTokens      []LoginToken   `gorm:"constraint:OnDelete:CASCADE"`
-	RecoveryCodes    []RecoveryCode `gorm:"constraint:OnDelete:CASCADE"`
+	EmailCode        EmailCode       `gorm:"constraint:OnDelete:CASCADE"`
+	RefreshTokens    []RefreshToken  `gorm:"constraint:OnDelete:CASCADE"`
+	PasswordTokens   []PasswordToken `gorm:"constraint:OnDelete:CASCADE"`
+	TwoFATokens      []TwoFAToken    `gorm:"constraint:OnDelete:CASCADE"`
+	RecoveryCodes    []RecoveryCode  `gorm:"constraint:OnDelete:CASCADE"`
 }
 
 type ConfirmEmailLastSent struct {
@@ -69,7 +77,14 @@ type RefreshToken struct {
 	UserId         uuid.UUID `gorm:"type:uuid"`
 }
 
-type LoginToken struct {
+type PasswordToken struct {
+	Base
+	Code           string
+	ExpirationTime int64
+	UserId         uuid.UUID `gorm:"type:uuid"`
+}
+
+type TwoFAToken struct {
 	Base
 	Code           string
 	ExpirationTime int64

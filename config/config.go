@@ -12,6 +12,7 @@ type ConfigData struct {
 	Debug                 bool   `json:"debug"`
 	ServerPort            int    `json:"server_port"`
 	DomainName            string `json:"domain_name"`
+	JWTSecret             string `json:"jwt_secret"`
 	CaptchaEnabled        bool   `json:"captcha_enabled"`
 	CaptchaVerifyUrl      string `json:"captcha_verify_url"`
 	CaptchaSecret         string `json:"captcha_secret"`
@@ -116,5 +117,9 @@ func verifyData() {
 
 	if strings.TrimSpace(Data.DomainName) == "" {
 		log.Println("WARNING: Empty domain name. Using default: hbank")
+	}
+
+	if len(Data.JWTSecret) < 10 {
+		log.Fatalln("ERROR: Please specify a jwt secret (>=10 characters)")
 	}
 }

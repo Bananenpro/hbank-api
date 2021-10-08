@@ -18,12 +18,17 @@ type Activate2FAOTP struct {
 }
 
 type VerifyOTPCode struct {
-	Email      string `json:"email" form:"email"`
-	OTPCode    string `json:"otp_code" form:"otp_code"`
-	LoginToken string `json:"login_token" form:"login_token"`
+	Email   string `json:"email" form:"email"`
+	OTPCode string `json:"otp_code" form:"otp_code"`
+}
+
+type PasswordAuth struct {
+	Email    string `json:"email" form:"email"`
+	Password string `json:"password" form:"password"`
 }
 
 type Login struct {
-	Email    string `json:"email" form:"email"`
-	Password string `json:"password" form:"password"`
+	Email         string `json:"email" form:"email"`
+	PasswordToken string `json:"password_token" form:"password_token"`
+	TwoFAToken    string `json:"two_fa_token" form:"two_fa_token"`
 }

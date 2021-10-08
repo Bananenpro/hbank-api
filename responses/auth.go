@@ -16,9 +16,9 @@ type RegisterInvalid struct {
 	MaxPasswordLength int `json:"max_password_length"`
 }
 
-type Login struct {
+type Token struct {
 	Base
-	LoginToken string `json:"login_token"`
+	Token string `json:"token"`
 }
 
 func NewRegisterInvalid(message string) RegisterInvalid {

@@ -3,6 +3,7 @@ package services
 import (
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -12,9 +13,13 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/Bananenpro/hbank2-api/config"
+	"github.com/Bananenpro/hbank2-api/models"
+	"github.com/golang-jwt/jwt"
+	"github.com/google/uuid"
 )
 
 var (
@@ -89,4 +94,58 @@ func IsValidEmail(email string) bool {
 	}
 
 	return true
+}
+
+type jwtClaims struct {
+	jwt.StandardClaims
+	UserId string `json:"user_id"`
+}
+
+func NewAuthToken(user *models.User) (string, string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwtClaims{
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Unix() + (config.Data.AuthTokenLifetime / 1000),
+			IssuedAt:  time.Now().Unix(),
+			Subject:   user.Name,
+		},
+		UserId: user.Id.String(),
+	})
+
+	str, err := token.SignedString([]byte(config.Data.JWTSecret))
+	if err != nil {
+		return "", "", err
+	}
+	parts := strings.Split(str, ".")
+	if len(parts) != 3 {
+		return "", "", errors.New("Generated jwt is not a valid jwt")
+	}
+
+	_, valid := VerifyAuthToken(str)
+	if !valid {
+		return "", "", errors.New("Generated jwt is not a valid jwt")
+	}
+
+	return parts[0] + "." + parts[1], parts[2], nil
+}
+
+func VerifyAuthToken(authToken string) (uuid.UUID, bool) {
+	var claims jwtClaims
+	token, err := jwt.ParseWithClaims(authToken, &claims, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+
+		return []byte(config.Data.JWTSecret), nil
+	})
+
+	if err != nil {
+		return uuid.UUID{}, false
+	}
+
+	if !token.Valid {
+		return uuid.UUID{}, false
+	}
+
+	userId, err := uuid.Parse(claims.UserId)
+	return userId, err == nil
 }

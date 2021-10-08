@@ -368,19 +368,17 @@ func TestHandler_VerifyOTPCode(t *testing.T) {
 		tName       string
 		email       string
 		otp         string
-		loginToken  string
 		wantCode    int
 		wantSuccess bool
 		wantMessage string
 	}{
-		{tName: "Success", email: "bob@gmail.com", otp: currentCode, loginToken: "", wantCode: http.StatusOK, wantSuccess: true, wantMessage: "Correct code"},
-		{tName: "Wrong email", email: "bobo@gmail.com", otp: currentCode, loginToken: "", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
-		{tName: "Wrong otp code", email: "bob@gmail.com", otp: pastCode, loginToken: "", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
-		{tName: "With login token", email: "bob@gmail.com", otp: currentCode, loginToken: "asdfasdfsadfasdf", wantCode: http.StatusNotImplemented, wantSuccess: false, wantMessage: "Not yet implemented"},
+		{tName: "Success", email: "bob@gmail.com", otp: currentCode, wantCode: http.StatusOK, wantSuccess: true, wantMessage: "Successfully aquired two factor token"},
+		{tName: "Wrong email", email: "bobo@gmail.com", otp: currentCode, wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
+		{tName: "Wrong otp code", email: "bob@gmail.com", otp: pastCode, wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.tName, func(t *testing.T) {
-			jsonBody := fmt.Sprintf(`{"email": "%s", "otp_code": "%s", "login_token": "%s"}`, tt.email, tt.otp, tt.loginToken)
+			jsonBody := fmt.Sprintf(`{"email": "%s", "otp_code": "%s"}`, tt.email, tt.otp)
 
 			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -393,11 +391,19 @@ func TestHandler_VerifyOTPCode(t *testing.T) {
 			assert.Equal(t, tt.wantCode, rec.Code)
 			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"success":%t`, tt.wantSuccess))
 			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
+
+			if tt.wantSuccess {
+				assert.Contains(t, rec.Body.String(), `"token":`)
+
+				user, _ := us.GetByEmail(tt.email)
+				tokens, _ := us.GetTwoFATokens(user)
+				assert.Equal(t, 1, len(tokens), "A two factor token was stored in the database")
+			}
 		})
 	}
 }
 
-func TestHandler_Login(t *testing.T) {
+func TestHandler_PasswordAuth(t *testing.T) {
 	config.Data.Debug = true
 	r := router.New()
 
@@ -422,20 +428,6 @@ func TestHandler_Login(t *testing.T) {
 		TwoFaOTPEnabled: true,
 	})
 
-	us.Create(&models.User{
-		Name:           "paul",
-		Email:          "paul@gmail.com",
-		PasswordHash:   password,
-		EmailConfirmed: true,
-	})
-
-	us.Create(&models.User{
-		Name:            "peter",
-		Email:           "peter@gmail.com",
-		PasswordHash:    password,
-		TwoFaOTPEnabled: true,
-	})
-
 	handler := New(us)
 
 	tests := []struct {
@@ -446,15 +438,115 @@ func TestHandler_Login(t *testing.T) {
 		wantSuccess bool
 		wantMessage string
 	}{
-		{tName: "Success", email: "bob@gmail.com", password: "password", wantCode: http.StatusOK, wantSuccess: true, wantMessage: "Successfully signed in"},
+		{tName: "Success", email: "bob@gmail.com", password: "password", wantCode: http.StatusOK, wantSuccess: true, wantMessage: "Successfully aquired password token"},
 		{tName: "Wrong email", email: "bobo@gmail.com", password: "password", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
 		{tName: "Wrong password", email: "bob@gmail.com", password: "drowssap", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
-		{tName: "2FA not enabled", email: "paul@gmail.com", password: "password", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "2FA is not enabled"},
-		{tName: "Email not confirmed", email: "peter@gmail.com", password: "password", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Email is not confirmed"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.tName, func(t *testing.T) {
 			jsonBody := fmt.Sprintf(`{"email": "%s", "password": "%s"}`, tt.email, tt.password)
+
+			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := r.NewContext(req, rec)
+
+			err := handler.PasswordAuth(c)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantCode, rec.Code)
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"success":%t`, tt.wantSuccess))
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
+
+			if tt.wantSuccess {
+				assert.Contains(t, rec.Body.String(), `"token":`)
+
+				user, _ := us.GetByEmail(tt.email)
+				tokens, _ := us.GetPasswordTokens(user)
+				assert.Equal(t, 1, len(tokens), "A password token was stored in the database")
+			}
+		})
+	}
+}
+
+func TestHandler_Login(t *testing.T) {
+	config.Data.Debug = true
+	r := router.New()
+
+	database, err := db.NewInMemory()
+	if err != nil {
+		t.Fatalf("Couldn't create in memory database")
+	}
+	err = db.AutoMigrate(database)
+	if err != nil {
+		t.Fatalf("Couldn't auto migrate database")
+	}
+	db.Clear(database)
+
+	us := db.NewUserStore(database)
+
+	us.Create(&models.User{
+		Name:           "bob",
+		Email:          "bob@gmail.com",
+		EmailConfirmed: true,
+		PasswordTokens: []models.PasswordToken{{Code: "1234567890", ExpirationTime: time.Now().UnixMilli() + config.Data.LoginTokenLifetime}},
+		TwoFATokens:    []models.TwoFAToken{{Code: "1234567890", ExpirationTime: time.Now().UnixMilli() + config.Data.LoginTokenLifetime}},
+	})
+
+	us.Create(&models.User{
+		Name:           "tim",
+		Email:          "tim@gmail.com",
+		EmailConfirmed: true,
+		PasswordTokens: []models.PasswordToken{{Code: "1234567890", ExpirationTime: time.Now().UnixMilli() + config.Data.LoginTokenLifetime}},
+		TwoFATokens:    []models.TwoFAToken{{Code: "1234567890", ExpirationTime: time.Now().UnixMilli() + config.Data.LoginTokenLifetime}},
+	})
+
+	us.Create(&models.User{
+		Name:           "paul",
+		Email:          "paul@gmail.com",
+		EmailConfirmed: true,
+		PasswordTokens: []models.PasswordToken{{Code: "1234567890", ExpirationTime: 0}},
+		TwoFATokens:    []models.TwoFAToken{{Code: "1234567890", ExpirationTime: time.Now().UnixMilli() + config.Data.LoginTokenLifetime}},
+	})
+
+	us.Create(&models.User{
+		Name:           "peter",
+		Email:          "peter@gmail.com",
+		EmailConfirmed: true,
+		PasswordTokens: []models.PasswordToken{{Code: "1234567890", ExpirationTime: time.Now().UnixMilli() + config.Data.LoginTokenLifetime}},
+		TwoFATokens:    []models.TwoFAToken{{Code: "1234567890", ExpirationTime: 0}},
+	})
+
+	us.Create(&models.User{
+		Name:           "hans",
+		Email:          "hans@gmail.com",
+		EmailConfirmed: true,
+		PasswordTokens: []models.PasswordToken{{Code: "1234567890", ExpirationTime: 0}},
+		TwoFATokens:    []models.TwoFAToken{{Code: "1234567890", ExpirationTime: 0}},
+	})
+
+	handler := New(us)
+
+	tests := []struct {
+		tName          string
+		email          string
+		passwordToken  string
+		twoFactorToken string
+		wantCode       int
+		wantSuccess    bool
+		wantMessage    string
+	}{
+		{tName: "Success", email: "bob@gmail.com", passwordToken: "1234567890", twoFactorToken: "1234567890", wantCode: http.StatusOK, wantSuccess: true, wantMessage: "Successfully signed in"},
+		{tName: "Wrong email", email: "tom@gmail.com", passwordToken: "1234567890", twoFactorToken: "1234567890", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
+		{tName: "Wrong password token", email: "tim@gmail.com", passwordToken: "0987654321", twoFactorToken: "1234567890", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
+		{tName: "Wrong two factor token", email: "tim@gmail.com", passwordToken: "1234567890", twoFactorToken: "0987654321", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
+		{tName: "Expired password token", email: "paul@gmail.com", passwordToken: "1234567890", twoFactorToken: "1234567890", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
+		{tName: "Expired two factor token", email: "peter@gmail.com", passwordToken: "1234567890", twoFactorToken: "1234567890", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
+		{tName: "Both tokens expired", email: "peter@gmail.com", passwordToken: "1234567890", twoFactorToken: "1234567890", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.tName, func(t *testing.T) {
+			jsonBody := fmt.Sprintf(`{"email": "%s", "password_token": "%s", "two_fa_token": "%s"}`, tt.email, tt.passwordToken, tt.twoFactorToken)
 
 			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -468,12 +560,30 @@ func TestHandler_Login(t *testing.T) {
 			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"success":%t`, tt.wantSuccess))
 			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
 
-			if tt.wantSuccess {
-				assert.Contains(t, rec.Body.String(), `"login_token":`)
+			user, _ := us.GetByEmail(tt.email)
+			if user != nil {
+				if tt.wantSuccess {
+					cookies := rec.Result().Cookies()
+					assert.Equal(t, 3, len(cookies), "Three auth cookie were returned")
+					for _, cookie := range cookies {
+						assert.True(t, cookie.Secure)
+						assert.Equal(t, http.SameSiteStrictMode, cookie.SameSite)
+					}
 
-				user, _ := us.GetByEmail(tt.email)
-				tokens, _ := us.GetLoginTokens(user)
-				assert.Equal(t, 1, len(tokens), "A login token was stored in the database")
+					refreshTokens, _ := us.GetRefreshTokens(user)
+					assert.Equal(t, 1, len(refreshTokens), "A refresh token was stored in the database")
+				}
+
+				if tt.passwordToken == "1234567890" && tt.twoFactorToken == "1234567890" {
+					pTokens, _ := us.GetPasswordTokens(user)
+					if len(pTokens) == 1 {
+						assert.True(t, pTokens[0].ExpirationTime > time.Now().UnixMilli())
+					}
+					tFATokens, _ := us.GetTwoFATokens(user)
+					if len(tFATokens) == 1 {
+						assert.True(t, tFATokens[0].ExpirationTime > time.Now().UnixMilli())
+					}
+				}
 			}
 		})
 	}

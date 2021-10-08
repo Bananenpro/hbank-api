@@ -20,3 +20,10 @@ func NewUnexpectedError(err error) Base {
 		}
 	}
 }
+
+func NewNotFound() Base {
+	return Base{
+		Success: false,
+		Message: "Resource not found",
+	}
+}

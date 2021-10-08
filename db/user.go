@@ -88,7 +88,7 @@ func (us *UserStore) DeleteEmailCode(emailCode *models.EmailCode) error {
 	return us.db.Delete(emailCode).Error
 }
 
-func (us *UserStore) GetRefreshToken(user *models.User, code string) (*models.RefreshToken, error) {
+func (us *UserStore) GetRefreshTokenByCode(user *models.User, code string) (*models.RefreshToken, error) {
 	var token models.RefreshToken
 	err := us.db.First(&token, "user_id = ? AND code = ?", user.Id, code).Error
 	if err != nil {
@@ -103,6 +103,16 @@ func (us *UserStore) GetRefreshToken(user *models.User, code string) (*models.Re
 	return &token, nil
 }
 
+func (us *UserStore) GetRefreshTokens(user *models.User) ([]models.RefreshToken, error) {
+	var tokens []models.RefreshToken
+	err := us.db.Find(&tokens, "user_id = ?", user.Id).Error
+	return tokens, err
+}
+
+func (us *UserStore) AddRefreshToken(user *models.User, refreshToken *models.RefreshToken) error {
+	return us.db.Model(&user).Association("RefreshTokens").Append(refreshToken)
+}
+
 func (us *UserStore) RotateRefreshToken(user *models.User, oldRefreshToken *models.RefreshToken) (*models.RefreshToken, error) {
 	if oldRefreshToken.UserId != user.Id {
 		return nil, errors.New("Refresh-token doesn't belong to user")
@@ -114,7 +124,7 @@ func (us *UserStore) RotateRefreshToken(user *models.User, oldRefreshToken *mode
 
 	newRefreshToken := &models.RefreshToken{
 		Code:           services.GenerateRandomString(64),
-		ExpirationTime: time.Now().UnixMilli() + config.Data.RefreshTokenLifetime,
+		ExpirationTime: time.Now().Unix() + config.Data.RefreshTokenLifetime,
 		UserId:         user.Id,
 	}
 
@@ -123,8 +133,12 @@ func (us *UserStore) RotateRefreshToken(user *models.User, oldRefreshToken *mode
 	return newRefreshToken, err
 }
 
-func (us *UserStore) GetLoginTokenByCode(user *models.User, code string) (*models.LoginToken, error) {
-	var token models.LoginToken
+func (us *UserStore) DeleteRefreshToken(refreshToken *models.RefreshToken) error {
+	return us.db.Delete(&refreshToken).Error
+}
+
+func (us *UserStore) GetPasswordTokenByCode(user *models.User, code string) (*models.PasswordToken, error) {
+	var token models.PasswordToken
 	err := us.db.First(&token, "user_id = ? AND code = ?", user.Id, code).Error
 
 	if err != nil {
@@ -139,13 +153,39 @@ func (us *UserStore) GetLoginTokenByCode(user *models.User, code string) (*model
 	return &token, nil
 }
 
-func (us *UserStore) GetLoginTokens(user *models.User) ([]models.LoginToken, error) {
-	var tokens []models.LoginToken
+func (us *UserStore) GetPasswordTokens(user *models.User) ([]models.PasswordToken, error) {
+	var tokens []models.PasswordToken
 	err := us.db.Find(&tokens, "user_id = ?", user.Id).Error
 	return tokens, err
 }
 
-func (us *UserStore) DeleteLoginToken(token *models.LoginToken) error {
+func (us *UserStore) DeletePasswordToken(token *models.PasswordToken) error {
+	return us.db.Delete(&token).Error
+}
+
+func (us *UserStore) GetTwoFATokenByCode(user *models.User, code string) (*models.TwoFAToken, error) {
+	var token models.TwoFAToken
+	err := us.db.First(&token, "user_id = ? AND code = ?", user.Id, code).Error
+
+	if err != nil {
+		switch err {
+		case gorm.ErrRecordNotFound:
+			return nil, nil
+		default:
+			return nil, err
+		}
+	}
+
+	return &token, nil
+}
+
+func (us *UserStore) GetTwoFATokens(user *models.User) ([]models.TwoFAToken, error) {
+	var tokens []models.TwoFAToken
+	err := us.db.Find(&tokens, "user_id = ?", user.Id).Error
+	return tokens, err
+}
+
+func (us *UserStore) DeleteTwoFAToken(token *models.TwoFAToken) error {
 	return us.db.Delete(&token).Error
 }
 
