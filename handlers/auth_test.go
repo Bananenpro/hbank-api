@@ -181,7 +181,7 @@ func TestHandler_VerifyConfirmEmailCode(t *testing.T) {
 		Email: "bob@gmail.com",
 		EmailCode: models.EmailCode{
 			Code:           "123456",
-			ExpirationTime: time.Now().UnixMilli() + config.Data.EmailCodeLifetime,
+			ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime,
 		},
 	})
 
@@ -190,7 +190,7 @@ func TestHandler_VerifyConfirmEmailCode(t *testing.T) {
 		Email: "paul@gmail.com",
 		EmailCode: models.EmailCode{
 			Code:           "123456",
-			ExpirationTime: time.Now().UnixMilli() + config.Data.EmailCodeLifetime,
+			ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime,
 		},
 	})
 
@@ -359,7 +359,7 @@ func TestHandler_VerifyOTPCode(t *testing.T) {
 		OtpQrCode: qr.Bytes(),
 	})
 
-	pastCode, _ := totp.GenerateCode(key.Secret(), time.UnixMilli(0))
+	pastCode, _ := totp.GenerateCode(key.Secret(), time.Unix(0, 0))
 	currentCode, _ := totp.GenerateCode(key.Secret(), time.Now())
 
 	handler := New(us)
@@ -489,16 +489,16 @@ func TestHandler_Login(t *testing.T) {
 		Name:           "bob",
 		Email:          "bob@gmail.com",
 		EmailConfirmed: true,
-		PasswordTokens: []models.PasswordToken{{Code: "1234567890", ExpirationTime: time.Now().UnixMilli() + config.Data.LoginTokenLifetime}},
-		TwoFATokens:    []models.TwoFAToken{{Code: "1234567890", ExpirationTime: time.Now().UnixMilli() + config.Data.LoginTokenLifetime}},
+		PasswordTokens: []models.PasswordToken{{Code: "1234567890", ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
+		TwoFATokens:    []models.TwoFAToken{{Code: "1234567890", ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
 	})
 
 	us.Create(&models.User{
 		Name:           "tim",
 		Email:          "tim@gmail.com",
 		EmailConfirmed: true,
-		PasswordTokens: []models.PasswordToken{{Code: "1234567890", ExpirationTime: time.Now().UnixMilli() + config.Data.LoginTokenLifetime}},
-		TwoFATokens:    []models.TwoFAToken{{Code: "1234567890", ExpirationTime: time.Now().UnixMilli() + config.Data.LoginTokenLifetime}},
+		PasswordTokens: []models.PasswordToken{{Code: "1234567890", ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
+		TwoFATokens:    []models.TwoFAToken{{Code: "1234567890", ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
 	})
 
 	us.Create(&models.User{
@@ -506,14 +506,14 @@ func TestHandler_Login(t *testing.T) {
 		Email:          "paul@gmail.com",
 		EmailConfirmed: true,
 		PasswordTokens: []models.PasswordToken{{Code: "1234567890", ExpirationTime: 0}},
-		TwoFATokens:    []models.TwoFAToken{{Code: "1234567890", ExpirationTime: time.Now().UnixMilli() + config.Data.LoginTokenLifetime}},
+		TwoFATokens:    []models.TwoFAToken{{Code: "1234567890", ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
 	})
 
 	us.Create(&models.User{
 		Name:           "peter",
 		Email:          "peter@gmail.com",
 		EmailConfirmed: true,
-		PasswordTokens: []models.PasswordToken{{Code: "1234567890", ExpirationTime: time.Now().UnixMilli() + config.Data.LoginTokenLifetime}},
+		PasswordTokens: []models.PasswordToken{{Code: "1234567890", ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
 		TwoFATokens:    []models.TwoFAToken{{Code: "1234567890", ExpirationTime: 0}},
 	})
 
@@ -577,11 +577,11 @@ func TestHandler_Login(t *testing.T) {
 				if tt.passwordToken == "1234567890" && tt.twoFactorToken == "1234567890" {
 					pTokens, _ := us.GetPasswordTokens(user)
 					if len(pTokens) == 1 {
-						assert.True(t, pTokens[0].ExpirationTime > time.Now().UnixMilli())
+						assert.True(t, pTokens[0].ExpirationTime > time.Now().Unix())
 					}
 					tFATokens, _ := us.GetTwoFATokens(user)
 					if len(tFATokens) == 1 {
-						assert.True(t, tFATokens[0].ExpirationTime > time.Now().UnixMilli())
+						assert.True(t, tFATokens[0].ExpirationTime > time.Now().Unix())
 					}
 				}
 			}

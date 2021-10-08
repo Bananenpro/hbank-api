@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"strings"
-	"time"
 )
 
 type ConfigData struct {
@@ -46,11 +45,11 @@ var defaultData = ConfigData{
 	UserMaxPasswordLength: 255,
 	UserMaxEmailLength:    255,
 	BcryptCost:            10,
-	LoginTokenLifetime:    time.Minute.Milliseconds() * 5,
-	EmailCodeLifetime:     time.Minute.Milliseconds() * 5,
-	AuthTokenLifetime:     time.Minute.Milliseconds() * 10,
-	RefreshTokenLifetime:  31557600000, // 1 year
-	SendEmailTimeout:      time.Minute.Milliseconds() * 2,
+	LoginTokenLifetime:    5 * 60,
+	EmailCodeLifetime:     5 * 60,
+	AuthTokenLifetime:     10 * 60,
+	RefreshTokenLifetime:  1 * 365 * 24 * 60 * 60,
+	SendEmailTimeout:      2 * 60,
 }
 
 var Data = defaultData

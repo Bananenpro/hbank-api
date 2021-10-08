@@ -104,7 +104,7 @@ type jwtClaims struct {
 func NewAuthToken(user *models.User) (string, string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwtClaims{
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Unix() + (config.Data.AuthTokenLifetime / 1000),
+			ExpiresAt: time.Now().Unix() + config.Data.AuthTokenLifetime,
 			IssuedAt:  time.Now().Unix(),
 			Subject:   user.Name,
 		},

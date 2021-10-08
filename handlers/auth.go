@@ -112,13 +112,13 @@ func (h *Handler) SendConfirmEmail(c echo.Context) error {
 	}
 
 	lastSend, err := h.userStore.GetConfirmEmailLastSent(email)
-	if lastSend+config.Data.SendEmailTimeout > time.Now().UnixMilli() {
+	if lastSend+config.Data.SendEmailTimeout > time.Now().Unix() {
 		return c.JSON(http.StatusTooManyRequests, responses.Base{
 			Success: false,
-			Message: fmt.Sprintf("Please wait at least %d minutes between confirm email requests", config.Data.SendEmailTimeout/time.Minute.Milliseconds()),
+			Message: fmt.Sprintf("Please wait at least %d minutes between confirm email requests", config.Data.SendEmailTimeout/60),
 		})
 	}
-	h.userStore.SetConfirmEmailLastSent(email, time.Now().UnixMilli())
+	h.userStore.SetConfirmEmailLastSent(email, time.Now().Unix())
 
 	user, err := h.userStore.GetByEmail(email)
 	if err != nil {
@@ -134,7 +134,7 @@ func (h *Handler) SendConfirmEmail(c echo.Context) error {
 			h.userStore.DeleteEmailCode(emailCode)
 			user.EmailCode = models.EmailCode{
 				Code:           services.GenerateRandomString(6),
-				ExpirationTime: time.Now().UnixMilli() + config.Data.EmailCodeLifetime,
+				ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime,
 			}
 			err = h.userStore.Update(user)
 			if err != nil {
@@ -189,7 +189,7 @@ func (h *Handler) VerifyConfirmEmailCode(c echo.Context) error {
 		}
 		if emailCode != nil {
 			if emailCode.Code == body.Code {
-				if emailCode.ExpirationTime > time.Now().UnixMilli() {
+				if emailCode.ExpirationTime > time.Now().Unix() {
 					user.EmailConfirmed = true
 					err = h.userStore.Update(user)
 					if err != nil {
@@ -317,7 +317,7 @@ func (h *Handler) VerifyOTPCode(c echo.Context) error {
 
 		user.TwoFATokens = append(user.TwoFATokens, models.TwoFAToken{
 			Code:           code,
-			ExpirationTime: time.Now().UnixMilli() + config.Data.LoginTokenLifetime,
+			ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime,
 		})
 		err = h.userStore.Update(user)
 		if err != nil {
@@ -376,7 +376,7 @@ func (h *Handler) PasswordAuth(c echo.Context) error {
 
 	user.PasswordTokens = append(user.PasswordTokens, models.PasswordToken{
 		Code:           code,
-		ExpirationTime: time.Now().UnixMilli() + config.Data.LoginTokenLifetime,
+		ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime,
 	})
 	err = h.userStore.Update(user)
 	if err != nil {
@@ -427,13 +427,13 @@ func (h *Handler) Login(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
 	}
 
-	if passwordToken.ExpirationTime < time.Now().UnixMilli() {
+	if passwordToken.ExpirationTime < time.Now().Unix() {
 		h.userStore.DeletePasswordToken(passwordToken)
 	}
-	if twoFAToken.ExpirationTime < time.Now().UnixMilli() {
+	if twoFAToken.ExpirationTime < time.Now().Unix() {
 		h.userStore.DeleteTwoFAToken(twoFAToken)
 	}
-	if passwordToken.ExpirationTime < time.Now().UnixMilli() || twoFAToken.ExpirationTime < time.Now().UnixMilli() {
+	if passwordToken.ExpirationTime < time.Now().Unix() || twoFAToken.ExpirationTime < time.Now().Unix() {
 		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
 	}
 
@@ -449,7 +449,7 @@ func (h *Handler) Login(c echo.Context) error {
 
 	refreshToken := &models.RefreshToken{
 		Code:           services.GenerateRandomString(64),
-		ExpirationTime: time.Now().UnixMilli() + config.Data.RefreshTokenLifetime,
+		ExpirationTime: time.Now().Unix() + config.Data.RefreshTokenLifetime,
 	}
 	err = h.userStore.AddRefreshToken(user, refreshToken)
 	if err != nil {
@@ -465,7 +465,7 @@ func (h *Handler) Login(c echo.Context) error {
 	c.SetCookie(&http.Cookie{
 		Name:     "Refresh-Token",
 		Value:    refreshToken.Code,
-		MaxAge:   int(config.Data.RefreshTokenLifetime / 1000),
+		MaxAge:   int(config.Data.RefreshTokenLifetime),
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
@@ -475,7 +475,7 @@ func (h *Handler) Login(c echo.Context) error {
 	c.SetCookie(&http.Cookie{
 		Name:     "Auth-Token",
 		Value:    authToken,
-		MaxAge:   int(config.Data.AuthTokenLifetime / 1000),
+		MaxAge:   int(config.Data.AuthTokenLifetime),
 		Secure:   true,
 		HttpOnly: false,
 		SameSite: http.SameSiteStrictMode,
@@ -484,7 +484,7 @@ func (h *Handler) Login(c echo.Context) error {
 	c.SetCookie(&http.Cookie{
 		Name:     "Auth-Token-Signature",
 		Value:    authTokenSignature,
-		MaxAge:   int(config.Data.AuthTokenLifetime / 1000),
+		MaxAge:   int(config.Data.AuthTokenLifetime),
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
