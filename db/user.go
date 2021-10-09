@@ -8,6 +8,7 @@ import (
 	"github.com/Bananenpro/hbank2-api/models"
 	"github.com/Bananenpro/hbank2-api/services"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -88,9 +89,9 @@ func (us *UserStore) DeleteEmailCode(emailCode *models.EmailCode) error {
 	return us.db.Delete(emailCode).Error
 }
 
-func (us *UserStore) GetRefreshTokenByCode(user *models.User, code string) (*models.RefreshToken, error) {
+func (us *UserStore) GetRefreshToken(user *models.User, id uuid.UUID) (*models.RefreshToken, error) {
 	var token models.RefreshToken
-	err := us.db.First(&token, "user_id = ? AND code = ?", user.Id, code).Error
+	err := us.db.First(&token, "user_id = ? AND id = ?", user.Id, id).Error
 	if err != nil {
 		switch err {
 		case gorm.ErrRecordNotFound:
@@ -122,8 +123,13 @@ func (us *UserStore) RotateRefreshToken(user *models.User, oldRefreshToken *mode
 		return nil, err
 	}
 
+	code := services.GenerateRandomString(64)
+	hash, err := bcrypt.GenerateFromPassword([]byte(code), config.Data.BcryptCost)
+	if err != nil {
+		return nil, err
+	}
 	newRefreshToken := &models.RefreshToken{
-		Code:           services.GenerateRandomString(64),
+		Code:           hash,
 		ExpirationTime: time.Now().Unix() + config.Data.RefreshTokenLifetime,
 		UserId:         user.Id,
 	}

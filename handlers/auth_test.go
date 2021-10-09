@@ -545,43 +545,48 @@ func TestHandler_Login(t *testing.T) {
 	us := db.NewUserStore(database)
 
 	us.Create(&models.User{
-		Name:           "bob",
-		Email:          "bob@gmail.com",
-		EmailConfirmed: true,
-		PasswordTokens: []models.PasswordToken{{Code: "1234567890", ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
-		TwoFATokens:    []models.TwoFAToken{{Code: "1234567890", ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
+		Name:            "bob",
+		Email:           "bob@gmail.com",
+		EmailConfirmed:  true,
+		TwoFaOTPEnabled: true,
+		PasswordTokens:  []models.PasswordToken{{Code: "1234567890", ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
+		TwoFATokens:     []models.TwoFAToken{{Code: "1234567890", ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
 	})
 
 	us.Create(&models.User{
-		Name:           "tim",
-		Email:          "tim@gmail.com",
-		EmailConfirmed: true,
-		PasswordTokens: []models.PasswordToken{{Code: "1234567890", ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
-		TwoFATokens:    []models.TwoFAToken{{Code: "1234567890", ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
+		Name:            "tim",
+		Email:           "tim@gmail.com",
+		EmailConfirmed:  true,
+		TwoFaOTPEnabled: true,
+		PasswordTokens:  []models.PasswordToken{{Code: "1234567890", ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
+		TwoFATokens:     []models.TwoFAToken{{Code: "1234567890", ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
 	})
 
 	us.Create(&models.User{
-		Name:           "paul",
-		Email:          "paul@gmail.com",
-		EmailConfirmed: true,
-		PasswordTokens: []models.PasswordToken{{Code: "1234567890", ExpirationTime: 0}},
-		TwoFATokens:    []models.TwoFAToken{{Code: "1234567890", ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
+		Name:            "paul",
+		Email:           "paul@gmail.com",
+		EmailConfirmed:  true,
+		TwoFaOTPEnabled: true,
+		PasswordTokens:  []models.PasswordToken{{Code: "1234567890", ExpirationTime: 0}},
+		TwoFATokens:     []models.TwoFAToken{{Code: "1234567890", ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
 	})
 
 	us.Create(&models.User{
-		Name:           "peter",
-		Email:          "peter@gmail.com",
-		EmailConfirmed: true,
-		PasswordTokens: []models.PasswordToken{{Code: "1234567890", ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
-		TwoFATokens:    []models.TwoFAToken{{Code: "1234567890", ExpirationTime: 0}},
+		Name:            "peter",
+		Email:           "peter@gmail.com",
+		EmailConfirmed:  true,
+		TwoFaOTPEnabled: true,
+		PasswordTokens:  []models.PasswordToken{{Code: "1234567890", ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
+		TwoFATokens:     []models.TwoFAToken{{Code: "1234567890", ExpirationTime: 0}},
 	})
 
 	us.Create(&models.User{
-		Name:           "hans",
-		Email:          "hans@gmail.com",
-		EmailConfirmed: true,
-		PasswordTokens: []models.PasswordToken{{Code: "1234567890", ExpirationTime: 0}},
-		TwoFATokens:    []models.TwoFAToken{{Code: "1234567890", ExpirationTime: 0}},
+		Name:            "hans",
+		Email:           "hans@gmail.com",
+		EmailConfirmed:  true,
+		TwoFaOTPEnabled: true,
+		PasswordTokens:  []models.PasswordToken{{Code: "1234567890", ExpirationTime: 0}},
+		TwoFATokens:     []models.TwoFAToken{{Code: "1234567890", ExpirationTime: 0}},
 	})
 
 	handler := New(us)
@@ -956,12 +961,17 @@ func TestHandler_Logout(t *testing.T) {
 
 	us := db.NewUserStore(database)
 
+	codeStr1 := "sadhfasdhfasdhjfsaliudlhfaskjfdhlasid"
+	codeStr2 := "asödfjasiefjsöalkejföosiaefjölaskejfs"
+	code1, _ := bcrypt.GenerateFromPassword([]byte(codeStr1), config.Data.BcryptCost)
+	code2, _ := bcrypt.GenerateFromPassword([]byte(codeStr2), config.Data.BcryptCost)
+
 	user1 := &models.User{
 		Name:  "bob",
 		Email: "bob@gmail.com",
 		RefreshTokens: []models.RefreshToken{
-			{Code: "sadhfasdhfasdhjfsaliudlhfaskjfdhlasid"},
-			{Code: "sadijfghurhglasdghsoirehgslkghseirghs"},
+			{Code: code1},
+			{Code: code2},
 		},
 	}
 	us.Create(user1)
@@ -970,8 +980,8 @@ func TestHandler_Logout(t *testing.T) {
 		Name:  "peter",
 		Email: "peter@gmail.com",
 		RefreshTokens: []models.RefreshToken{
-			{Code: "sadhfasdhfasdhjfsaliudlhfaskjfdhlasid"},
-			{Code: "sadnjfghurhglasdghsoirehgslkghseirghs"},
+			{Code: code1},
+			{Code: code2},
 		},
 	}
 	us.Create(user2)
@@ -992,9 +1002,11 @@ func TestHandler_Logout(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.tName, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/?all=%t", tt.all), nil)
+
+			rTokens, _ := us.GetRefreshTokens(tt.user)
 			req.AddCookie(&http.Cookie{
 				Name:  "Refresh-Token",
-				Value: "sadhfasdhfasdhjfsaliudlhfaskjfdhlasid",
+				Value: rTokens[0].Id.String() + codeStr1,
 			})
 			rec := httptest.NewRecorder()
 			c := r.NewContext(req, rec)

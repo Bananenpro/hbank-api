@@ -16,7 +16,7 @@ type UserStore interface {
 	GetEmailCode(user *User) (*EmailCode, error)
 	DeleteEmailCode(code *EmailCode) error
 
-	GetRefreshTokenByCode(user *User, code string) (*RefreshToken, error)
+	GetRefreshToken(user *User, id uuid.UUID) (*RefreshToken, error)
 	GetRefreshTokens(user *User) ([]RefreshToken, error)
 	AddRefreshToken(user *User, refreshToken *RefreshToken) error
 	RotateRefreshToken(user *User, oldRefreshToken *RefreshToken) (*RefreshToken, error)
@@ -73,7 +73,7 @@ type EmailCode struct {
 
 type RefreshToken struct {
 	Base
-	Code           string
+	Code           []byte
 	ExpirationTime int64
 	Used           bool
 	UserId         uuid.UUID `gorm:"type:uuid"`

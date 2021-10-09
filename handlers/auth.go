@@ -425,7 +425,7 @@ func (h *Handler) NewOTP(c echo.Context) error {
 	})
 }
 
-// /v1/auth/login (POST)
+// /v1/auth/passwordAuth (POST)
 func (h *Handler) PasswordAuth(c echo.Context) error {
 	var body bindings.PasswordAuth
 	err := c.Bind(&body)
@@ -540,8 +540,14 @@ func (h *Handler) Login(c echo.Context) error {
 		})
 	}
 
+	code := services.GenerateRandomString(64)
+	hash, err := bcrypt.GenerateFromPassword([]byte(code), config.Data.BcryptCost)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+
 	refreshToken := &models.RefreshToken{
-		Code:           services.GenerateRandomString(64),
+		Code:           hash,
 		ExpirationTime: time.Now().Unix() + config.Data.RefreshTokenLifetime,
 	}
 	err = h.userStore.AddRefreshToken(user, refreshToken)
@@ -557,7 +563,7 @@ func (h *Handler) Login(c echo.Context) error {
 
 	c.SetCookie(&http.Cookie{
 		Name:     "Refresh-Token",
-		Value:    refreshToken.Code,
+		Value:    refreshToken.Id.String() + code,
 		MaxAge:   int(config.Data.RefreshTokenLifetime),
 		Secure:   true,
 		HttpOnly: true,
@@ -607,7 +613,11 @@ func (h *Handler) Logout(c echo.Context) error {
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 		}
-		refreshToken, err := h.userStore.GetRefreshTokenByCode(user, refreshCookie.Value)
+		tokenId, err := uuid.Parse(refreshCookie.Value[:36])
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		}
+		refreshToken, err := h.userStore.GetRefreshToken(user, tokenId)
 		if err != nil || refreshToken == nil {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 		}
