@@ -36,3 +36,9 @@ type Login struct {
 type Password struct {
 	Password string `json:"password" form:"password"`
 }
+
+type ChangePassword struct {
+	OldPassword string `json:"old_password" form:"old_password"`
+	NewPassword string `json:"new_password" form:"new_password"`
+	TwoFAToken  string `json:"two_fa_token" form:"two_fa_token"`
+}

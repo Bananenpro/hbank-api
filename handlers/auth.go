@@ -751,3 +751,64 @@ func (h *Handler) NewRecoveryCodes(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, responses.NewRecoveryCodes(codes))
 }
+
+// /v1/auth/changePassword (POST)
+func (h *Handler) ChangePassword(c echo.Context) error {
+	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
+	if err != nil || user == nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+
+	var body bindings.ChangePassword
+	err = c.Bind(&body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.Base{
+			Success: false,
+			Message: "Invalid request body",
+		})
+	}
+
+	if len(body.NewPassword) > config.Data.UserMaxPasswordLength {
+		return c.JSON(http.StatusOK, responses.Base{
+			Success: false,
+			Message: fmt.Sprintf("New password too long (max %d)", config.Data.UserMaxPasswordLength),
+		})
+	}
+
+	if utf8.RuneCountInString(body.NewPassword) < config.Data.UserMinPasswordLength {
+		return c.JSON(http.StatusOK, responses.Base{
+			Success: false,
+			Message: fmt.Sprintf("New password too short (min %d)", config.Data.UserMinPasswordLength),
+		})
+	}
+
+	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.OldPassword)) != nil {
+		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+	}
+
+	twoFAToken, err := h.userStore.GetTwoFATokenByCode(user, body.TwoFAToken)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+	if twoFAToken == nil {
+		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+	}
+	h.userStore.DeleteTwoFAToken(twoFAToken)
+	if twoFAToken.ExpirationTime < time.Now().Unix() {
+		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+	}
+
+	user.PasswordHash, err = bcrypt.GenerateFromPassword([]byte(body.NewPassword), config.Data.BcryptCost)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+	err = h.userStore.Update(user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+
+	return c.JSON(http.StatusOK, responses.Base{
+		Success: true,
+		Message: "Successfully changed password",
+	})
+}

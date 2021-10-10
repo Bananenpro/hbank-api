@@ -1029,3 +1029,98 @@ func TestHandler_Logout(t *testing.T) {
 		})
 	}
 }
+
+func TestHandler_ChangePassword(t *testing.T) {
+	config.Data.Debug = true
+	r := router.New()
+
+	database, err := db.NewInMemory()
+	if err != nil {
+		t.Fatalf("Couldn't create in memory database")
+	}
+	err = db.AutoMigrate(database)
+	if err != nil {
+		t.Fatalf("Couldn't auto migrate database")
+	}
+	db.Clear(database)
+
+	us := db.NewUserStore(database)
+
+	password := "123456"
+	hash, _ := bcrypt.GenerateFromPassword([]byte(password), config.Data.BcryptCost)
+	user1 := &models.User{
+		Name:         "bob",
+		Email:        "bob@gmail.com",
+		PasswordHash: hash,
+		TwoFATokens:  []models.TwoFAToken{{Code: "1234567890", ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
+	}
+	us.Create(user1)
+
+	user2 := &models.User{
+		Name:         "bob2",
+		Email:        "bob2@gmail.com",
+		PasswordHash: hash,
+		TwoFATokens:  []models.TwoFAToken{{Code: "1234567890", ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
+	}
+	us.Create(user2)
+
+	user3 := &models.User{
+		Name:         "bob3",
+		Email:        "bob3@gmail.com",
+		PasswordHash: hash,
+		TwoFATokens:  []models.TwoFAToken{{Code: "1234567890", ExpirationTime: 0}},
+	}
+	us.Create(user3)
+
+	handler := New(us)
+
+	tests := []struct {
+		tName       string
+		user        *models.User
+		twoFAToken  string
+		oldPassword string
+		newPassword string
+		wantCode    int
+		wantSuccess bool
+		wantMessage string
+	}{
+		{tName: "Success", user: user1, twoFAToken: "1234567890", oldPassword: "123456", newPassword: "abcdef", wantCode: http.StatusOK, wantSuccess: true, wantMessage: "Successfully changed password"},
+		{tName: "Wrong password", user: user2, twoFAToken: "1234567890", oldPassword: "654321", newPassword: "abcdef", wantCode: http.StatusForbidden, wantSuccess: false, wantMessage: "Invalid credentials"},
+		{tName: "New password too short", user: user2, twoFAToken: "1234567890", oldPassword: "123456", newPassword: "abcde", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "New password too short (min 6)"},
+		{tName: "New password too long", user: user2, twoFAToken: "1234567890", oldPassword: "123456", newPassword: strings.Repeat("a", 70), wantCode: http.StatusOK, wantSuccess: false, wantMessage: "New password too long (max 64)"},
+		{tName: "Wrong two factor token", user: user2, twoFAToken: "0987654321", oldPassword: "123456", newPassword: "abcdef", wantCode: http.StatusForbidden, wantSuccess: false, wantMessage: "Invalid credentials"},
+		{tName: "Expired two factor token", user: user3, twoFAToken: "1234567890", oldPassword: "123456", newPassword: "abcdef", wantCode: http.StatusForbidden, wantSuccess: false, wantMessage: "Invalid credentials"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.tName, func(t *testing.T) {
+			jsonBody := fmt.Sprintf(`{"old_password": "%s", "new_password": "%s", "two_fa_token": "%s"}`, tt.oldPassword, tt.newPassword, tt.twoFAToken)
+			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := r.NewContext(req, rec)
+
+			c.Set("userId", tt.user.Id)
+
+			err := handler.ChangePassword(c)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantCode, rec.Code)
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"success":%t`, tt.wantSuccess))
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
+
+			user, _ := us.GetById(tt.user.Id)
+			if tt.wantSuccess {
+				assert.Error(t, bcrypt.CompareHashAndPassword(user.PasswordHash, []byte("123456")))
+				assert.NoError(t, bcrypt.CompareHashAndPassword(user.PasswordHash, []byte("abcdef")))
+			} else {
+				assert.NoError(t, bcrypt.CompareHashAndPassword(user.PasswordHash, []byte("123456")))
+				assert.Error(t, bcrypt.CompareHashAndPassword(user.PasswordHash, []byte("abcdef")))
+			}
+
+			if tt.twoFAToken == "1234567890" && tt.oldPassword == "123456" && tt.newPassword == "abcdef" {
+				tokens, _ := us.GetTwoFATokens(user)
+				assert.Empty(t, tokens)
+			}
+		})
+	}
+}

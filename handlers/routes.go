@@ -15,6 +15,7 @@ func (h *Handler) RegisterV1(v1 *echo.Group) {
 	auth.POST("/passwordAuth", h.PasswordAuth)
 	auth.POST("/login", h.Login)
 	auth.POST("/logout", h.Logout, middlewares.JWT)
+	auth.POST("/changePassword", h.ChangePassword, middlewares.JWT)
 
 	twoFactor := auth.Group("/twoFactor")
 	twoFactor.POST("/otp/activate", h.Activate2FAOTP)
