@@ -14,6 +14,7 @@ func (h *Handler) RegisterV1(v1 *echo.Group) {
 	auth.POST("/confirmEmail", h.VerifyConfirmEmailCode)
 	auth.POST("/passwordAuth", h.PasswordAuth)
 	auth.POST("/login", h.Login)
+	auth.POST("/refresh", h.Refresh)
 	auth.POST("/logout", h.Logout, middlewares.JWT)
 	auth.POST("/changePassword", h.ChangePassword, middlewares.JWT)
 	auth.POST("/forgotPassword", h.ForgotPassword)

@@ -114,19 +114,20 @@ func (us *UserStore) AddRefreshToken(user *models.User, refreshToken *models.Ref
 	return us.db.Model(&user).Association("RefreshTokens").Append(refreshToken)
 }
 
-func (us *UserStore) RotateRefreshToken(user *models.User, oldRefreshToken *models.RefreshToken) (*models.RefreshToken, error) {
-	if oldRefreshToken.UserId != user.Id {
-		return nil, errors.New("Refresh-token doesn't belong to user")
+func (us *UserStore) RotateRefreshToken(user *models.User, oldRefreshToken *models.RefreshToken) (*models.RefreshToken, string, error) {
+	if oldRefreshToken.UserId.String() != user.Id.String() {
+		return nil, "", errors.New("Refresh-token doesn't belong to user")
 	}
-	err := us.db.Delete(oldRefreshToken).Error
+	oldRefreshToken.Used = true
+	err := us.db.Model(oldRefreshToken).Select("used").Updates(oldRefreshToken).Error
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	code := services.GenerateRandomString(64)
 	hash, err := bcrypt.GenerateFromPassword([]byte(code), config.Data.BcryptCost)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	newRefreshToken := &models.RefreshToken{
 		Code:           hash,
@@ -136,7 +137,7 @@ func (us *UserStore) RotateRefreshToken(user *models.User, oldRefreshToken *mode
 
 	err = us.db.Create(newRefreshToken).Error
 
-	return newRefreshToken, err
+	return newRefreshToken, code, err
 }
 
 func (us *UserStore) DeleteRefreshToken(refreshToken *models.RefreshToken) error {

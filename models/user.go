@@ -19,7 +19,7 @@ type UserStore interface {
 	GetRefreshToken(user *User, id uuid.UUID) (*RefreshToken, error)
 	GetRefreshTokens(user *User) ([]RefreshToken, error)
 	AddRefreshToken(user *User, refreshToken *RefreshToken) error
-	RotateRefreshToken(user *User, oldRefreshToken *RefreshToken) (*RefreshToken, error)
+	RotateRefreshToken(user *User, oldRefreshToken *RefreshToken) (*RefreshToken, string, error)
 	DeleteRefreshToken(refreshToken *RefreshToken) error
 	DeleteRefreshTokens(user *User) error
 

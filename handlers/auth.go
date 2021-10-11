@@ -596,6 +596,101 @@ func (h *Handler) Login(c echo.Context) error {
 	})
 }
 
+// /v1/auth/refresh (POST)
+func (h *Handler) Refresh(c echo.Context) error {
+	var body bindings.Refresh
+	err := c.Bind(&body)
+	if err != nil {
+		fmt.Println(err)
+		return c.JSON(http.StatusBadRequest, responses.Base{
+			Success: false,
+			Message: "Invalid request body",
+		})
+	}
+
+	userId, err := uuid.Parse(body.UserId)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+	}
+	user, err := h.userStore.GetById(userId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+	}
+
+	refreshCookie, err := c.Cookie("Refresh-Token")
+	if err != nil || len(refreshCookie.Value) <= 36 {
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+	}
+
+	refreshTokenId, err := uuid.Parse(refreshCookie.Value[:36])
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+	}
+
+	refreshToken, err := h.userStore.GetRefreshToken(user, refreshTokenId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+	if refreshToken == nil || bcrypt.CompareHashAndPassword(refreshToken.Code, []byte(refreshCookie.Value[36:])) != nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+	}
+
+	if refreshToken.Used {
+		err = h.userStore.DeleteRefreshTokens(user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		}
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+	}
+
+	newRefreshToken, code, err := h.userStore.RotateRefreshToken(user, refreshToken)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+
+	authToken, authTokenSignature, err := services.NewAuthToken(user)
+	if err != nil {
+		h.userStore.DeleteRefreshToken(newRefreshToken)
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+
+	c.SetCookie(&http.Cookie{
+		Name:     "Refresh-Token",
+		Value:    newRefreshToken.Id.String() + code,
+		MaxAge:   int(config.Data.RefreshTokenLifetime),
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+		Path:     "/v1/auth",
+	})
+
+	c.SetCookie(&http.Cookie{
+		Name:     "Auth-Token",
+		Value:    authToken,
+		MaxAge:   int(config.Data.AuthTokenLifetime),
+		Secure:   true,
+		HttpOnly: false,
+		SameSite: http.SameSiteStrictMode,
+	})
+
+	c.SetCookie(&http.Cookie{
+		Name:     "Auth-Token-Signature",
+		Value:    authTokenSignature,
+		MaxAge:   int(config.Data.AuthTokenLifetime),
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+	})
+
+	return c.JSON(http.StatusOK, responses.Base{
+		Success: true,
+		Message: "Successfully refreshed tokens",
+	})
+}
+
 // /v1/auth/logout?all=bool (POST)
 func (h *Handler) Logout(c echo.Context) error {
 	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
@@ -611,7 +706,7 @@ func (h *Handler) Logout(c echo.Context) error {
 		}
 	} else {
 		refreshCookie, err := c.Cookie("Refresh-Token")
-		if err != nil {
+		if err != nil || len(refreshCookie.Value) <= 36 {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 		}
 		tokenId, err := uuid.Parse(refreshCookie.Value[:36])

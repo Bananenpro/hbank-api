@@ -54,3 +54,7 @@ type ResetPassword struct {
 	Token       string `json:"token" form:"token"`
 	NewPassword string `json:"new_password" form:"new_password"`
 }
+
+type Refresh struct {
+	UserId string `json:"user_id" form:"user_id"`
+}
