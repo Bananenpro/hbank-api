@@ -579,6 +579,7 @@ func (h *Handler) Login(c echo.Context) error {
 		Secure:   true,
 		HttpOnly: false,
 		SameSite: http.SameSiteStrictMode,
+		Path:     "/v1",
 	})
 
 	c.SetCookie(&http.Cookie{
@@ -588,6 +589,7 @@ func (h *Handler) Login(c echo.Context) error {
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
+		Path:     "/v1",
 	})
 
 	return c.JSON(http.StatusOK, responses.Base{
@@ -674,6 +676,7 @@ func (h *Handler) Refresh(c echo.Context) error {
 		Secure:   true,
 		HttpOnly: false,
 		SameSite: http.SameSiteStrictMode,
+		Path:     "/v1",
 	})
 
 	c.SetCookie(&http.Cookie{
@@ -683,6 +686,7 @@ func (h *Handler) Refresh(c echo.Context) error {
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
+		Path:     "/v1",
 	})
 
 	return c.JSON(http.StatusOK, responses.Base{
