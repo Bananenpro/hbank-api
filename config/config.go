@@ -10,6 +10,8 @@ import (
 type ConfigData struct {
 	Debug                 bool   `json:"debug"`
 	ServerPort            int    `json:"server_port"`
+	SSLCertPath           string `json:"ssl_cert_path"`
+	SSLKeyPath            string `json:"ssl_key_path"`
 	DomainName            string `json:"domain_name"`
 	JWTSecret             string `json:"jwt_secret"`
 	CaptchaEnabled        bool   `json:"captcha_enabled"`
@@ -81,6 +83,18 @@ func verifyData() {
 	if Data.ServerPort <= 1023 || Data.ServerPort > 65353 {
 		log.Println("WARNING: Invalid port number. Using default port: ", defaultData.ServerPort)
 		Data.ServerPort = defaultData.ServerPort
+	}
+
+	if f, err := os.Open(Data.SSLCertPath); os.IsNotExist(err) {
+		log.Fatalf("ERROR: Cannot find ssl cert file `%s`\n", Data.SSLCertPath)
+	} else {
+		f.Close()
+	}
+
+	if f, err := os.Open(Data.SSLKeyPath); os.IsNotExist(err) {
+		log.Fatalf("ERROR: Cannot find ssl key file `%s`\n", Data.SSLCertPath)
+	} else {
+		f.Close()
 	}
 
 	if Data.CaptchaEnabled {

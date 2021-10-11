@@ -1,2 +1,4 @@
 database.sqlite
 config.json
+localhost.crt
+localhost.key

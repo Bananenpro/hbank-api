@@ -34,5 +34,5 @@ func main() {
 	v1 := r.Group("/v1")
 	handler.RegisterV1(v1)
 
-	r.Logger.Fatal(r.Start(fmt.Sprintf(":%d", config.Data.ServerPort)))
+	r.Logger.Fatal(r.StartTLS(fmt.Sprintf(":%d", config.Data.ServerPort), config.Data.SSLCertPath, config.Data.SSLKeyPath))
 }
