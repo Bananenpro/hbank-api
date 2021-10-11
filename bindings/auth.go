@@ -42,3 +42,15 @@ type ChangePassword struct {
 	NewPassword string `json:"new_password" form:"new_password"`
 	TwoFAToken  string `json:"two_fa_token" form:"two_fa_token"`
 }
+
+type ForgotPassword struct {
+	Email        string `json:"email" form:"email"`
+	CaptchaToken string `json:"h-captcha-response" form:"h-captcha-response"`
+	TwoFAToken   string `json:"two_fa_token" form:"two_fa_token"`
+}
+
+type ResetPassword struct {
+	Email       string `json:"email" form:"email"`
+	Token       string `json:"token" form:"token"`
+	NewPassword string `json:"new_password" form:"new_password"`
+}

@@ -277,3 +277,38 @@ func (us *UserStore) SetConfirmEmailLastSent(email string, time int64) error {
 	lastSent.LastSent = time
 	return us.db.Updates(&lastSent).Error
 }
+
+func (us *UserStore) GetForgotPasswordEmailLastSent(email string) (int64, error) {
+	var lastSent models.ForgotPasswordEmailLastSent
+	err := us.db.First(&lastSent, "email = ?", email).Error
+	if err != nil {
+		switch err {
+		case gorm.ErrRecordNotFound:
+			return 0, nil
+		default:
+			return 0, err
+		}
+	}
+
+	return lastSent.LastSent, nil
+}
+
+func (us *UserStore) SetForgotPasswordEmailLastSent(email string, time int64) error {
+	var lastSent models.ForgotPasswordEmailLastSent
+	err := us.db.First(&lastSent, "email = ?", email).Error
+	if err != nil {
+		switch err {
+		case gorm.ErrRecordNotFound:
+			us.db.Create(&models.ForgotPasswordEmailLastSent{
+				Email:    email,
+				LastSent: time,
+			})
+			return nil
+		default:
+			return err
+		}
+	}
+
+	lastSent.LastSent = time
+	return us.db.Updates(&lastSent).Error
+}

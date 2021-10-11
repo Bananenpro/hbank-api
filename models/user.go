@@ -38,6 +38,9 @@ type UserStore interface {
 
 	GetConfirmEmailLastSent(email string) (int64, error)
 	SetConfirmEmailLastSent(email string, time int64) error
+
+	GetForgotPasswordEmailLastSent(email string) (int64, error)
+	SetForgotPasswordEmailLastSent(email string, time int64) error
 }
 
 type User struct {
@@ -97,4 +100,10 @@ type RecoveryCode struct {
 	Base
 	Code   string
 	UserId uuid.UUID `gorm:"type:uuid"`
+}
+
+type ForgotPasswordEmailLastSent struct {
+	Base
+	Email    string `gorm:"unique"`
+	LastSent int64
 }

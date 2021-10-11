@@ -23,6 +23,7 @@ func AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(
 		&models.User{},
 		&models.ConfirmEmailLastSent{},
+		&models.ForgotPasswordEmailLastSent{},
 		&models.EmailCode{},
 		&models.RefreshToken{},
 		&models.PasswordToken{},

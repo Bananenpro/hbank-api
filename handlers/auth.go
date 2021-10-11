@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"crypto/subtle"
 	"fmt"
 	"image/png"
 	"net/http"
@@ -796,6 +797,161 @@ func (h *Handler) ChangePassword(c echo.Context) error {
 	h.userStore.DeleteTwoFAToken(twoFAToken)
 	if twoFAToken.ExpirationTime < time.Now().Unix() {
 		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+	}
+
+	user.PasswordHash, err = bcrypt.GenerateFromPassword([]byte(body.NewPassword), config.Data.BcryptCost)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+	err = h.userStore.Update(user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+
+	return c.JSON(http.StatusOK, responses.Base{
+		Success: true,
+		Message: "Successfully changed password",
+	})
+}
+
+// /v1/auth/forgotPassword (POST)
+func (h *Handler) ForgotPassword(c echo.Context) error {
+	var body bindings.ForgotPassword
+	err := c.Bind(&body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.Base{
+			Success: false,
+			Message: "Invalid request body",
+		})
+	}
+
+	if !services.IsValidEmail(body.Email) {
+		return c.JSON(http.StatusBadRequest, responses.Base{
+			Success: false,
+			Message: "Invalid email",
+		})
+	}
+
+	if services.VerifyCaptcha(body.CaptchaToken) {
+		user, err := h.userStore.GetByEmail(body.Email)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		}
+		if user == nil {
+			return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+		}
+		twoFAToken, err := h.userStore.GetTwoFATokenByCode(user, body.TwoFAToken)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		}
+		if twoFAToken == nil {
+			return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+		}
+		h.userStore.DeleteTwoFAToken(twoFAToken)
+		if twoFAToken.ExpirationTime < time.Now().Unix() {
+			return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+		}
+
+		lastSend, err := h.userStore.GetForgotPasswordEmailLastSent(body.Email)
+		if lastSend+config.Data.SendEmailTimeout > time.Now().Unix() {
+			return c.JSON(http.StatusTooManyRequests, responses.Base{
+				Success: false,
+				Message: fmt.Sprintf("Please wait at least %d minutes between forgot password email requests", config.Data.SendEmailTimeout/60),
+			})
+		}
+		h.userStore.SetForgotPasswordEmailLastSent(body.Email, time.Now().Unix())
+
+		emailCode, err := h.userStore.GetEmailCode(user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		}
+
+		h.userStore.DeleteEmailCode(emailCode)
+		user.EmailCode = models.EmailCode{
+			Code:           services.GenerateRandomString(64),
+			ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime,
+		}
+		err = h.userStore.Update(user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		}
+
+		if config.Data.EmailEnabled {
+			type templateData struct {
+				Name string
+				Url  string
+			}
+			body, err := services.ParseEmailTemplate("forgotPassword.html", templateData{
+				Name: user.Name,
+				Url:  fmt.Sprintf("https://%s/auth/forgotPassword?email=%s&token=%s", config.Data.DomainName, body.Email, user.EmailCode.Code),
+			})
+			if err != nil {
+				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			}
+			go services.SendEmail([]string{user.Email}, "H-Bank Passwort vergessen", body)
+		}
+		return c.JSON(http.StatusOK, responses.Base{
+			Success: true,
+			Message: "An email with a reset password link has been sent to the specified address",
+		})
+	}
+
+	return c.JSON(http.StatusOK, responses.Base{
+		Success: false,
+		Message: "Invalid captcha token",
+	})
+}
+
+// /v1/auth/resetPassword (POST)
+func (h *Handler) ResetPassword(c echo.Context) error {
+	var body bindings.ResetPassword
+	err := c.Bind(&body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.Base{
+			Success: false,
+			Message: "Invalid request body",
+		})
+	}
+
+	if !services.IsValidEmail(body.Email) {
+		return c.JSON(http.StatusBadRequest, responses.Base{
+			Success: false,
+			Message: "Invalid email",
+		})
+	}
+
+	if len(body.NewPassword) > config.Data.UserMaxPasswordLength {
+		return c.JSON(http.StatusOK, responses.Base{
+			Success: false,
+			Message: fmt.Sprintf("New password too long (max %d)", config.Data.UserMaxPasswordLength),
+		})
+	}
+
+	if utf8.RuneCountInString(body.NewPassword) < config.Data.UserMinPasswordLength {
+		return c.JSON(http.StatusOK, responses.Base{
+			Success: false,
+			Message: fmt.Sprintf("New password too short (min %d)", config.Data.UserMinPasswordLength),
+		})
+	}
+
+	user, err := h.userStore.GetByEmail(body.Email)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+	}
+
+	token, err := h.userStore.GetEmailCode(user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+	if token == nil || subtle.ConstantTimeCompare([]byte(token.Code), []byte(body.Token)) == 0 {
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+	}
+	h.userStore.DeleteEmailCode(token)
+	if token.ExpirationTime < time.Now().Unix() {
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
 	}
 
 	user.PasswordHash, err = bcrypt.GenerateFromPassword([]byte(body.NewPassword), config.Data.BcryptCost)

@@ -1124,3 +1124,181 @@ func TestHandler_ChangePassword(t *testing.T) {
 		})
 	}
 }
+
+func TestHandler_ForgotPassword(t *testing.T) {
+	config.Data.Debug = true
+	r := router.New()
+
+	database, err := db.NewInMemory()
+	if err != nil {
+		t.Fatalf("Couldn't create in memory database")
+	}
+	err = db.AutoMigrate(database)
+	if err != nil {
+		t.Fatalf("Couldn't auto migrate database")
+	}
+	db.Clear(database)
+
+	us := db.NewUserStore(database)
+
+	us.Create(&models.User{
+		Name:  "bob",
+		Email: "bob@gmail.com",
+		TwoFATokens: []models.TwoFAToken{
+			{Code: "1234567890", ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime},
+			{Code: "12345678901", ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime},
+		},
+	})
+
+	us.Create(&models.User{
+		Name:        "peter",
+		Email:       "peter@gmail.com",
+		TwoFATokens: []models.TwoFAToken{{Code: "1234567890", ExpirationTime: 0}},
+	})
+
+	us.Create(&models.User{
+		Name:        "paul",
+		Email:       "paul@gmail.com",
+		TwoFATokens: []models.TwoFAToken{{Code: "1234567890", ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
+	})
+
+	handler := New(us)
+
+	tests := []struct {
+		tName       string
+		email       string
+		twoFAToken  string
+		wantCode    int
+		wantSuccess bool
+		wantMessage string
+	}{
+		{tName: "Success", email: "bob@gmail.com", twoFAToken: "1234567890", wantCode: http.StatusOK, wantSuccess: true, wantMessage: "An email with a reset password link has been sent to the specified address"},
+		{tName: "Expired two factor token", email: "peter@gmail.com", twoFAToken: "1234567890", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
+		{tName: "Wrong two factor token", email: "paul@gmail.com", twoFAToken: "0987654321", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
+		{tName: "Non existing user", email: "hans@gmail.com", twoFAToken: "0987654321", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.tName, func(t *testing.T) {
+			jsonBody := fmt.Sprintf(`{"email": "%s", "two_fa_token": "%s"})`, tt.email, tt.twoFAToken)
+			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := r.NewContext(req, rec)
+
+			err := handler.ForgotPassword(c)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantCode, rec.Code)
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"success":%t`, tt.wantSuccess))
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
+
+			if tt.wantSuccess {
+				user, err := us.GetByEmail(tt.email)
+				assert.NoError(t, err)
+				assert.NotNil(t, user)
+
+				if user != nil {
+					emailCode, err := us.GetEmailCode(user)
+					assert.NoError(t, err)
+					assert.NotNil(t, emailCode)
+
+					jsonBody := fmt.Sprintf(`{"email": "%s", "two_fa_token": "%s"})`, tt.email, "12345678901")
+					req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
+					req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+					rec := httptest.NewRecorder()
+					c := r.NewContext(req, rec)
+
+					err = handler.ForgotPassword(c)
+
+					assert.NoError(t, err)
+					assert.Equal(t, http.StatusTooManyRequests, rec.Code)
+					assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"success":%t`, false))
+					assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, "Please wait at least 2 minutes between forgot password email requests"))
+				}
+			}
+		})
+	}
+}
+
+func TestHandler_ResetPassword(t *testing.T) {
+	config.Data.Debug = true
+	r := router.New()
+
+	database, err := db.NewInMemory()
+	if err != nil {
+		t.Fatalf("Couldn't create in memory database")
+	}
+	err = db.AutoMigrate(database)
+	if err != nil {
+		t.Fatalf("Couldn't auto migrate database")
+	}
+	db.Clear(database)
+
+	us := db.NewUserStore(database)
+
+	user1 := &models.User{
+		Name:      "bob",
+		Email:     "bob@gmail.com",
+		EmailCode: models.EmailCode{Code: "abcdefg", ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime},
+	}
+	us.Create(user1)
+
+	user2 := &models.User{
+		Name:      "bob2",
+		Email:     "bob2@gmail.com",
+		EmailCode: models.EmailCode{Code: "abcdefg", ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime},
+	}
+	us.Create(user2)
+
+	user3 := &models.User{
+		Name:      "bob3",
+		Email:     "bob3@gmail.com",
+		EmailCode: models.EmailCode{Code: "abcdefg", ExpirationTime: 0},
+	}
+	us.Create(user3)
+
+	handler := New(us)
+
+	tests := []struct {
+		tName       string
+		email       string
+		token       string
+		newPassword string
+		wantCode    int
+		wantSuccess bool
+		wantMessage string
+	}{
+		{tName: "Success", email: "bob@gmail.com", token: "abcdefg", newPassword: "123456", wantCode: http.StatusOK, wantSuccess: true, wantMessage: "Successfully changed password"},
+		{tName: "Expired token", email: "bob3@gmail.com", token: "abcdefg", newPassword: "123456", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
+		{tName: "Non existing user", email: "bob4@gmail.com", token: "abcdefg", newPassword: "123456", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
+		{tName: "Password too short", email: "bob2@gmail.com", token: "abcdefg", newPassword: "12345", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "New password too short (min 6)"},
+		{tName: "Password too long", email: "bob2@gmail.com", token: "abcdefg", newPassword: strings.Repeat("a", 70), wantCode: http.StatusOK, wantSuccess: false, wantMessage: "New password too long (max 64)"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.tName, func(t *testing.T) {
+			jsonBody := fmt.Sprintf(`{"email": "%s", "new_password": "%s", "token": "%s"}`, tt.email, tt.newPassword, tt.token)
+			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := r.NewContext(req, rec)
+
+			err := handler.ResetPassword(c)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantCode, rec.Code)
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"success":%t`, tt.wantSuccess))
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
+
+			user, _ := us.GetByEmail(tt.email)
+			if tt.wantSuccess {
+				assert.NoError(t, bcrypt.CompareHashAndPassword(user.PasswordHash, []byte("123456")))
+			}
+
+			if user != nil && tt.token == "abcdefg" && tt.newPassword == "123456" {
+				code, err := us.GetEmailCode(user)
+				assert.NoError(t, err)
+				assert.Nil(t, code)
+			}
+		})
+	}
+}
