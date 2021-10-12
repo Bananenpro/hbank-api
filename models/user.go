@@ -67,14 +67,14 @@ type ConfirmEmailLastSent struct {
 
 type EmailCode struct {
 	Base
-	Code           []byte
+	CodeHash       []byte
 	ExpirationTime int64
 	UserId         uuid.UUID `gorm:"type:uuid"`
 }
 
 type RefreshToken struct {
 	Base
-	Code           []byte
+	CodeHash       []byte
 	ExpirationTime int64
 	Used           bool
 	UserId         uuid.UUID `gorm:"type:uuid"`
@@ -82,22 +82,22 @@ type RefreshToken struct {
 
 type PasswordToken struct {
 	Base
-	Code           []byte
+	CodeHash       []byte
 	ExpirationTime int64
 	UserId         uuid.UUID `gorm:"type:uuid"`
 }
 
 type TwoFAToken struct {
 	Base
-	Code           []byte
+	CodeHash       []byte
 	ExpirationTime int64
 	UserId         uuid.UUID `gorm:"type:uuid"`
 }
 
 type RecoveryCode struct {
 	Base
-	Code   []byte
-	UserId uuid.UUID `gorm:"type:uuid"`
+	CodeHash []byte
+	UserId   uuid.UUID `gorm:"type:uuid"`
 }
 
 type ForgotPasswordEmailLastSent struct {

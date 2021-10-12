@@ -136,7 +136,7 @@ func (h *Handler) SendConfirmEmail(c echo.Context) error {
 			h.userStore.DeleteEmailCode(emailCode)
 			code := services.GenerateRandomString(6)
 			user.EmailCode = models.EmailCode{
-				Code:           services.HashToken(code),
+				CodeHash:       services.HashToken(code),
 				ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime,
 			}
 			err = h.userStore.Update(user)
@@ -191,7 +191,7 @@ func (h *Handler) VerifyConfirmEmailCode(c echo.Context) error {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 		}
 		if emailCode != nil {
-			if subtle.ConstantTimeCompare(emailCode.Code, services.HashToken(body.Code)) == 1 {
+			if subtle.ConstantTimeCompare(emailCode.CodeHash, services.HashToken(body.Code)) == 1 {
 				if emailCode.ExpirationTime > time.Now().Unix() {
 					user.EmailConfirmed = true
 					err = h.userStore.Update(user)
@@ -342,7 +342,7 @@ func (h *Handler) VerifyOTPCode(c echo.Context) error {
 		}
 
 		user.TwoFATokens = append(user.TwoFATokens, models.TwoFAToken{
-			Code:           services.HashToken(code),
+			CodeHash:       services.HashToken(code),
 			ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime,
 		})
 		err = h.userStore.Update(user)
@@ -458,7 +458,7 @@ func (h *Handler) PasswordAuth(c echo.Context) error {
 	}
 
 	user.PasswordTokens = append(user.PasswordTokens, models.PasswordToken{
-		Code:           services.HashToken(code),
+		CodeHash:       services.HashToken(code),
 		ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime,
 	})
 	err = h.userStore.Update(user)
@@ -544,7 +544,7 @@ func (h *Handler) Login(c echo.Context) error {
 	}
 
 	refreshToken := &models.RefreshToken{
-		Code:           hash,
+		CodeHash:       hash,
 		ExpirationTime: time.Now().Unix() + config.Data.RefreshTokenLifetime,
 	}
 	err = h.userStore.AddRefreshToken(user, refreshToken)
@@ -632,7 +632,7 @@ func (h *Handler) Refresh(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 	}
-	if refreshToken == nil || bcrypt.CompareHashAndPassword(refreshToken.Code, []byte(refreshCookie.Value[36:])) != nil {
+	if refreshToken == nil || bcrypt.CompareHashAndPassword(refreshToken.CodeHash, []byte(refreshCookie.Value[36:])) != nil {
 		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
 	}
 
@@ -775,7 +775,7 @@ func (h *Handler) VerifyRecoveryCode(c echo.Context) error {
 	}
 
 	user.TwoFATokens = append(user.TwoFATokens, models.TwoFAToken{
-		Code:           services.HashToken(token),
+		CodeHash:       services.HashToken(token),
 		ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime,
 	})
 	err = h.userStore.Update(user)
@@ -941,7 +941,7 @@ func (h *Handler) ForgotPassword(c echo.Context) error {
 		h.userStore.DeleteEmailCode(emailCode)
 		code := services.GenerateRandomString(64)
 		user.EmailCode = models.EmailCode{
-			Code:           services.HashToken(code),
+			CodeHash:       services.HashToken(code),
 			ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime,
 		}
 		err = h.userStore.Update(user)
@@ -1019,7 +1019,7 @@ func (h *Handler) ResetPassword(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 	}
-	if token == nil || subtle.ConstantTimeCompare(token.Code, services.HashToken(body.Token)) == 0 {
+	if token == nil || subtle.ConstantTimeCompare(token.CodeHash, services.HashToken(body.Token)) == 0 {
 		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
 	}
 	h.userStore.DeleteEmailCode(token)

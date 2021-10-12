@@ -130,7 +130,7 @@ func (us *UserStore) RotateRefreshToken(user *models.User, oldRefreshToken *mode
 		return nil, "", err
 	}
 	newRefreshToken := &models.RefreshToken{
-		Code:           hash,
+		CodeHash:       hash,
 		ExpirationTime: time.Now().Unix() + config.Data.RefreshTokenLifetime,
 		UserId:         user.Id,
 	}
@@ -150,7 +150,7 @@ func (us *UserStore) DeleteRefreshTokens(user *models.User) error {
 
 func (us *UserStore) GetPasswordTokenByCode(user *models.User, code string) (*models.PasswordToken, error) {
 	var token models.PasswordToken
-	err := us.db.First(&token, "user_id = ? AND code = ?", user.Id, services.HashToken(code)).Error
+	err := us.db.First(&token, "user_id = ? AND code_hash = ?", user.Id, services.HashToken(code)).Error
 
 	if err != nil {
 		switch err {
@@ -176,7 +176,7 @@ func (us *UserStore) DeletePasswordToken(token *models.PasswordToken) error {
 
 func (us *UserStore) GetTwoFATokenByCode(user *models.User, code string) (*models.TwoFAToken, error) {
 	var token models.TwoFAToken
-	err := us.db.First(&token, "user_id = ? AND code = ?", user.Id, services.HashToken(code)).Error
+	err := us.db.First(&token, "user_id = ? AND code_hash = ?", user.Id, services.HashToken(code)).Error
 
 	if err != nil {
 		switch err {
@@ -202,7 +202,7 @@ func (us *UserStore) DeleteTwoFAToken(token *models.TwoFAToken) error {
 
 func (us *UserStore) GetRecoveryCodeByCode(user *models.User, code string) (*models.RecoveryCode, error) {
 	var rCode models.RecoveryCode
-	err := us.db.First(&rCode, "user_id = ? AND code = ?", user.Id, services.HashToken(code)).Error
+	err := us.db.First(&rCode, "user_id = ? AND code_hash = ?", user.Id, services.HashToken(code)).Error
 
 	if err != nil {
 		switch err {
@@ -227,7 +227,7 @@ func (us *UserStore) NewRecoveryCodes(user *models.User) ([]string, error) {
 
 	for i := range codes {
 		codesStr[i] = services.GenerateRandomString(32)
-		codes[i].Code = services.HashToken(codesStr[i])
+		codes[i].CodeHash = services.HashToken(codesStr[i])
 	}
 
 	user.RecoveryCodes = codes

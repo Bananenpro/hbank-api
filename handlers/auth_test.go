@@ -182,7 +182,7 @@ func TestHandler_VerifyConfirmEmailCode(t *testing.T) {
 		Name:  "bob",
 		Email: "bob@gmail.com",
 		EmailCode: models.EmailCode{
-			Code:           services.HashToken("123456"),
+			CodeHash:       services.HashToken("123456"),
 			ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime,
 		},
 	})
@@ -191,7 +191,7 @@ func TestHandler_VerifyConfirmEmailCode(t *testing.T) {
 		Name:  "paul",
 		Email: "paul@gmail.com",
 		EmailCode: models.EmailCode{
-			Code:           services.HashToken("123456"),
+			CodeHash:       services.HashToken("123456"),
 			ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime,
 		},
 	})
@@ -200,7 +200,7 @@ func TestHandler_VerifyConfirmEmailCode(t *testing.T) {
 		Name:  "peter",
 		Email: "peter@gmail.com",
 		EmailCode: models.EmailCode{
-			Code:           services.HashToken("123456"),
+			CodeHash:       services.HashToken("123456"),
 			ExpirationTime: 0,
 		},
 	})
@@ -551,8 +551,8 @@ func TestHandler_Login(t *testing.T) {
 		Email:           "bob@gmail.com",
 		EmailConfirmed:  true,
 		TwoFaOTPEnabled: true,
-		PasswordTokens:  []models.PasswordToken{{Code: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
-		TwoFATokens:     []models.TwoFAToken{{Code: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
+		PasswordTokens:  []models.PasswordToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
+		TwoFATokens:     []models.TwoFAToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
 	})
 
 	us.Create(&models.User{
@@ -560,8 +560,8 @@ func TestHandler_Login(t *testing.T) {
 		Email:           "tim@gmail.com",
 		EmailConfirmed:  true,
 		TwoFaOTPEnabled: true,
-		PasswordTokens:  []models.PasswordToken{{Code: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
-		TwoFATokens:     []models.TwoFAToken{{Code: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
+		PasswordTokens:  []models.PasswordToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
+		TwoFATokens:     []models.TwoFAToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
 	})
 
 	us.Create(&models.User{
@@ -569,8 +569,8 @@ func TestHandler_Login(t *testing.T) {
 		Email:           "paul@gmail.com",
 		EmailConfirmed:  true,
 		TwoFaOTPEnabled: true,
-		PasswordTokens:  []models.PasswordToken{{Code: services.HashToken("1234567890"), ExpirationTime: 0}},
-		TwoFATokens:     []models.TwoFAToken{{Code: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
+		PasswordTokens:  []models.PasswordToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: 0}},
+		TwoFATokens:     []models.TwoFAToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
 	})
 
 	us.Create(&models.User{
@@ -578,8 +578,8 @@ func TestHandler_Login(t *testing.T) {
 		Email:           "peter@gmail.com",
 		EmailConfirmed:  true,
 		TwoFaOTPEnabled: true,
-		PasswordTokens:  []models.PasswordToken{{Code: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
-		TwoFATokens:     []models.TwoFAToken{{Code: services.HashToken("1234567890"), ExpirationTime: 0}},
+		PasswordTokens:  []models.PasswordToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
+		TwoFATokens:     []models.TwoFAToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: 0}},
 	})
 
 	us.Create(&models.User{
@@ -587,8 +587,8 @@ func TestHandler_Login(t *testing.T) {
 		Email:           "hans@gmail.com",
 		EmailConfirmed:  true,
 		TwoFaOTPEnabled: true,
-		PasswordTokens:  []models.PasswordToken{{Code: services.HashToken("1234567890"), ExpirationTime: 0}},
-		TwoFATokens:     []models.TwoFAToken{{Code: services.HashToken("1234567890"), ExpirationTime: 0}},
+		PasswordTokens:  []models.PasswordToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: 0}},
+		TwoFATokens:     []models.TwoFAToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: 0}},
 	})
 
 	handler := New(us)
@@ -675,7 +675,7 @@ func TestHandler_VerifyRecoveryCode(t *testing.T) {
 		Name:  "bob",
 		Email: "bob@gmail.com",
 		RecoveryCodes: []models.RecoveryCode{
-			{Code: services.HashToken("1234567890")},
+			{CodeHash: services.HashToken("1234567890")},
 		},
 	})
 
@@ -741,16 +741,16 @@ func TestHandler_NewRecoveryCodes(t *testing.T) {
 	user := &models.User{
 		PasswordHash: hash,
 		RecoveryCodes: []models.RecoveryCode{
-			{Code: services.HashToken("öareoghöaorwenhgöareohgoaöwrhgaeorgha")},
-			{Code: services.HashToken("askfjaösdhfgoöasdhfoöasdhföasdhfökjas")},
-			{Code: services.HashToken("aslkfjöasdjfjasbdviusadhföalsjdhföasd")},
-			{Code: services.HashToken("öasdfhsuighösafnöasjdföashdgoaösdfkjd")},
-			{Code: services.HashToken("lalskfsaoghskfnöosauhgpisejfäsgjösadd")},
-			{Code: services.HashToken("zalskfsaoghskfnöosauhgpisejfäsgjösadd")},
-			{Code: services.HashToken("oalskfsaoghskfnöosauhgpisejfäsgjösadd")},
-			{Code: services.HashToken("aalskfsaoghskfnöosauhgpisejfäsgjösadd")},
-			{Code: services.HashToken("üalskfsaoghskfnöosauhgpisejfäsgjösadd")},
-			{Code: services.HashToken("jalskfsaoghskfnöosauhgpisejfäsgjösadd")},
+			{CodeHash: services.HashToken("öareoghöaorwenhgöareohgoaöwrhgaeorgha")},
+			{CodeHash: services.HashToken("askfjaösdhfgoöasdhfoöasdhföasdhfökjas")},
+			{CodeHash: services.HashToken("aslkfjöasdjfjasbdviusadhföalsjdhföasd")},
+			{CodeHash: services.HashToken("öasdfhsuighösafnöasjdföashdgoaösdfkjd")},
+			{CodeHash: services.HashToken("lalskfsaoghskfnöosauhgpisejfäsgjösadd")},
+			{CodeHash: services.HashToken("zalskfsaoghskfnöosauhgpisejfäsgjösadd")},
+			{CodeHash: services.HashToken("oalskfsaoghskfnöosauhgpisejfäsgjösadd")},
+			{CodeHash: services.HashToken("aalskfsaoghskfnöosauhgpisejfäsgjösadd")},
+			{CodeHash: services.HashToken("üalskfsaoghskfnöosauhgpisejfäsgjösadd")},
+			{CodeHash: services.HashToken("jalskfsaoghskfnöosauhgpisejfäsgjösadd")},
 		},
 	}
 	us.Create(user)
@@ -887,8 +887,8 @@ func TestHandler_Logout(t *testing.T) {
 		Name:  "bob",
 		Email: "bob@gmail.com",
 		RefreshTokens: []models.RefreshToken{
-			{Code: code1},
-			{Code: code2},
+			{CodeHash: code1},
+			{CodeHash: code2},
 		},
 	}
 	us.Create(user1)
@@ -897,8 +897,8 @@ func TestHandler_Logout(t *testing.T) {
 		Name:  "peter",
 		Email: "peter@gmail.com",
 		RefreshTokens: []models.RefreshToken{
-			{Code: code1},
-			{Code: code2},
+			{CodeHash: code1},
+			{CodeHash: code2},
 		},
 	}
 	us.Create(user2)
@@ -969,7 +969,7 @@ func TestHandler_ChangePassword(t *testing.T) {
 		Name:         "bob",
 		Email:        "bob@gmail.com",
 		PasswordHash: hash,
-		TwoFATokens:  []models.TwoFAToken{{Code: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
+		TwoFATokens:  []models.TwoFAToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
 	}
 	us.Create(user1)
 
@@ -977,7 +977,7 @@ func TestHandler_ChangePassword(t *testing.T) {
 		Name:         "bob2",
 		Email:        "bob2@gmail.com",
 		PasswordHash: hash,
-		TwoFATokens:  []models.TwoFAToken{{Code: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
+		TwoFATokens:  []models.TwoFAToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
 	}
 	us.Create(user2)
 
@@ -985,7 +985,7 @@ func TestHandler_ChangePassword(t *testing.T) {
 		Name:         "bob3",
 		Email:        "bob3@gmail.com",
 		PasswordHash: hash,
-		TwoFATokens:  []models.TwoFAToken{{Code: services.HashToken("1234567890"), ExpirationTime: 0}},
+		TwoFATokens:  []models.TwoFAToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: 0}},
 	}
 	us.Create(user3)
 
@@ -1062,21 +1062,21 @@ func TestHandler_ForgotPassword(t *testing.T) {
 		Name:  "bob",
 		Email: "bob@gmail.com",
 		TwoFATokens: []models.TwoFAToken{
-			{Code: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime},
-			{Code: services.HashToken("12345678901"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime},
+			{CodeHash: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime},
+			{CodeHash: services.HashToken("12345678901"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime},
 		},
 	})
 
 	us.Create(&models.User{
 		Name:        "peter",
 		Email:       "peter@gmail.com",
-		TwoFATokens: []models.TwoFAToken{{Code: services.HashToken("1234567890"), ExpirationTime: 0}},
+		TwoFATokens: []models.TwoFAToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: 0}},
 	})
 
 	us.Create(&models.User{
 		Name:        "paul",
 		Email:       "paul@gmail.com",
-		TwoFATokens: []models.TwoFAToken{{Code: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
+		TwoFATokens: []models.TwoFAToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
 	})
 
 	handler := New(us)
@@ -1156,21 +1156,21 @@ func TestHandler_ResetPassword(t *testing.T) {
 	user1 := &models.User{
 		Name:      "bob",
 		Email:     "bob@gmail.com",
-		EmailCode: models.EmailCode{Code: services.HashToken("abcdefg"), ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime},
+		EmailCode: models.EmailCode{CodeHash: services.HashToken("abcdefg"), ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime},
 	}
 	us.Create(user1)
 
 	user2 := &models.User{
 		Name:      "bob2",
 		Email:     "bob2@gmail.com",
-		EmailCode: models.EmailCode{Code: services.HashToken("abcdefg"), ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime},
+		EmailCode: models.EmailCode{CodeHash: services.HashToken("abcdefg"), ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime},
 	}
 	us.Create(user2)
 
 	user3 := &models.User{
 		Name:      "bob3",
 		Email:     "bob3@gmail.com",
-		EmailCode: models.EmailCode{Code: services.HashToken("abcdefg"), ExpirationTime: 0},
+		EmailCode: models.EmailCode{CodeHash: services.HashToken("abcdefg"), ExpirationTime: 0},
 	}
 	us.Create(user3)
 
@@ -1245,8 +1245,8 @@ func TestHandler_Refresh(t *testing.T) {
 		Name:  "bob",
 		Email: "bob@gmail.com",
 		RefreshTokens: []models.RefreshToken{
-			{Code: code1},
-			{Code: code2, Used: true},
+			{CodeHash: code1},
+			{CodeHash: code2, Used: true},
 		},
 	}
 	us.Create(user1)
@@ -1255,8 +1255,8 @@ func TestHandler_Refresh(t *testing.T) {
 		Name:  "peter",
 		Email: "peter@gmail.com",
 		RefreshTokens: []models.RefreshToken{
-			{Code: code1},
-			{Code: code2, Used: true},
+			{CodeHash: code1},
+			{CodeHash: code2, Used: true},
 		},
 	}
 	us.Create(user2)
@@ -1265,8 +1265,8 @@ func TestHandler_Refresh(t *testing.T) {
 		Name:  "paul",
 		Email: "paul@gmail.com",
 		RefreshTokens: []models.RefreshToken{
-			{Code: code1},
-			{Code: code2, Used: true},
+			{CodeHash: code1},
+			{CodeHash: code2, Used: true},
 		},
 	}
 	us.Create(user1)
