@@ -182,7 +182,7 @@ func TestHandler_VerifyConfirmEmailCode(t *testing.T) {
 		Name:  "bob",
 		Email: "bob@gmail.com",
 		EmailCode: models.EmailCode{
-			Code:           "123456",
+			Code:           services.HashToken("123456"),
 			ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime,
 		},
 	})
@@ -191,7 +191,7 @@ func TestHandler_VerifyConfirmEmailCode(t *testing.T) {
 		Name:  "paul",
 		Email: "paul@gmail.com",
 		EmailCode: models.EmailCode{
-			Code:           "123456",
+			Code:           services.HashToken("123456"),
 			ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime,
 		},
 	})
@@ -200,7 +200,7 @@ func TestHandler_VerifyConfirmEmailCode(t *testing.T) {
 		Name:  "peter",
 		Email: "peter@gmail.com",
 		EmailCode: models.EmailCode{
-			Code:           "123456",
+			Code:           services.HashToken("123456"),
 			ExpirationTime: 0,
 		},
 	})
@@ -1156,21 +1156,21 @@ func TestHandler_ResetPassword(t *testing.T) {
 	user1 := &models.User{
 		Name:      "bob",
 		Email:     "bob@gmail.com",
-		EmailCode: models.EmailCode{Code: "abcdefg", ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime},
+		EmailCode: models.EmailCode{Code: services.HashToken("abcdefg"), ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime},
 	}
 	us.Create(user1)
 
 	user2 := &models.User{
 		Name:      "bob2",
 		Email:     "bob2@gmail.com",
-		EmailCode: models.EmailCode{Code: "abcdefg", ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime},
+		EmailCode: models.EmailCode{Code: services.HashToken("abcdefg"), ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime},
 	}
 	us.Create(user2)
 
 	user3 := &models.User{
 		Name:      "bob3",
 		Email:     "bob3@gmail.com",
-		EmailCode: models.EmailCode{Code: "abcdefg", ExpirationTime: 0},
+		EmailCode: models.EmailCode{Code: services.HashToken("abcdefg"), ExpirationTime: 0},
 	}
 	us.Create(user3)
 

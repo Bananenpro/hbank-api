@@ -134,8 +134,9 @@ func (h *Handler) SendConfirmEmail(c echo.Context) error {
 
 		if !user.EmailConfirmed {
 			h.userStore.DeleteEmailCode(emailCode)
+			code := services.GenerateRandomString(6)
 			user.EmailCode = models.EmailCode{
-				Code:           services.GenerateRandomString(6),
+				Code:           services.HashToken(code),
 				ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime,
 			}
 			err = h.userStore.Update(user)
@@ -150,7 +151,7 @@ func (h *Handler) SendConfirmEmail(c echo.Context) error {
 				}
 				body, err := services.ParseEmailTemplate("email.html", templateData{
 					Name:    user.Name,
-					Content: "der Code lautet: " + user.EmailCode.Code,
+					Content: "der Code lautet: " + code,
 				})
 				if err != nil {
 					return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
@@ -190,7 +191,7 @@ func (h *Handler) VerifyConfirmEmailCode(c echo.Context) error {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 		}
 		if emailCode != nil {
-			if subtle.ConstantTimeCompare([]byte(emailCode.Code), []byte(body.Code)) == 1 {
+			if subtle.ConstantTimeCompare(emailCode.Code, services.HashToken(body.Code)) == 1 {
 				if emailCode.ExpirationTime > time.Now().Unix() {
 					user.EmailConfirmed = true
 					err = h.userStore.Update(user)
@@ -938,8 +939,9 @@ func (h *Handler) ForgotPassword(c echo.Context) error {
 		}
 
 		h.userStore.DeleteEmailCode(emailCode)
+		code := services.GenerateRandomString(64)
 		user.EmailCode = models.EmailCode{
-			Code:           services.GenerateRandomString(64),
+			Code:           services.HashToken(code),
 			ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime,
 		}
 		err = h.userStore.Update(user)
@@ -954,7 +956,7 @@ func (h *Handler) ForgotPassword(c echo.Context) error {
 			}
 			body, err := services.ParseEmailTemplate("forgotPassword.html", templateData{
 				Name: user.Name,
-				Url:  fmt.Sprintf("https://%s/auth/forgotPassword?email=%s&token=%s", config.Data.DomainName, body.Email, user.EmailCode.Code),
+				Url:  fmt.Sprintf("https://%s/auth/forgotPassword?email=%s&token=%s", config.Data.DomainName, body.Email, code),
 			})
 			if err != nil {
 				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
@@ -1017,7 +1019,7 @@ func (h *Handler) ResetPassword(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 	}
-	if token == nil || subtle.ConstantTimeCompare([]byte(token.Code), []byte(body.Token)) == 0 {
+	if token == nil || subtle.ConstantTimeCompare(token.Code, services.HashToken(body.Token)) == 0 {
 		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
 	}
 	h.userStore.DeleteEmailCode(token)

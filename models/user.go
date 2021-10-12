@@ -67,7 +67,7 @@ type ConfirmEmailLastSent struct {
 
 type EmailCode struct {
 	Base
-	Code           string
+	Code           []byte
 	ExpirationTime int64
 	UserId         uuid.UUID `gorm:"type:uuid"`
 }
