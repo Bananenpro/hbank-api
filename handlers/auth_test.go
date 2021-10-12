@@ -139,7 +139,7 @@ func TestHandler_SendConfirmEmail(t *testing.T) {
 				assert.NotNil(t, user)
 
 				if user != nil {
-					emailCode, err := us.GetEmailCode(user)
+					emailCode, err := us.GetEmailCode(user, "confirmEmail")
 					assert.NoError(t, err)
 					assert.NotNil(t, emailCode)
 
@@ -184,6 +184,7 @@ func TestHandler_VerifyConfirmEmailCode(t *testing.T) {
 		EmailCode: models.EmailCode{
 			CodeHash:       services.HashToken("123456"),
 			ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime,
+			Purpose:        "confirmEmail",
 		},
 	})
 
@@ -193,6 +194,7 @@ func TestHandler_VerifyConfirmEmailCode(t *testing.T) {
 		EmailCode: models.EmailCode{
 			CodeHash:       services.HashToken("123456"),
 			ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime,
+			Purpose:        "confirmEmail",
 		},
 	})
 
@@ -202,6 +204,7 @@ func TestHandler_VerifyConfirmEmailCode(t *testing.T) {
 		EmailCode: models.EmailCode{
 			CodeHash:       services.HashToken("123456"),
 			ExpirationTime: 0,
+			Purpose:        "confirmEmail",
 		},
 	})
 
@@ -238,7 +241,7 @@ func TestHandler_VerifyConfirmEmailCode(t *testing.T) {
 
 			user, err := us.GetByEmail(tt.email)
 			if user != nil {
-				code, err := us.GetEmailCode(user)
+				code, err := us.GetEmailCode(user, "confirmEmail")
 				assert.NoError(t, err)
 				assert.Equal(t, tt.code == "123456", code == nil, "Code was (not) deleted from database")
 				assert.Equal(t, tt.wantSuccess, user.EmailConfirmed, "Email (not) confirmed")
@@ -1115,7 +1118,7 @@ func TestHandler_ForgotPassword(t *testing.T) {
 				assert.NotNil(t, user)
 
 				if user != nil {
-					emailCode, err := us.GetEmailCode(user)
+					emailCode, err := us.GetEmailCode(user, "resetPassword")
 					assert.NoError(t, err)
 					assert.NotNil(t, emailCode)
 
@@ -1156,21 +1159,21 @@ func TestHandler_ResetPassword(t *testing.T) {
 	user1 := &models.User{
 		Name:      "bob",
 		Email:     "bob@gmail.com",
-		EmailCode: models.EmailCode{CodeHash: services.HashToken("abcdefg"), ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime},
+		EmailCode: models.EmailCode{CodeHash: services.HashToken("abcdefg"), ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime, Purpose: "resetPassword"},
 	}
 	us.Create(user1)
 
 	user2 := &models.User{
 		Name:      "bob2",
 		Email:     "bob2@gmail.com",
-		EmailCode: models.EmailCode{CodeHash: services.HashToken("abcdefg"), ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime},
+		EmailCode: models.EmailCode{CodeHash: services.HashToken("abcdefg"), ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime, Purpose: "resetPassword"},
 	}
 	us.Create(user2)
 
 	user3 := &models.User{
 		Name:      "bob3",
 		Email:     "bob3@gmail.com",
-		EmailCode: models.EmailCode{CodeHash: services.HashToken("abcdefg"), ExpirationTime: 0},
+		EmailCode: models.EmailCode{CodeHash: services.HashToken("abcdefg"), ExpirationTime: 0, Purpose: "resetPassword"},
 	}
 	us.Create(user3)
 
@@ -1212,7 +1215,7 @@ func TestHandler_ResetPassword(t *testing.T) {
 			}
 
 			if user != nil && tt.token == "abcdefg" && tt.newPassword == "123456" {
-				code, err := us.GetEmailCode(user)
+				code, err := us.GetEmailCode(user, "resetPassword")
 				assert.NoError(t, err)
 				assert.Nil(t, code)
 			}

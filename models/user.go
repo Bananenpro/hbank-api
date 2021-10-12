@@ -13,7 +13,7 @@ type UserStore interface {
 	DeleteById(id uuid.UUID) error
 	DeleteByEmail(email string) error
 
-	GetEmailCode(user *User) (*EmailCode, error)
+	GetEmailCode(user *User, purpose string) (*EmailCode, error)
 	DeleteEmailCode(code *EmailCode) error
 
 	GetRefreshToken(user *User, id uuid.UUID) (*RefreshToken, error)
@@ -68,6 +68,7 @@ type ConfirmEmailLastSent struct {
 type EmailCode struct {
 	Base
 	CodeHash       []byte
+	Purpose        string
 	ExpirationTime int64
 	UserId         uuid.UUID `gorm:"type:uuid"`
 }
