@@ -2,7 +2,7 @@ package services
 
 import (
 	"crypto/rand"
-	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -153,5 +153,5 @@ func VerifyAuthToken(authToken string) (uuid.UUID, bool) {
 }
 
 func HashToken(token string) []byte {
-	return pbkdf2.Key([]byte(token), []byte(""), 4096, 32, sha256.New)
+	return pbkdf2.Key([]byte(token), []byte(""), 10000, 64, sha512.New)
 }
