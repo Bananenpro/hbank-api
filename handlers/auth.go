@@ -127,7 +127,7 @@ func (h *Handler) SendConfirmEmail(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 	}
 	if user != nil {
-		emailCode, err := h.userStore.GetEmailCode(user, "confirmEmail")
+		emailCode, err := h.userStore.GetEmailCode(user)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 		}
@@ -138,7 +138,6 @@ func (h *Handler) SendConfirmEmail(c echo.Context) error {
 			user.EmailCode = models.EmailCode{
 				CodeHash:       services.HashToken(code),
 				ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime,
-				Purpose:        "confirmEmail",
 			}
 			err = h.userStore.Update(user)
 			if err != nil {
@@ -187,7 +186,7 @@ func (h *Handler) VerifyConfirmEmailCode(c echo.Context) error {
 	success := false
 
 	if user != nil {
-		emailCode, err := h.userStore.GetEmailCode(user, "confirmEmail")
+		emailCode, err := h.userStore.GetEmailCode(user)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 		}
@@ -934,7 +933,7 @@ func (h *Handler) ForgotPassword(c echo.Context) error {
 		}
 		h.userStore.SetForgotPasswordEmailLastSent(body.Email, time.Now().Unix())
 
-		emailCode, err := h.userStore.GetEmailCode(user, "resetPassword")
+		emailCode, err := h.userStore.GetEmailCode(user)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 		}
@@ -944,7 +943,6 @@ func (h *Handler) ForgotPassword(c echo.Context) error {
 		user.EmailCode = models.EmailCode{
 			CodeHash:       services.HashToken(code),
 			ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime,
-			Purpose:        "resetPassword",
 		}
 		err = h.userStore.Update(user)
 		if err != nil {
@@ -1017,7 +1015,7 @@ func (h *Handler) ResetPassword(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
 	}
 
-	token, err := h.userStore.GetEmailCode(user, "resetPassword")
+	token, err := h.userStore.GetEmailCode(user)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 	}

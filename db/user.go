@@ -70,9 +70,9 @@ func (us *UserStore) DeleteByEmail(email string) error {
 	return us.db.Delete(models.User{}, "email = ?", email).Error
 }
 
-func (us *UserStore) GetEmailCode(user *models.User, purpose string) (*models.EmailCode, error) {
+func (us *UserStore) GetEmailCode(user *models.User) (*models.EmailCode, error) {
 	var emailCode models.EmailCode
-	err := us.db.First(&emailCode, "user_id = ? AND purpose = ?", user.Id, purpose).Error
+	err := us.db.First(&emailCode, "user_id = ?", user.Id).Error
 	if err != nil {
 		switch err {
 		case gorm.ErrRecordNotFound:
