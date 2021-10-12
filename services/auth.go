@@ -2,6 +2,7 @@ package services
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -20,6 +21,7 @@ import (
 	"github.com/Bananenpro/hbank2-api/models"
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/pbkdf2"
 )
 
 var (
@@ -148,4 +150,8 @@ func VerifyAuthToken(authToken string) (uuid.UUID, bool) {
 
 	userId, err := uuid.Parse(claims.UserId)
 	return userId, err == nil
+}
+
+func HashToken(token string) []byte {
+	return pbkdf2.Key([]byte(token), []byte(""), 4096, 32, sha256.New)
 }

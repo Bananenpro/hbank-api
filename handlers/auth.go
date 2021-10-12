@@ -92,11 +92,6 @@ func (h *Handler) Register(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 	}
 
-	strCodes := make([]string, len(codes))
-	for i, c := range codes {
-		strCodes[i] = c.Code
-	}
-
 	return c.JSON(http.StatusCreated, responses.RegisterSuccess{
 		Base: responses.Base{
 			Success: true,
@@ -104,7 +99,7 @@ func (h *Handler) Register(c echo.Context) error {
 		},
 		UserId:    user.Id.String(),
 		UserEmail: body.Email,
-		Codes:     strCodes,
+		Codes:     codes,
 	})
 }
 
@@ -734,34 +729,6 @@ func (h *Handler) Logout(c echo.Context) error {
 	})
 }
 
-// /v1/auth/twoFactor/recovery/get (POST)
-func (h *Handler) GetRecoveryCodes(c echo.Context) error {
-	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
-	if err != nil || user == nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
-	}
-
-	var body bindings.Password
-	err = c.Bind(&body)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.Base{
-			Success: false,
-			Message: "Invalid request body",
-		})
-	}
-
-	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.Password)) != nil {
-		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
-	}
-
-	codes, err := h.userStore.GetRecoveryCodes(user)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
-	}
-
-	return c.JSON(http.StatusOK, responses.NewRecoveryCodes(codes))
-}
-
 // /v1/auth/twoFactor/recovery/verify (POST)
 func (h *Handler) VerifyRecoveryCode(c echo.Context) error {
 	var body bindings.VerifyCode
@@ -849,7 +816,12 @@ func (h *Handler) NewRecoveryCodes(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 	}
 
-	return c.JSON(http.StatusOK, responses.NewRecoveryCodes(codes))
+	return c.JSON(http.StatusOK, responses.RecoveryCodes{
+		Base: responses.Base{
+			Success: true,
+		},
+		Codes: codes,
+	})
 }
 
 // /v1/auth/changePassword (POST)

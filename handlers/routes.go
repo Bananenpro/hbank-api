@@ -26,7 +26,6 @@ func (h *Handler) RegisterV1(v1 *echo.Group) {
 	twoFactor.POST("/otp/verify", h.VerifyOTPCode)
 	twoFactor.POST("/otp/new", h.NewOTP, middlewares.JWT)
 
-	twoFactor.POST("/recovery/get", h.GetRecoveryCodes, middlewares.JWT)
 	twoFactor.POST("/recovery/verify", h.VerifyRecoveryCode)
 	twoFactor.POST("/recovery/new", h.NewRecoveryCodes, middlewares.JWT)
 

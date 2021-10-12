@@ -2,7 +2,6 @@ package responses
 
 import (
 	"github.com/Bananenpro/hbank2-api/config"
-	"github.com/Bananenpro/hbank2-api/models"
 )
 
 type RegisterSuccess struct {
@@ -47,19 +46,5 @@ func NewInvalidCredentials() Base {
 	return Base{
 		Success: false,
 		Message: "Invalid credentials",
-	}
-}
-
-func NewRecoveryCodes(codes []models.RecoveryCode) RecoveryCodes {
-	strCodes := make([]string, len(codes))
-	for i, c := range codes {
-		strCodes[i] = c.Code
-	}
-
-	return RecoveryCodes{
-		Base: Base{
-			Success: true,
-		},
-		Codes: strCodes,
 	}
 }

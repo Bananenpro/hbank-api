@@ -32,8 +32,7 @@ type UserStore interface {
 	DeleteTwoFAToken(token *TwoFAToken) error
 
 	GetRecoveryCodeByCode(user *User, code string) (*RecoveryCode, error)
-	GetRecoveryCodes(user *User) ([]RecoveryCode, error)
-	NewRecoveryCodes(user *User) ([]RecoveryCode, error)
+	NewRecoveryCodes(user *User) ([]string, error)
 	DeleteRecoveryCode(code *RecoveryCode) error
 
 	GetConfirmEmailLastSent(email string) (int64, error)
@@ -98,7 +97,7 @@ type TwoFAToken struct {
 
 type RecoveryCode struct {
 	Base
-	Code   string
+	Code   []byte
 	UserId uuid.UUID `gorm:"type:uuid"`
 }
 

@@ -14,6 +14,7 @@ import (
 	"github.com/Bananenpro/hbank2-api/db"
 	"github.com/Bananenpro/hbank2-api/models"
 	"github.com/Bananenpro/hbank2-api/router"
+	"github.com/Bananenpro/hbank2-api/services"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/pquerna/otp/totp"
@@ -654,74 +655,6 @@ func TestHandler_Login(t *testing.T) {
 	}
 }
 
-func TestHandler_GetRecoveryCodes(t *testing.T) {
-	config.Data.Debug = true
-	r := router.New()
-
-	database, err := db.NewInMemory()
-	if err != nil {
-		t.Fatalf("Couldn't create in memory database")
-	}
-	err = db.AutoMigrate(database)
-	if err != nil {
-		t.Fatalf("Couldn't auto migrate database")
-	}
-	db.Clear(database)
-
-	us := db.NewUserStore(database)
-
-	hash, _ := bcrypt.GenerateFromPassword([]byte("123456"), config.Data.BcryptCost)
-	user := &models.User{
-		PasswordHash: hash,
-		RecoveryCodes: []models.RecoveryCode{
-			{Code: "öareoghöaorwenhgöareohgoaöwrhgaeorgha"},
-			{Code: "askfjaösdhfgoöasdhfoöasdhföasdhfökjas"},
-			{Code: "aslkfjöasdjfjasbdviusadhföalsjdhföasd"},
-			{Code: "öasdfhsuighösafnöasjdföashdgoaösdfkjd"},
-			{Code: "öalskfsaoghskfnöosauhgpisejfäsgjösadd"},
-		},
-	}
-	us.Create(user)
-
-	handler := New(us)
-
-	tests := []struct {
-		tName       string
-		password    string
-		wantCode    int
-		wantSuccess bool
-		wantMessage string
-	}{
-		{tName: "Success", password: "123456", wantCode: http.StatusOK, wantSuccess: true},
-		{tName: "Wrong password", password: "654321", wantCode: http.StatusForbidden, wantSuccess: false, wantMessage: "Invalid credentials"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.tName, func(t *testing.T) {
-			jsonBody := fmt.Sprintf(`{"password": "%s"}`, tt.password)
-			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
-			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-			rec := httptest.NewRecorder()
-			c := r.NewContext(req, rec)
-
-			c.Set("userId", user.Id)
-
-			err := handler.GetRecoveryCodes(c)
-
-			assert.NoError(t, err)
-			assert.Equal(t, tt.wantCode, rec.Code)
-			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"success":%t`, tt.wantSuccess))
-			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
-
-			if tt.wantSuccess {
-				codes := user.RecoveryCodes
-				for _, c := range codes {
-					assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"%s"`, c.Code))
-				}
-			}
-		})
-	}
-}
-
 func TestHandler_VerifyRecoveryCode(t *testing.T) {
 	config.Data.Debug = true
 	r := router.New()
@@ -742,7 +675,7 @@ func TestHandler_VerifyRecoveryCode(t *testing.T) {
 		Name:  "bob",
 		Email: "bob@gmail.com",
 		RecoveryCodes: []models.RecoveryCode{
-			{Code: "1234567890"},
+			{Code: services.HashToken("1234567890")},
 		},
 	})
 
@@ -783,9 +716,6 @@ func TestHandler_VerifyRecoveryCode(t *testing.T) {
 
 				tokens, _ := us.GetTwoFATokens(user)
 				assert.Equal(t, 1, len(tokens), "A two factor token was stored in the database")
-
-				rCodes, _ := us.GetRecoveryCodes(user)
-				assert.Empty(t, rCodes, "The recovery code was deleted from the database")
 			}
 		})
 	}
@@ -811,16 +741,16 @@ func TestHandler_NewRecoveryCodes(t *testing.T) {
 	user := &models.User{
 		PasswordHash: hash,
 		RecoveryCodes: []models.RecoveryCode{
-			{Code: "öareoghöaorwenhgöareohgoaöwrhgaeorgha"},
-			{Code: "askfjaösdhfgoöasdhfoöasdhföasdhfökjas"},
-			{Code: "aslkfjöasdjfjasbdviusadhföalsjdhföasd"},
-			{Code: "öasdfhsuighösafnöasjdföashdgoaösdfkjd"},
-			{Code: "lalskfsaoghskfnöosauhgpisejfäsgjösadd"},
-			{Code: "zalskfsaoghskfnöosauhgpisejfäsgjösadd"},
-			{Code: "oalskfsaoghskfnöosauhgpisejfäsgjösadd"},
-			{Code: "aalskfsaoghskfnöosauhgpisejfäsgjösadd"},
-			{Code: "üalskfsaoghskfnöosauhgpisejfäsgjösadd"},
-			{Code: "jalskfsaoghskfnöosauhgpisejfäsgjösadd"},
+			{Code: services.HashToken("öareoghöaorwenhgöareohgoaöwrhgaeorgha")},
+			{Code: services.HashToken("askfjaösdhfgoöasdhfoöasdhföasdhfökjas")},
+			{Code: services.HashToken("aslkfjöasdjfjasbdviusadhföalsjdhföasd")},
+			{Code: services.HashToken("öasdfhsuighösafnöasjdföashdgoaösdfkjd")},
+			{Code: services.HashToken("lalskfsaoghskfnöosauhgpisejfäsgjösadd")},
+			{Code: services.HashToken("zalskfsaoghskfnöosauhgpisejfäsgjösadd")},
+			{Code: services.HashToken("oalskfsaoghskfnöosauhgpisejfäsgjösadd")},
+			{Code: services.HashToken("aalskfsaoghskfnöosauhgpisejfäsgjösadd")},
+			{Code: services.HashToken("üalskfsaoghskfnöosauhgpisejfäsgjösadd")},
+			{Code: services.HashToken("jalskfsaoghskfnöosauhgpisejfäsgjösadd")},
 		},
 	}
 	us.Create(user)
@@ -853,20 +783,6 @@ func TestHandler_NewRecoveryCodes(t *testing.T) {
 			assert.Equal(t, tt.wantCode, rec.Code)
 			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"success":%t`, tt.wantSuccess))
 			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
-
-			if tt.wantSuccess {
-				prevCodes := user.RecoveryCodes
-				codes, _ := us.GetRecoveryCodes(user)
-
-				for i, c := range codes {
-					assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"%s"`, c.Code))
-					assert.NotContains(t, rec.Body.String(), fmt.Sprintf(`"%s"`, prevCodes[i].Code))
-
-					for _, c2 := range prevCodes {
-						assert.NotEqual(t, c.Code, c2.Code)
-					}
-				}
-			}
 		})
 	}
 }

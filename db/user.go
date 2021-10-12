@@ -202,7 +202,7 @@ func (us *UserStore) DeleteTwoFAToken(token *models.TwoFAToken) error {
 
 func (us *UserStore) GetRecoveryCodeByCode(user *models.User, code string) (*models.RecoveryCode, error) {
 	var rCode models.RecoveryCode
-	err := us.db.First(&rCode, "user_id = ? AND code = ?", user.Id, code).Error
+	err := us.db.First(&rCode, "user_id = ? AND code = ?", user.Id, services.HashToken(code)).Error
 
 	if err != nil {
 		switch err {
@@ -216,28 +216,24 @@ func (us *UserStore) GetRecoveryCodeByCode(user *models.User, code string) (*mod
 	return &rCode, nil
 }
 
-func (us *UserStore) GetRecoveryCodes(user *models.User) ([]models.RecoveryCode, error) {
-	var codes []models.RecoveryCode
-	err := us.db.Find(&codes, "user_id = ?", user.Id).Error
-	return codes, err
-}
-
-func (us *UserStore) NewRecoveryCodes(user *models.User) ([]models.RecoveryCode, error) {
+func (us *UserStore) NewRecoveryCodes(user *models.User) ([]string, error) {
 	err := us.db.Where("user_id = ?", user.Id).Delete(&models.RecoveryCode{}).Error
 	if err != nil {
-		return []models.RecoveryCode{}, err
+		return []string{}, err
 	}
 
 	codes := make([]models.RecoveryCode, 10)
+	codesStr := make([]string, 10)
 
 	for i := range codes {
-		codes[i].Code = services.GenerateRandomString(32)
+		codesStr[i] = services.GenerateRandomString(32)
+		codes[i].Code = services.HashToken(codesStr[i])
 	}
 
 	user.RecoveryCodes = codes
 	err = us.Update(user)
 
-	return codes, err
+	return codesStr, err
 }
 
 func (us *UserStore) DeleteRecoveryCode(code *models.RecoveryCode) error {
