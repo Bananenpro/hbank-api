@@ -150,7 +150,7 @@ func (us *UserStore) DeleteRefreshTokens(user *models.User) error {
 
 func (us *UserStore) GetPasswordTokenByCode(user *models.User, code string) (*models.PasswordToken, error) {
 	var token models.PasswordToken
-	err := us.db.First(&token, "user_id = ? AND code = ?", user.Id, code).Error
+	err := us.db.First(&token, "user_id = ? AND code = ?", user.Id, services.HashToken(code)).Error
 
 	if err != nil {
 		switch err {
@@ -176,7 +176,7 @@ func (us *UserStore) DeletePasswordToken(token *models.PasswordToken) error {
 
 func (us *UserStore) GetTwoFATokenByCode(user *models.User, code string) (*models.TwoFAToken, error) {
 	var token models.TwoFAToken
-	err := us.db.First(&token, "user_id = ? AND code = ?", user.Id, code).Error
+	err := us.db.First(&token, "user_id = ? AND code = ?", user.Id, services.HashToken(code)).Error
 
 	if err != nil {
 		switch err {

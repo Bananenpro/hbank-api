@@ -341,7 +341,7 @@ func (h *Handler) VerifyOTPCode(c echo.Context) error {
 		}
 
 		user.TwoFATokens = append(user.TwoFATokens, models.TwoFAToken{
-			Code:           code,
+			Code:           services.HashToken(code),
 			ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime,
 		})
 		err = h.userStore.Update(user)
@@ -457,7 +457,7 @@ func (h *Handler) PasswordAuth(c echo.Context) error {
 	}
 
 	user.PasswordTokens = append(user.PasswordTokens, models.PasswordToken{
-		Code:           code,
+		Code:           services.HashToken(code),
 		ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime,
 	})
 	err = h.userStore.Update(user)
@@ -774,7 +774,7 @@ func (h *Handler) VerifyRecoveryCode(c echo.Context) error {
 	}
 
 	user.TwoFATokens = append(user.TwoFATokens, models.TwoFAToken{
-		Code:           token,
+		Code:           services.HashToken(token),
 		ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime,
 	})
 	err = h.userStore.Update(user)
