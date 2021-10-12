@@ -70,8 +70,8 @@ func (us *UserStore) DeleteByEmail(email string) error {
 	return us.db.Delete(models.User{}, "email = ?", email).Error
 }
 
-func (us *UserStore) GetEmailCode(user *models.User) (*models.EmailCode, error) {
-	var emailCode models.EmailCode
+func (us *UserStore) GetConfirmEmailCode(user *models.User) (*models.ConfirmEmailCode, error) {
+	var emailCode models.ConfirmEmailCode
 	err := us.db.First(&emailCode, "user_id = ?", user.Id).Error
 	if err != nil {
 		switch err {
@@ -85,7 +85,26 @@ func (us *UserStore) GetEmailCode(user *models.User) (*models.EmailCode, error) 
 	return &emailCode, nil
 }
 
-func (us *UserStore) DeleteEmailCode(emailCode *models.EmailCode) error {
+func (us *UserStore) DeleteConfirmEmailCode(emailCode *models.ConfirmEmailCode) error {
+	return us.db.Delete(emailCode).Error
+}
+
+func (us *UserStore) GetResetPasswordCode(user *models.User) (*models.ResetPasswordCode, error) {
+	var emailCode models.ResetPasswordCode
+	err := us.db.First(&emailCode, "user_id = ?", user.Id).Error
+	if err != nil {
+		switch err {
+		case gorm.ErrRecordNotFound:
+			return nil, nil
+		default:
+			return nil, err
+		}
+	}
+
+	return &emailCode, nil
+}
+
+func (us *UserStore) DeleteResetPasswordCode(emailCode *models.ResetPasswordCode) error {
 	return us.db.Delete(emailCode).Error
 }
 

@@ -13,8 +13,11 @@ type UserStore interface {
 	DeleteById(id uuid.UUID) error
 	DeleteByEmail(email string) error
 
-	GetEmailCode(user *User) (*EmailCode, error)
-	DeleteEmailCode(code *EmailCode) error
+	GetConfirmEmailCode(user *User) (*ConfirmEmailCode, error)
+	DeleteConfirmEmailCode(code *ConfirmEmailCode) error
+
+	GetResetPasswordCode(user *User) (*ResetPasswordCode, error)
+	DeleteResetPasswordCode(code *ResetPasswordCode) error
 
 	GetRefreshToken(user *User, id uuid.UUID) (*RefreshToken, error)
 	AddRefreshToken(user *User, refreshToken *RefreshToken) error
@@ -43,20 +46,21 @@ type UserStore interface {
 
 type User struct {
 	Base
-	Name             string
-	Email            string `gorm:"unique"`
-	PasswordHash     []byte
-	ProfilePicture   []byte
-	ProfilePictureId uuid.UUID `gorm:"type:uuid"`
-	EmailConfirmed   bool
-	TwoFaOTPEnabled  bool
-	OtpSecret        string
-	OtpQrCode        []byte
-	EmailCode        EmailCode       `gorm:"constraint:OnDelete:CASCADE"`
-	RefreshTokens    []RefreshToken  `gorm:"constraint:OnDelete:CASCADE"`
-	PasswordTokens   []PasswordToken `gorm:"constraint:OnDelete:CASCADE"`
-	TwoFATokens      []TwoFAToken    `gorm:"constraint:OnDelete:CASCADE"`
-	RecoveryCodes    []RecoveryCode  `gorm:"constraint:OnDelete:CASCADE"`
+	Name              string
+	Email             string `gorm:"unique"`
+	PasswordHash      []byte
+	ProfilePicture    []byte
+	ProfilePictureId  uuid.UUID `gorm:"type:uuid"`
+	EmailConfirmed    bool
+	TwoFaOTPEnabled   bool
+	OtpSecret         string
+	OtpQrCode         []byte
+	ConfirmEmailCode  ConfirmEmailCode  `gorm:"constraint:OnDelete:CASCADE"`
+	ResetPasswordCode ResetPasswordCode `gorm:"constraint:OnDelete:CASCADE"`
+	RefreshTokens     []RefreshToken    `gorm:"constraint:OnDelete:CASCADE"`
+	PasswordTokens    []PasswordToken   `gorm:"constraint:OnDelete:CASCADE"`
+	TwoFATokens       []TwoFAToken      `gorm:"constraint:OnDelete:CASCADE"`
+	RecoveryCodes     []RecoveryCode    `gorm:"constraint:OnDelete:CASCADE"`
 }
 
 type ConfirmEmailLastSent struct {
@@ -65,7 +69,14 @@ type ConfirmEmailLastSent struct {
 	LastSent int64
 }
 
-type EmailCode struct {
+type ConfirmEmailCode struct {
+	Base
+	CodeHash       []byte
+	ExpirationTime int64
+	UserId         uuid.UUID `gorm:"type:uuid"`
+}
+
+type ResetPasswordCode struct {
 	Base
 	CodeHash       []byte
 	ExpirationTime int64
