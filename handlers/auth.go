@@ -195,7 +195,7 @@ func (h *Handler) VerifyConfirmEmailCode(c echo.Context) error {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 		}
 		if emailCode != nil {
-			if emailCode.Code == body.Code {
+			if subtle.ConstantTimeCompare([]byte(emailCode.Code), []byte(body.Code)) == 1 {
 				if emailCode.ExpirationTime > time.Now().Unix() {
 					user.EmailConfirmed = true
 					err = h.userStore.Update(user)
