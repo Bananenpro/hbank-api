@@ -153,5 +153,5 @@ func VerifyAuthToken(authToken string) (uuid.UUID, bool) {
 }
 
 func HashToken(token string) []byte {
-	return pbkdf2.Key([]byte(token), []byte(""), 10000, 64, sha512.New)
+	return pbkdf2.Key([]byte(token), []byte(""), config.Data.PBKDF2Iterations, 64, sha512.New)
 }

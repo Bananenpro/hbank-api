@@ -30,6 +30,7 @@ type ConfigData struct {
 	UserMaxPasswordLength int    `json:"user_max_password_length"`
 	UserMaxEmailLength    int    `json:"user_max_email_length"`
 	BcryptCost            int    `json:"bcrypt_cost"`
+	PBKDF2Iterations      int    `json:"pbkdf2_iterations"`
 	LoginTokenLifetime    int64  `json:"login_token_lifetime"`
 	EmailCodeLifetime     int64  `json:"email_code_lifetime"`
 	AuthTokenLifetime     int64  `json:"auth_token_lifetime"`
@@ -47,6 +48,7 @@ var defaultData = ConfigData{
 	UserMaxPasswordLength: 64,
 	UserMaxEmailLength:    64,
 	BcryptCost:            10,
+	PBKDF2Iterations:      10000,
 	LoginTokenLifetime:    5 * 60,
 	EmailCodeLifetime:     5 * 60,
 	AuthTokenLifetime:     10 * 60,
