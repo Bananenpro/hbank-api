@@ -1339,3 +1339,166 @@ func TestHandler_Refresh(t *testing.T) {
 		})
 	}
 }
+
+func TestHandler_RequestChangeEmail(t *testing.T) {
+	config.Data.Debug = true
+	r := router.New()
+
+	database, err := db.NewInMemory()
+	if err != nil {
+		t.Fatalf("Couldn't create in memory database")
+	}
+	err = db.AutoMigrate(database)
+	if err != nil {
+		t.Fatalf("Couldn't auto migrate database")
+	}
+	db.Clear(database)
+
+	us := db.NewUserStore(database)
+
+	passwordHash, _ := bcrypt.GenerateFromPassword([]byte("123456"), config.Data.BcryptCost)
+
+	bob := &models.User{
+		Name:         "bob",
+		Email:        "bob@gmail.com",
+		PasswordHash: passwordHash,
+		TwoFATokens: []models.TwoFAToken{
+			{CodeHash: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime},
+		},
+	}
+	us.Create(bob)
+
+	peter := &models.User{
+		Name:         "peter",
+		Email:        "peter@gmail.com",
+		PasswordHash: passwordHash,
+		TwoFATokens:  []models.TwoFAToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: 0}},
+	}
+	us.Create(peter)
+
+	handler := New(us)
+
+	tests := []struct {
+		tName       string
+		user        *models.User
+		newEmail    string
+		password    string
+		twoFAToken  string
+		wantCode    int
+		wantSuccess bool
+		wantMessage string
+	}{
+		{tName: "Success", user: bob, newEmail: "hans@gmail.com", password: "123456", twoFAToken: "1234567890", wantCode: http.StatusOK, wantSuccess: true, wantMessage: "An email with a change email link has been sent to the new email address"},
+		{tName: "Expired two factor token", user: peter, newEmail: "hans@gmail.com", password: "123456", twoFAToken: "1234567890", wantCode: http.StatusForbidden, wantSuccess: false, wantMessage: "Invalid credentials"},
+		{tName: "Wrong password", user: bob, newEmail: "hans@gmail.com", password: "654321", twoFAToken: "1234567890", wantCode: http.StatusForbidden, wantSuccess: false, wantMessage: "Invalid credentials"},
+		{tName: "Wrong two factor token", user: bob, newEmail: "hans@gmail.com", password: "123456", twoFAToken: "0987654321", wantCode: http.StatusForbidden, wantSuccess: false, wantMessage: "Invalid credentials"},
+		{tName: "Already existing email", user: bob, newEmail: "peter@gmail.com", password: "123456", twoFAToken: "1234567890", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "The user with this email does already exist"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.tName, func(t *testing.T) {
+			jsonBody := fmt.Sprintf(`{"new_email": "%s", "two_fa_token": "%s", "password": "%s"})`, tt.newEmail, tt.twoFAToken, tt.password)
+			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := r.NewContext(req, rec)
+			c.Set("userId", tt.user.Id)
+
+			err := handler.RequestChangeEmail(c)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantCode, rec.Code)
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"success":%t`, tt.wantSuccess))
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
+
+			if tt.wantSuccess {
+				emailCode, err := us.GetChangeEmailCode(tt.user)
+				assert.NoError(t, err)
+				assert.NotNil(t, emailCode)
+				assert.Equal(t, emailCode.NewEmail, tt.newEmail)
+			}
+		})
+	}
+}
+
+func TestHandler_ChangeEmail(t *testing.T) {
+	config.Data.Debug = true
+	r := router.New()
+
+	database, err := db.NewInMemory()
+	if err != nil {
+		t.Fatalf("Couldn't create in memory database")
+	}
+	err = db.AutoMigrate(database)
+	if err != nil {
+		t.Fatalf("Couldn't auto migrate database")
+	}
+	db.Clear(database)
+
+	us := db.NewUserStore(database)
+
+	user1 := &models.User{
+		Name:            "bob",
+		Email:           "bob@gmail.com",
+		ChangeEmailCode: models.ChangeEmailCode{CodeHash: services.HashToken("abcdefg"), NewEmail: "hans@gmail.com", ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime},
+	}
+	us.Create(user1)
+
+	user2 := &models.User{
+		Name:            "bob2",
+		Email:           "bob2@gmail.com",
+		ChangeEmailCode: models.ChangeEmailCode{CodeHash: services.HashToken("abcdefg"), NewEmail: "bob3@gmail.com", ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime},
+	}
+	us.Create(user2)
+
+	user3 := &models.User{
+		Name:            "bob3",
+		Email:           "bob3@gmail.com",
+		ChangeEmailCode: models.ChangeEmailCode{CodeHash: services.HashToken("abcdefg"), NewEmail: "hans3@gmail.com", ExpirationTime: 0},
+	}
+	us.Create(user3)
+
+	handler := New(us)
+
+	tests := []struct {
+		tName       string
+		user        *models.User
+		token       string
+		wantCode    int
+		wantSuccess bool
+		wantMessage string
+	}{
+		{tName: "Success", user: user1, token: "abcdefg", wantCode: http.StatusOK, wantSuccess: true, wantMessage: "Successfully changed email address"},
+		{tName: "Wrong token", user: user2, token: "abcdefgh", wantCode: http.StatusForbidden, wantSuccess: false, wantMessage: "Invalid credentials"},
+		{tName: "Email does already exist", user: user2, token: "abcdefg", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "The user with this email does already exist"},
+		{tName: "Expired token", user: user3, token: "abcdefg", wantCode: http.StatusForbidden, wantSuccess: false, wantMessage: "Invalid credentials"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.tName, func(t *testing.T) {
+			jsonBody := fmt.Sprintf(`{"token": "%s"}`, tt.token)
+			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := r.NewContext(req, rec)
+
+			c.Set("userId", tt.user.Id)
+
+			err := handler.ChangeEmail(c)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantCode, rec.Code)
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"success":%t`, tt.wantSuccess))
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
+
+			user, _ := us.GetById(tt.user.Id)
+			if tt.wantSuccess {
+				assert.Equal(t, "hans@gmail.com", user.Email)
+			}
+
+			if tt.token == "abcdefg" {
+				code, err := us.GetChangeEmailCode(user)
+				assert.NoError(t, err)
+				assert.Nil(t, code)
+			}
+		})
+	}
+}

@@ -108,6 +108,25 @@ func (us *UserStore) DeleteResetPasswordCode(emailCode *models.ResetPasswordCode
 	return us.db.Delete(emailCode).Error
 }
 
+func (us *UserStore) GetChangeEmailCode(user *models.User) (*models.ChangeEmailCode, error) {
+	var emailCode models.ChangeEmailCode
+	err := us.db.First(&emailCode, "user_id = ?", user.Id).Error
+	if err != nil {
+		switch err {
+		case gorm.ErrRecordNotFound:
+			return nil, nil
+		default:
+			return nil, err
+		}
+	}
+
+	return &emailCode, nil
+}
+
+func (us *UserStore) DeleteChangeEmailCode(emailCode *models.ChangeEmailCode) error {
+	return us.db.Delete(emailCode).Error
+}
+
 func (us *UserStore) GetRefreshToken(user *models.User, id uuid.UUID) (*models.RefreshToken, error) {
 	var token models.RefreshToken
 	err := us.db.First(&token, "user_id = ? AND id = ?", user.Id, id).Error

@@ -26,6 +26,7 @@ func AutoMigrate(db *gorm.DB) error {
 		&models.ForgotPasswordEmailLastSent{},
 		&models.ConfirmEmailCode{},
 		&models.ResetPasswordCode{},
+		&models.ChangeEmailCode{},
 		&models.RefreshToken{},
 		&models.PasswordToken{},
 		&models.TwoFAToken{},

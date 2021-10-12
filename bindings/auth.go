@@ -55,6 +55,17 @@ type ResetPassword struct {
 	NewPassword string `json:"new_password" form:"new_password"`
 }
 
+type ChangeEmailRequest struct {
+	Password     string `json:"password" form:"password"`
+	CaptchaToken string `json:"h-captcha-response" form:"h-captcha-response"`
+	TwoFAToken   string `json:"two_fa_token" form:"two_fa_token"`
+	NewEmail     string `json:"new_email" form:"new_email"`
+}
+
+type ChangeEmail struct {
+	Token string `json:"token" form:"token"`
+}
+
 type Refresh struct {
 	UserId string `json:"user_id" form:"user_id"`
 }

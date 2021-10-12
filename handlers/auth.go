@@ -1041,3 +1041,142 @@ func (h *Handler) ResetPassword(c echo.Context) error {
 		Message: "Successfully changed password",
 	})
 }
+
+// /v1/auth/requestChangeEmail (POST)
+func (h *Handler) RequestChangeEmail(c echo.Context) error {
+	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
+	if err != nil || user == nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+
+	var body bindings.ChangeEmailRequest
+	err = c.Bind(&body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.Base{
+			Success: false,
+			Message: "Invalid request body",
+		})
+	}
+
+	if !services.IsValidEmail(body.NewEmail) {
+		return c.JSON(http.StatusBadRequest, responses.Base{
+			Success: false,
+			Message: "Invalid new email",
+		})
+	}
+
+	if services.VerifyCaptcha(body.CaptchaToken) {
+		if u, _ := h.userStore.GetByEmail(body.NewEmail); u != nil {
+			return c.JSON(http.StatusOK, responses.Base{
+				Success: false,
+				Message: "The user with this email does already exist",
+			})
+		}
+
+		if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.Password)) != nil {
+			return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+		}
+
+		twoFAToken, err := h.userStore.GetTwoFATokenByCode(user, body.TwoFAToken)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		}
+		if twoFAToken == nil {
+			return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+		}
+		h.userStore.DeleteTwoFAToken(twoFAToken)
+		if twoFAToken.ExpirationTime < time.Now().Unix() {
+			return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+		}
+
+		emailCode, err := h.userStore.GetChangeEmailCode(user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		}
+
+		h.userStore.DeleteChangeEmailCode(emailCode)
+		code := services.GenerateRandomString(64)
+		user.ChangeEmailCode = models.ChangeEmailCode{
+			CodeHash:       services.HashToken(code),
+			ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime,
+			NewEmail:       body.NewEmail,
+		}
+		err = h.userStore.Update(user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		}
+
+		if config.Data.EmailEnabled {
+			type templateData struct {
+				Name string
+				Url  string
+			}
+			emailBody, err := services.ParseEmailTemplate("changeEmail.html", templateData{
+				Name: user.Name,
+				Url:  fmt.Sprintf("https://%s/auth/changeEmail?token=%s", config.Data.DomainName, code),
+			})
+			if err != nil {
+				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			}
+			go services.SendEmail([]string{body.NewEmail}, "H-Bank Email ändern", emailBody)
+		}
+		return c.JSON(http.StatusOK, responses.Base{
+			Success: true,
+			Message: "An email with a change email link has been sent to the new email address",
+		})
+	}
+
+	return c.JSON(http.StatusOK, responses.Base{
+		Success: false,
+		Message: "Invalid captcha token",
+	})
+}
+
+// /v1/auth/changeEmail (POST)
+func (h *Handler) ChangeEmail(c echo.Context) error {
+	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
+	if err != nil || user == nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+
+	var body bindings.ChangeEmail
+	err = c.Bind(&body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.Base{
+			Success: false,
+			Message: "Invalid request body",
+		})
+	}
+
+	token, err := h.userStore.GetChangeEmailCode(user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+	if token == nil || subtle.ConstantTimeCompare(token.CodeHash, services.HashToken(body.Token)) == 0 {
+		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+	}
+	h.userStore.DeleteChangeEmailCode(token)
+	if token.ExpirationTime < time.Now().Unix() {
+		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+	}
+
+	if u, _ := h.userStore.GetByEmail(token.NewEmail); u != nil {
+		return c.JSON(http.StatusOK, responses.Base{
+			Success: false,
+			Message: "The user with this email does already exist",
+		})
+	}
+
+	user.Email = token.NewEmail
+	user.EmailConfirmed = true
+
+	err = h.userStore.Update(user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+
+	return c.JSON(http.StatusOK, responses.Base{
+		Success: true,
+		Message: "Successfully changed email address",
+	})
+}

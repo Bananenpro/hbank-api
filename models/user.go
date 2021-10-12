@@ -19,6 +19,9 @@ type UserStore interface {
 	GetResetPasswordCode(user *User) (*ResetPasswordCode, error)
 	DeleteResetPasswordCode(code *ResetPasswordCode) error
 
+	GetChangeEmailCode(user *User) (*ChangeEmailCode, error)
+	DeleteChangeEmailCode(code *ChangeEmailCode) error
+
 	GetRefreshToken(user *User, id uuid.UUID) (*RefreshToken, error)
 	AddRefreshToken(user *User, refreshToken *RefreshToken) error
 	RotateRefreshToken(user *User, oldRefreshToken *RefreshToken) (*RefreshToken, string, error)
@@ -57,6 +60,7 @@ type User struct {
 	OtpQrCode         []byte
 	ConfirmEmailCode  ConfirmEmailCode  `gorm:"constraint:OnDelete:CASCADE"`
 	ResetPasswordCode ResetPasswordCode `gorm:"constraint:OnDelete:CASCADE"`
+	ChangeEmailCode   ChangeEmailCode   `gorm:"constraint:OnDelete:CASCADE"`
 	RefreshTokens     []RefreshToken    `gorm:"constraint:OnDelete:CASCADE"`
 	PasswordTokens    []PasswordToken   `gorm:"constraint:OnDelete:CASCADE"`
 	TwoFATokens       []TwoFAToken      `gorm:"constraint:OnDelete:CASCADE"`
@@ -81,6 +85,14 @@ type ResetPasswordCode struct {
 	CodeHash       []byte
 	ExpirationTime int64
 	UserId         uuid.UUID `gorm:"type:uuid"`
+}
+
+type ChangeEmailCode struct {
+	Base
+	CodeHash       []byte
+	ExpirationTime int64
+	UserId         uuid.UUID `gorm:"type:uuid"`
+	NewEmail       string
 }
 
 type RefreshToken struct {
