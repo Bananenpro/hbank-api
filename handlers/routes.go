@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"github.com/Bananenpro/hbank2-api/router/middlewares"
+	"github.com/Bananenpro/hbank-api/router/middlewares"
 	"github.com/labstack/echo/v4"
 )
 

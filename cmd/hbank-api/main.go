@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Bananenpro/hbank2-api/config"
-	"github.com/Bananenpro/hbank2-api/db"
-	"github.com/Bananenpro/hbank2-api/handlers"
-	"github.com/Bananenpro/hbank2-api/router"
-	"github.com/Bananenpro/hbank2-api/services"
+	"github.com/Bananenpro/hbank-api/config"
+	"github.com/Bananenpro/hbank-api/db"
+	"github.com/Bananenpro/hbank-api/handlers"
+	"github.com/Bananenpro/hbank-api/router"
+	"github.com/Bananenpro/hbank-api/services"
 	"github.com/adrg/xdg"
 )
 

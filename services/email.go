@@ -7,7 +7,7 @@ import (
 	"net/smtp"
 	"path/filepath"
 
-	"github.com/Bananenpro/hbank2-api/config"
+	"github.com/Bananenpro/hbank-api/config"
 )
 
 var emailAuth smtp.Auth

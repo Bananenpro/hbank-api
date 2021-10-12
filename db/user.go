@@ -4,9 +4,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Bananenpro/hbank2-api/config"
-	"github.com/Bananenpro/hbank2-api/models"
-	"github.com/Bananenpro/hbank2-api/services"
+	"github.com/Bananenpro/hbank-api/config"
+	"github.com/Bananenpro/hbank-api/models"
+	"github.com/Bananenpro/hbank-api/services"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"

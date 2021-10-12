@@ -1,9 +1,10 @@
-module github.com/Bananenpro/hbank2-api
+module github.com/Bananenpro/hbank-api
 
 go 1.17
 
 require (
 	github.com/adrg/xdg v0.3.4
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/labstack/echo/v4 v4.6.1
 	github.com/pquerna/otp v1.3.0
@@ -16,7 +17,6 @@ require (
 require (
 	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
 	github.com/davecgh/go-spew v1.1.0 // indirect
-	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.2 // indirect
 	github.com/labstack/gommon v0.3.0 // indirect

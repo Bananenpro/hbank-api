@@ -17,8 +17,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/Bananenpro/hbank2-api/config"
-	"github.com/Bananenpro/hbank2-api/models"
+	"github.com/Bananenpro/hbank-api/config"
+	"github.com/Bananenpro/hbank-api/models"
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/pbkdf2"

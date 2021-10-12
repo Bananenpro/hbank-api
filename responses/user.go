@@ -1,6 +1,6 @@
 package responses
 
-import "github.com/Bananenpro/hbank2-api/models"
+import "github.com/Bananenpro/hbank-api/models"
 
 type AuthUser struct {
 	Base

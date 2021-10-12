@@ -1,7 +1,7 @@
 package responses
 
 import (
-	"github.com/Bananenpro/hbank2-api/config"
+	"github.com/Bananenpro/hbank-api/config"
 )
 
 type RegisterSuccess struct {

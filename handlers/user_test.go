@@ -6,10 +6,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Bananenpro/hbank2-api/config"
-	"github.com/Bananenpro/hbank2-api/db"
-	"github.com/Bananenpro/hbank2-api/models"
-	"github.com/Bananenpro/hbank2-api/router"
+	"github.com/Bananenpro/hbank-api/config"
+	"github.com/Bananenpro/hbank-api/db"
+	"github.com/Bananenpro/hbank-api/models"
+	"github.com/Bananenpro/hbank-api/router"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )

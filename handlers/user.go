@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"net/http"
 
-	"github.com/Bananenpro/hbank2-api/responses"
+	"github.com/Bananenpro/hbank-api/responses"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )

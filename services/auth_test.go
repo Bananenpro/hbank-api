@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Bananenpro/hbank2-api/config"
-	"github.com/Bananenpro/hbank2-api/models"
+	"github.com/Bananenpro/hbank-api/config"
+	"github.com/Bananenpro/hbank-api/models"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
