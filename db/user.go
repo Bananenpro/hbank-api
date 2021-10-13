@@ -70,6 +70,12 @@ func (us *UserStore) Update(user *models.User) error {
 }
 
 func (us *UserStore) Delete(user *models.User) error {
+	us.db.Delete(&models.ConfirmEmailLastSent{}, "email = ?", user.Email)
+	us.db.Delete(&models.ForgotPasswordEmailLastSent{}, "email = ?", user.Email)
+	us.db.Delete(&models.RefreshToken{}, "user_id = ?", user.Id)
+	us.db.Delete(&models.PasswordToken{}, "user_id = ?", user.Id)
+	us.db.Delete(&models.TwoFAToken{}, "user_id = ?", user.Id)
+	us.db.Delete(&models.RecoveryCode{}, "user_id = ?", user.Id)
 	return us.db.Delete(user).Error
 }
 
@@ -263,6 +269,12 @@ func (us *UserStore) GetRecoveryCodeByCode(user *models.User, code string) (*mod
 	}
 
 	return &rCode, nil
+}
+
+func (us *UserStore) GetRecoveryCodes(user *models.User) ([]models.RecoveryCode, error) {
+	var codes []models.RecoveryCode
+	err := us.db.Find(&codes, "user_id = ?", user.Id).Error
+	return codes, err
 }
 
 func (us *UserStore) NewRecoveryCodes(user *models.User) ([]string, error) {

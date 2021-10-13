@@ -38,6 +38,7 @@ type UserStore interface {
 	DeleteTwoFAToken(token *TwoFAToken) error
 
 	GetRecoveryCodeByCode(user *User, code string) (*RecoveryCode, error)
+	GetRecoveryCodes(user *User) ([]RecoveryCode, error)
 	NewRecoveryCodes(user *User) ([]string, error)
 	DeleteRecoveryCode(code *RecoveryCode) error
 
@@ -62,10 +63,10 @@ type User struct {
 	ConfirmEmailCode  ConfirmEmailCode  `gorm:"constraint:OnDelete:CASCADE"`
 	ResetPasswordCode ResetPasswordCode `gorm:"constraint:OnDelete:CASCADE"`
 	ChangeEmailCode   ChangeEmailCode   `gorm:"constraint:OnDelete:CASCADE"`
-	RefreshTokens     []RefreshToken    `gorm:"constraint:OnDelete:CASCADE"`
-	PasswordTokens    []PasswordToken   `gorm:"constraint:OnDelete:CASCADE"`
-	TwoFATokens       []TwoFAToken      `gorm:"constraint:OnDelete:CASCADE"`
-	RecoveryCodes     []RecoveryCode    `gorm:"constraint:OnDelete:CASCADE"`
+	RefreshTokens     []RefreshToken
+	PasswordTokens    []PasswordToken
+	TwoFATokens       []TwoFAToken
+	RecoveryCodes     []RecoveryCode
 }
 
 type ConfirmEmailLastSent struct {
@@ -76,9 +77,8 @@ type ConfirmEmailLastSent struct {
 
 type ConfirmEmailCode struct {
 	Base
-	CodeHash       []byte
-	ExpirationTime int64
-	UserId         uuid.UUID `gorm:"type:uuid"`
+	CodeHash []byte
+	UserId   uuid.UUID `gorm:"type:uuid"`
 }
 
 type ResetPasswordCode struct {

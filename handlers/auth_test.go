@@ -182,8 +182,7 @@ func TestHandler_VerifyConfirmEmailCode(t *testing.T) {
 		Name:  "bob",
 		Email: "bob@gmail.com",
 		ConfirmEmailCode: models.ConfirmEmailCode{
-			CodeHash:       services.HashToken("123456"),
-			ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime,
+			CodeHash: services.HashToken("123456"),
 		},
 	})
 
@@ -191,17 +190,7 @@ func TestHandler_VerifyConfirmEmailCode(t *testing.T) {
 		Name:  "paul",
 		Email: "paul@gmail.com",
 		ConfirmEmailCode: models.ConfirmEmailCode{
-			CodeHash:       services.HashToken("123456"),
-			ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime,
-		},
-	})
-
-	us.Create(&models.User{
-		Name:  "peter",
-		Email: "peter@gmail.com",
-		ConfirmEmailCode: models.ConfirmEmailCode{
-			CodeHash:       services.HashToken("123456"),
-			ExpirationTime: 0,
+			CodeHash: services.HashToken("123456"),
 		},
 	})
 
@@ -218,7 +207,6 @@ func TestHandler_VerifyConfirmEmailCode(t *testing.T) {
 		{tName: "Success", email: "bob@gmail.com", code: "123456", wantCode: http.StatusOK, wantSuccess: true, wantMessage: "Successfully confirmed email address"},
 		{tName: "Wrong email", email: "paula@gmail.com", code: "123456", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Email was not confirmed"},
 		{tName: "Wrong code", email: "paul@gmail.com", code: "654321", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Email was not confirmed"},
-		{tName: "Expired code", email: "peter@gmail.com", code: "123456", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Email was not confirmed"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.tName, func(t *testing.T) {

@@ -136,8 +136,7 @@ func (h *Handler) SendConfirmEmail(c echo.Context) error {
 			h.userStore.DeleteConfirmEmailCode(emailCode)
 			code := services.GenerateRandomString(6)
 			user.ConfirmEmailCode = models.ConfirmEmailCode{
-				CodeHash:       services.HashToken(code),
-				ExpirationTime: time.Now().Unix() + config.Data.EmailCodeLifetime,
+				CodeHash: services.HashToken(code),
 			}
 			err = h.userStore.Update(user)
 			if err != nil {
@@ -146,12 +145,14 @@ func (h *Handler) SendConfirmEmail(c echo.Context) error {
 
 			if config.Data.EmailEnabled {
 				type templateData struct {
-					Name    string
-					Content string
+					Name      string
+					Content   string
+					DeleteUrl string
 				}
-				body, err := services.ParseEmailTemplate("email.html", templateData{
-					Name:    user.Name,
-					Content: "der Code lautet: " + code,
+				body, err := services.ParseEmailTemplate("confirmEmail.html", templateData{
+					Name:      user.Name,
+					Content:   "der Code lautet: " + code,
+					DeleteUrl: fmt.Sprintf("https://%s/account/delete?code=%s", config.Data.DomainName, code),
 				})
 				if err != nil {
 					return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
@@ -183,8 +184,6 @@ func (h *Handler) VerifyConfirmEmailCode(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 	}
 
-	success := false
-
 	if user != nil {
 		confirmEmailCode, err := h.userStore.GetConfirmEmailCode(user)
 		if err != nil {
@@ -192,32 +191,25 @@ func (h *Handler) VerifyConfirmEmailCode(c echo.Context) error {
 		}
 		if confirmEmailCode != nil {
 			if subtle.ConstantTimeCompare(confirmEmailCode.CodeHash, services.HashToken(body.Code)) == 1 {
-				if confirmEmailCode.ExpirationTime > time.Now().Unix() {
-					user.EmailConfirmed = true
-					err = h.userStore.Update(user)
-					if err != nil {
-						return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
-					}
-
-					success = true
+				user.EmailConfirmed = true
+				err = h.userStore.Update(user)
+				if err != nil {
+					return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 				}
 
 				h.userStore.DeleteConfirmEmailCode(confirmEmailCode)
+				return c.JSON(http.StatusOK, responses.Base{
+					Success: true,
+					Message: "Successfully confirmed email address",
+				})
 			}
 		}
 	}
 
-	if success {
-		return c.JSON(http.StatusOK, responses.Base{
-			Success: true,
-			Message: "Successfully confirmed email address",
-		})
-	} else {
-		return c.JSON(http.StatusOK, responses.Base{
-			Success: false,
-			Message: "Email was not confirmed",
-		})
-	}
+	return c.JSON(http.StatusOK, responses.Base{
+		Success: false,
+		Message: "Email was not confirmed",
+	})
 }
 
 // /v1/auth/twoFactor/otp/activate (POST)
