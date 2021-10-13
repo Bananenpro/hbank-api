@@ -275,8 +275,14 @@ func (h *Handler) Activate2FAOTP(c echo.Context) error {
 // /v1/auth/twoFactor/otp/get (POST)
 func (h *Handler) GetOTPQRCode(c echo.Context) error {
 	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
-	if err != nil || user == nil {
+	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.Base{
+			Success: false,
+			Message: "The user does no longer exist",
+		})
 	}
 
 	var body bindings.Password
@@ -369,8 +375,14 @@ func (h *Handler) NewOTP(c echo.Context) error {
 	}
 
 	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
-	if err != nil || user == nil {
+	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.Base{
+			Success: false,
+			Message: "The user does no longer exist",
+		})
 	}
 
 	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.Password)) != nil {
@@ -686,8 +698,14 @@ func (h *Handler) Refresh(c echo.Context) error {
 // /v1/auth/logout?all=bool (POST)
 func (h *Handler) Logout(c echo.Context) error {
 	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
-	if err != nil || user == nil {
+	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.Base{
+			Success: false,
+			Message: "The user does no longer exist",
+		})
 	}
 
 	if services.StrToBool(c.QueryParams().Get("all")) {
@@ -786,8 +804,14 @@ func (h *Handler) VerifyRecoveryCode(c echo.Context) error {
 // /v1/auth/twoFactor/recovery/new (POST)
 func (h *Handler) NewRecoveryCodes(c echo.Context) error {
 	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
-	if err != nil || user == nil {
+	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.Base{
+			Success: false,
+			Message: "The user does no longer exist",
+		})
 	}
 
 	var body bindings.Password
@@ -819,8 +843,14 @@ func (h *Handler) NewRecoveryCodes(c echo.Context) error {
 // /v1/auth/changePassword (POST)
 func (h *Handler) ChangePassword(c echo.Context) error {
 	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
-	if err != nil || user == nil {
+	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.Base{
+			Success: false,
+			Message: "The user does no longer exist",
+		})
 	}
 
 	var body bindings.ChangePassword
@@ -1036,8 +1066,14 @@ func (h *Handler) ResetPassword(c echo.Context) error {
 // /v1/auth/requestChangeEmail (POST)
 func (h *Handler) RequestChangeEmail(c echo.Context) error {
 	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
-	if err != nil || user == nil {
+	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.Base{
+			Success: false,
+			Message: "The user does no longer exist",
+		})
 	}
 
 	var body bindings.ChangeEmailRequest
@@ -1126,8 +1162,14 @@ func (h *Handler) RequestChangeEmail(c echo.Context) error {
 // /v1/auth/changeEmail (POST)
 func (h *Handler) ChangeEmail(c echo.Context) error {
 	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
-	if err != nil || user == nil {
+	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.Base{
+			Success: false,
+			Message: "The user does no longer exist",
+		})
 	}
 
 	var body bindings.ChangeEmail

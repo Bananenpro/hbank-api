@@ -19,8 +19,14 @@ import (
 func (h *Handler) GetUsers(c echo.Context) error {
 	authUserId := c.Get("userId").(uuid.UUID)
 	authUser, err := h.userStore.GetById(authUserId)
-	if err != nil || authUser == nil {
+	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+	if authUser == nil {
+		return c.JSON(http.StatusUnauthorized, responses.Base{
+			Success: false,
+			Message: "The user does no longer exist",
+		})
 	}
 
 	var users []models.User
@@ -40,8 +46,14 @@ func (h *Handler) GetUsers(c echo.Context) error {
 func (h *Handler) GetUser(c echo.Context) error {
 	authUserId := c.Get("userId").(uuid.UUID)
 	authUser, err := h.userStore.GetById(authUserId)
-	if err != nil || authUser == nil {
+	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+	if authUser == nil {
+		return c.JSON(http.StatusUnauthorized, responses.Base{
+			Success: false,
+			Message: "The user does no longer exist",
+		})
 	}
 
 	userId, err := uuid.Parse(c.Param("id"))
@@ -70,8 +82,14 @@ func (h *Handler) GetUser(c echo.Context) error {
 func (h *Handler) DeleteUser(c echo.Context) error {
 	userId := c.Get("userId").(uuid.UUID)
 	user, err := h.userStore.GetById(userId)
-	if err != nil || user == nil {
+	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.Base{
+			Success: false,
+			Message: "The user does no longer exist",
+		})
 	}
 
 	var body bindings.DeleteUser
