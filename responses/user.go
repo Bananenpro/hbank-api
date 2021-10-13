@@ -59,7 +59,7 @@ func NewUsers(users []models.User) interface{} {
 
 	type usersResp struct {
 		Base
-		Users []User
+		Users []User `json:"users"`
 	}
 
 	return usersResp{
