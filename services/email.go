@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"html/template"
 	"net/smtp"
-	"path/filepath"
 
 	"github.com/Bananenpro/hbank-api/config"
 )
@@ -16,11 +15,8 @@ func EmailAuthenticate() {
 	emailAuth = smtp.PlainAuth("", config.Data.EmailUsername, config.Data.EmailPassword, config.Data.EmailHost)
 }
 
-func ParseEmailTemplate(name string, data interface{}) (string, error) {
-	filepath, err := filepath.Abs("templates/" + name)
-	if err != nil {
-		return "", err
-	}
+func ParseEmailTemplate(name string, lang string, data interface{}) (string, error) {
+	filepath := fmt.Sprintf("templates/email/%s/%s.html", lang, name)
 
 	t, err := template.ParseFiles(filepath)
 	if err != nil {

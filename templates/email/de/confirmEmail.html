@@ -27,9 +27,12 @@
 								<div style="height: 200px; padding: 5px 10px;">
 									<p style="color: black;font-size: 14px;">
 										Hallo {{.Name}},<br><br>
-										bitte klicke <a href="{{.Url}}">hier</a>, um deine Email-Adresse zu dieser Adresse zu ändern.<br><br>
+										Du kannst deine Email-Adresse mit diesem Code bestätigen: {{.Code}}<br><br>
 										Viele Grüße,<br>
-										Dein H-Bank Team
+										Das H-Bank Team
+									</p>
+									<p style="color: gray;font-size: 10px;">
+										Du hast diesen Account gar nicht erstellt? Kein Problem! <a href="{{.DeleteUrl}}">Hier</a> kannst du ihn löschen.
 									</p>
 								</div>
 							</td>

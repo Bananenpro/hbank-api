@@ -146,18 +146,18 @@ func (h *Handler) SendConfirmEmail(c echo.Context) error {
 			if config.Data.EmailEnabled {
 				type templateData struct {
 					Name      string
-					Content   string
+					Code      string
 					DeleteUrl string
 				}
-				body, err := services.ParseEmailTemplate("confirmEmail.html", templateData{
+				body, err := services.ParseEmailTemplate("confirmEmail", c.Get("lang").(string), templateData{
 					Name:      user.Name,
-					Content:   "der Code lautet: " + code,
+					Code:      code,
 					DeleteUrl: fmt.Sprintf("https://%s/account/delete?code=%s", config.Data.DomainName, code),
 				})
 				if err != nil {
 					return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 				}
-				go services.SendEmail([]string{user.Email}, "H-Bank Bestätigungscode", body)
+				go services.SendEmail([]string{user.Email}, "H-Bank Confirm Email", body)
 			}
 		}
 	}
@@ -975,14 +975,14 @@ func (h *Handler) ForgotPassword(c echo.Context) error {
 				Name string
 				Url  string
 			}
-			body, err := services.ParseEmailTemplate("forgotPassword.html", templateData{
+			body, err := services.ParseEmailTemplate("forgotPassword", c.Get("lang").(string), templateData{
 				Name: user.Name,
 				Url:  fmt.Sprintf("https://%s/auth/forgotPassword?email=%s&token=%s", config.Data.DomainName, body.Email, code),
 			})
 			if err != nil {
 				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 			}
-			go services.SendEmail([]string{user.Email}, "H-Bank Passwort vergessen", body)
+			go services.SendEmail([]string{user.Email}, "H-Bank Reset Password", body)
 		}
 		return c.JSON(http.StatusOK, responses.Base{
 			Success: true,
@@ -1101,6 +1101,7 @@ func (h *Handler) RequestChangeEmail(c echo.Context) error {
 		}
 
 		if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.Password)) != nil {
+			fmt.Println("password")
 			return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
 		}
 
@@ -1109,10 +1110,12 @@ func (h *Handler) RequestChangeEmail(c echo.Context) error {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 		}
 		if twoFAToken == nil {
+			fmt.Println("token")
 			return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
 		}
 		h.userStore.DeleteTwoFAToken(twoFAToken)
 		if twoFAToken.ExpirationTime < time.Now().Unix() {
+			fmt.Println("expired")
 			return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
 		}
 
@@ -1138,14 +1141,14 @@ func (h *Handler) RequestChangeEmail(c echo.Context) error {
 				Name string
 				Url  string
 			}
-			emailBody, err := services.ParseEmailTemplate("changeEmail.html", templateData{
+			emailBody, err := services.ParseEmailTemplate("changeEmail", c.Get("lang").(string), templateData{
 				Name: user.Name,
 				Url:  fmt.Sprintf("https://%s/auth/changeEmail?token=%s", config.Data.DomainName, code),
 			})
 			if err != nil {
 				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 			}
-			go services.SendEmail([]string{body.NewEmail}, "H-Bank Email ändern", emailBody)
+			go services.SendEmail([]string{body.NewEmail}, "H-Bank Change Email", emailBody)
 		}
 		return c.JSON(http.StatusOK, responses.Base{
 			Success: true,
