@@ -31,6 +31,6 @@ func (h *Handler) RegisterV1(v1 *echo.Group) {
 	twoFactor.POST("/recovery/verify", h.VerifyRecoveryCode)
 	twoFactor.POST("/recovery/new", h.NewRecoveryCodes, middlewares.JWT)
 
-	user := v1.Group("/user", middlewares.JWT)
-	user.GET("/:id", h.GetUser)
+	v1.GET("/user", h.GetUsers, middlewares.JWT)
+	v1.GET("/user/:id", h.GetUser, middlewares.JWT)
 }

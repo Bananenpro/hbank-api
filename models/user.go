@@ -5,6 +5,7 @@ import (
 )
 
 type UserStore interface {
+	GetAll(except *User) ([]User, error)
 	GetById(id uuid.UUID) (*User, error)
 	GetByEmail(email string) (*User, error)
 	Create(user *User) error

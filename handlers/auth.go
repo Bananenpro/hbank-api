@@ -698,8 +698,7 @@ func (h *Handler) Logout(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 	}
 
-	all := c.QueryParam("all")
-	if strings.EqualFold(all, "true") || strings.EqualFold(all, "on") || strings.EqualFold(all, "yes") {
+	if services.StrToBool(c.QueryParams().Get("all")) {
 		err = h.userStore.DeleteRefreshTokens(user)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))

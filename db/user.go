@@ -22,6 +22,17 @@ func NewUserStore(db *gorm.DB) *UserStore {
 	}
 }
 
+func (us *UserStore) GetAll(except *models.User) ([]models.User, error) {
+	var users []models.User
+	var err error
+	if except == nil {
+		err = us.db.Find(&users).Error
+	} else {
+		err = us.db.Not("id = ?", except.Id).Find(&users).Error
+	}
+	return users, err
+}
+
 func (us *UserStore) GetById(id uuid.UUID) (*models.User, error) {
 	var user models.User
 	err := us.db.First(&user, id).Error

@@ -3,7 +3,6 @@ package responses
 import "github.com/Bananenpro/hbank-api/models"
 
 type AuthUser struct {
-	Base
 	Id              string `json:"id"`
 	Name            string `json:"name"`
 	Email           string `json:"email"`
@@ -12,30 +11,61 @@ type AuthUser struct {
 }
 
 type User struct {
-	Base
 	Id   string `json:"id"`
 	Name string `json:"name"`
 }
 
-func NewAuthUser(user *models.User) AuthUser {
-	return AuthUser{
+func NewAuthUser(user *models.User) interface{} {
+	type authUserResp struct {
+		Base
+		AuthUser
+	}
+	return authUserResp{
 		Base: Base{
 			Success: true,
 		},
-		Id:              user.Id.String(),
-		Name:            user.Name,
-		Email:           user.Email,
-		EmailConfirmed:  user.EmailConfirmed,
-		TwoFAOTPEnabled: user.TwoFaOTPEnabled,
+		AuthUser: AuthUser{
+			Id:              user.Id.String(),
+			Name:            user.Name,
+			Email:           user.Email,
+			EmailConfirmed:  user.EmailConfirmed,
+			TwoFAOTPEnabled: user.TwoFaOTPEnabled,
+		},
 	}
 }
 
-func NewUser(user *models.User) User {
-	return User{
+func NewUser(user *models.User) interface{} {
+	type userResp struct {
+		Base
+		User
+	}
+	return userResp{
 		Base: Base{
 			Success: true,
 		},
-		Id:   user.Id.String(),
-		Name: user.Name,
+		User: User{
+			Id:   user.Id.String(),
+			Name: user.Name,
+		},
+	}
+}
+
+func NewUsers(users []models.User) interface{} {
+	userDTOs := make([]User, len(users))
+	for i, u := range users {
+		userDTOs[i].Id = u.Id.String()
+		userDTOs[i].Name = u.Name
+	}
+
+	type usersResp struct {
+		Base
+		Users []User
+	}
+
+	return usersResp{
+		Base: Base{
+			Success: true,
+		},
+		Users: userDTOs,
 	}
 }
