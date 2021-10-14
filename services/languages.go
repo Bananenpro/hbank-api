@@ -19,6 +19,8 @@ func Tr(text string, lang string) string {
 		translation, ok := langTranslations[text]
 		if ok {
 			return translation
+		} else {
+			log.Printf("Missing translation of string '%s' for language '%s'", text, lang)
 		}
 	}
 
