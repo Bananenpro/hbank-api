@@ -26,7 +26,7 @@ func (us *UserStore) GetAll(except *models.User) ([]models.User, error) {
 	var users []models.User
 	var err error
 	if except == nil {
-		err = us.db.Find(&users).Error
+		err = us.db.Omit("profile_picture").Find(&users).Error
 	} else {
 		err = us.db.Not("id = ?", except.Id).Find(&users).Error
 	}
@@ -35,7 +35,7 @@ func (us *UserStore) GetAll(except *models.User) ([]models.User, error) {
 
 func (us *UserStore) GetById(id uuid.UUID) (*models.User, error) {
 	var user models.User
-	err := us.db.First(&user, id).Error
+	err := us.db.Omit("profile_picture").First(&user, id).Error
 	if err != nil {
 		switch err {
 		case gorm.ErrRecordNotFound:
@@ -49,7 +49,7 @@ func (us *UserStore) GetById(id uuid.UUID) (*models.User, error) {
 
 func (us *UserStore) GetByEmail(email string) (*models.User, error) {
 	var user models.User
-	err := us.db.First(&user, "email = ?", email).Error
+	err := us.db.Omit("profile_picture").First(&user, "email = ?", email).Error
 	if err != nil {
 		switch err {
 		case gorm.ErrRecordNotFound:
@@ -85,6 +85,20 @@ func (us *UserStore) DeleteById(id uuid.UUID) error {
 
 func (us *UserStore) DeleteByEmail(email string) error {
 	return us.db.Delete(models.User{}, "email = ?", email).Error
+}
+
+func (us *UserStore) GetProfilePicture(user *models.User) ([]byte, error) {
+	var u models.User
+	err := us.db.Select("profile_picture").First(&u, user.Id).Error
+	if err != nil {
+		switch err {
+		case gorm.ErrRecordNotFound:
+			return nil, nil
+		default:
+			return nil, err
+		}
+	}
+	return u.ProfilePicture, nil
 }
 
 func (us *UserStore) GetConfirmEmailCode(user *models.User) (*models.ConfirmEmailCode, error) {

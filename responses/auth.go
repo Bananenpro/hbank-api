@@ -30,6 +30,11 @@ type RecoveryCodes struct {
 	Codes []string `json:"recovery_codes"`
 }
 
+type ProfilePictureId struct {
+	Base
+	ProfilePictureId string `json:"profile_picture_id"`
+}
+
 func NewRegisterInvalid(message string, lang string) RegisterInvalid {
 	return RegisterInvalid{
 		Base: Base{

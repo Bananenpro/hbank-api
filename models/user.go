@@ -14,6 +14,8 @@ type UserStore interface {
 	DeleteById(id uuid.UUID) error
 	DeleteByEmail(email string) error
 
+	GetProfilePicture(user *User) ([]byte, error)
+
 	GetConfirmEmailCode(user *User) (*ConfirmEmailCode, error)
 	DeleteConfirmEmailCode(code *ConfirmEmailCode) error
 

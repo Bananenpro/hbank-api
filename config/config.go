@@ -8,52 +8,56 @@ import (
 )
 
 type ConfigData struct {
-	Debug                 bool   `json:"debug"`
-	ServerPort            int    `json:"server_port"`
-	SSLCertPath           string `json:"ssl_cert_path"`
-	SSLKeyPath            string `json:"ssl_key_path"`
-	DomainName            string `json:"domain_name"`
-	JWTSecret             string `json:"jwt_secret"`
-	CaptchaEnabled        bool   `json:"captcha_enabled"`
-	CaptchaVerifyUrl      string `json:"captcha_verify_url"`
-	CaptchaSecret         string `json:"captcha_secret"`
-	CaptchaSiteKey        string `json:"captcha_site_key"`
-	EmailEnabled          bool   `json:"email_enabled"`
-	EmailHost             string `json:"email_host"`
-	EmailPort             int    `json:"email_port"`
-	EmailUsername         string `json:"email_username"`
-	EmailPassword         string `json:"email_password"`
-	UserMinNameLength     int    `json:"user_min_name_length"`
-	UserMinPasswordLength int    `json:"user_min_password_length"`
-	UserMinEmailLength    int    `json:"user_min_email_length"`
-	UserMaxNameLength     int    `json:"user_max_name_length"`
-	UserMaxPasswordLength int    `json:"user_max_password_length"`
-	UserMaxEmailLength    int    `json:"user_max_email_length"`
-	BcryptCost            int    `json:"bcrypt_cost"`
-	PBKDF2Iterations      int    `json:"pbkdf2_iterations"`
-	LoginTokenLifetime    int64  `json:"login_token_lifetime"`
-	EmailCodeLifetime     int64  `json:"email_code_lifetime"`
-	AuthTokenLifetime     int64  `json:"auth_token_lifetime"`
-	RefreshTokenLifetime  int64  `json:"refresh_token_lifetime"`
-	SendEmailTimeout      int64  `json:"send_email_timeout"`
+	Debug                     bool   `json:"debug"`
+	ServerPort                int    `json:"server_port"`
+	SSLCertPath               string `json:"ssl_cert_path"`
+	SSLKeyPath                string `json:"ssl_key_path"`
+	DomainName                string `json:"domain_name"`
+	JWTSecret                 string `json:"jwt_secret"`
+	CaptchaEnabled            bool   `json:"captcha_enabled"`
+	CaptchaVerifyUrl          string `json:"captcha_verify_url"`
+	CaptchaSecret             string `json:"captcha_secret"`
+	CaptchaSiteKey            string `json:"captcha_site_key"`
+	EmailEnabled              bool   `json:"email_enabled"`
+	EmailHost                 string `json:"email_host"`
+	EmailPort                 int    `json:"email_port"`
+	EmailUsername             string `json:"email_username"`
+	EmailPassword             string `json:"email_password"`
+	UserMinNameLength         int    `json:"user_min_name_length"`
+	UserMinPasswordLength     int    `json:"user_min_password_length"`
+	UserMinEmailLength        int    `json:"user_min_email_length"`
+	UserMaxNameLength         int    `json:"user_max_name_length"`
+	UserMaxPasswordLength     int    `json:"user_max_password_length"`
+	UserMaxEmailLength        int    `json:"user_max_email_length"`
+	UserMaxProfilePictureSize int64  `json:"user_max_profile_picture_size"`
+	UserProfilePictureSize    int    `json:"user_profile_picture_size"`
+	BcryptCost                int    `json:"bcrypt_cost"`
+	PBKDF2Iterations          int    `json:"pbkdf2_iterations"`
+	LoginTokenLifetime        int64  `json:"login_token_lifetime"`
+	EmailCodeLifetime         int64  `json:"email_code_lifetime"`
+	AuthTokenLifetime         int64  `json:"auth_token_lifetime"`
+	RefreshTokenLifetime      int64  `json:"refresh_token_lifetime"`
+	SendEmailTimeout          int64  `json:"send_email_timeout"`
 }
 
 var defaultData = ConfigData{
-	ServerPort:            8080,
-	DomainName:            "hbank",
-	UserMinNameLength:     3,
-	UserMinPasswordLength: 6,
-	UserMinEmailLength:    3,
-	UserMaxNameLength:     64,
-	UserMaxPasswordLength: 64,
-	UserMaxEmailLength:    64,
-	BcryptCost:            10,
-	PBKDF2Iterations:      10000,
-	LoginTokenLifetime:    5 * 60,
-	EmailCodeLifetime:     5 * 60,
-	AuthTokenLifetime:     10 * 60,
-	RefreshTokenLifetime:  1 * 365 * 24 * 60 * 60,
-	SendEmailTimeout:      2 * 60,
+	ServerPort:                8080,
+	DomainName:                "hbank",
+	UserMinNameLength:         3,
+	UserMinPasswordLength:     6,
+	UserMinEmailLength:        3,
+	UserMaxNameLength:         64,
+	UserMaxPasswordLength:     64,
+	UserMaxEmailLength:        64,
+	UserMaxProfilePictureSize: 10000000, // 10 MB
+	UserProfilePictureSize:    500,
+	BcryptCost:                10,
+	PBKDF2Iterations:          10000,
+	LoginTokenLifetime:        5 * 60,
+	EmailCodeLifetime:         5 * 60,
+	AuthTokenLifetime:         10 * 60,
+	RefreshTokenLifetime:      1 * 365 * 24 * 60 * 60,
+	SendEmailTimeout:          2 * 60,
 }
 
 var Data = defaultData

@@ -3,16 +3,18 @@ package responses
 import "github.com/Bananenpro/hbank-api/models"
 
 type AuthUser struct {
-	Id              string `json:"id"`
-	Name            string `json:"name"`
-	Email           string `json:"email"`
-	EmailConfirmed  bool   `json:"email_confirmed"`
-	TwoFAOTPEnabled bool   `json:"two_fa_otp_enabled"`
+	Id               string `json:"id"`
+	Name             string `json:"name"`
+	Email            string `json:"email"`
+	EmailConfirmed   bool   `json:"email_confirmed"`
+	TwoFAOTPEnabled  bool   `json:"two_fa_otp_enabled"`
+	ProfilePictureId string `json:"profile_picture_id"`
 }
 
 type User struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
+	Id               string `json:"id"`
+	Name             string `json:"name"`
+	ProfilePictureId string `json:"profile_picture_id"`
 }
 
 func NewAuthUser(user *models.User) interface{} {
@@ -25,11 +27,12 @@ func NewAuthUser(user *models.User) interface{} {
 			Success: true,
 		},
 		AuthUser: AuthUser{
-			Id:              user.Id.String(),
-			Name:            user.Name,
-			Email:           user.Email,
-			EmailConfirmed:  user.EmailConfirmed,
-			TwoFAOTPEnabled: user.TwoFaOTPEnabled,
+			Id:               user.Id.String(),
+			Name:             user.Name,
+			Email:            user.Email,
+			EmailConfirmed:   user.EmailConfirmed,
+			TwoFAOTPEnabled:  user.TwoFaOTPEnabled,
+			ProfilePictureId: user.ProfilePictureId.String(),
 		},
 	}
 }
@@ -44,8 +47,9 @@ func NewUser(user *models.User) interface{} {
 			Success: true,
 		},
 		User: User{
-			Id:   user.Id.String(),
-			Name: user.Name,
+			Id:               user.Id.String(),
+			Name:             user.Name,
+			ProfilePictureId: user.ProfilePictureId.String(),
 		},
 	}
 }
@@ -55,6 +59,7 @@ func NewUsers(users []models.User) interface{} {
 	for i, u := range users {
 		userDTOs[i].Id = u.Id.String()
 		userDTOs[i].Name = u.Name
+		userDTOs[i].ProfilePictureId = u.ProfilePictureId.String()
 	}
 
 	type usersResp struct {

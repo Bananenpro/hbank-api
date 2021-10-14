@@ -35,4 +35,6 @@ func (h *Handler) RegisterV1(v1 *echo.Group) {
 	v1.GET("/user/:id", h.GetUser, middlewares.JWT)
 	v1.DELETE("/user/:id", h.DeleteUserByConfirmEmailCode)
 	v1.DELETE("/user", h.DeleteUser, middlewares.JWT)
+	v1.POST("/user/profilePicture", h.SetProfilePicture, middlewares.JWT)
+	v1.GET("/user/:id/profilePicture", h.GetProfilePicture, middlewares.JWT)
 }
