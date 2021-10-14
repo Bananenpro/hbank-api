@@ -14,6 +14,7 @@ import (
 
 func main() {
 	config.Load([]string{"config.json", xdg.ConfigHome + "/hbank/config.json"})
+	services.LoadTranslations()
 
 	services.EmailAuthenticate()
 
