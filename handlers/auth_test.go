@@ -69,6 +69,7 @@ func TestRegister(t *testing.T) {
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := r.NewContext(req, rec)
+			c.Set("lang", "en")
 
 			err := handler.Register(c)
 
@@ -123,6 +124,7 @@ func TestHandler_SendConfirmEmail(t *testing.T) {
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := r.NewContext(req, rec)
+			c.Set("lang", "en")
 			c.SetParamNames("email")
 			c.SetParamValues(tt.email)
 
@@ -147,6 +149,7 @@ func TestHandler_SendConfirmEmail(t *testing.T) {
 					req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 					rec := httptest.NewRecorder()
 					c := r.NewContext(req, rec)
+					c.Set("lang", "en")
 					c.SetParamNames("email")
 					c.SetParamValues(tt.email)
 
@@ -216,6 +219,7 @@ func TestHandler_VerifyConfirmEmailCode(t *testing.T) {
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := r.NewContext(req, rec)
+			c.Set("lang", "en")
 
 			err := handler.VerifyConfirmEmailCode(c)
 
@@ -296,6 +300,7 @@ func TestHandler_Activate2FAOTP(t *testing.T) {
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := r.NewContext(req, rec)
+			c.Set("lang", "en")
 
 			err := handler.Activate2FAOTP(c)
 
@@ -360,6 +365,7 @@ func TestHandler_GetOTPQRCode(t *testing.T) {
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := r.NewContext(req, rec)
+			c.Set("lang", "en")
 
 			c.Set("userId", user.Id)
 
@@ -433,6 +439,7 @@ func TestHandler_VerifyOTPCode(t *testing.T) {
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := r.NewContext(req, rec)
+			c.Set("lang", "en")
 
 			err := handler.VerifyOTPCode(c)
 
@@ -499,6 +506,7 @@ func TestHandler_PasswordAuth(t *testing.T) {
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := r.NewContext(req, rec)
+			c.Set("lang", "en")
 
 			err := handler.PasswordAuth(c)
 
@@ -606,6 +614,7 @@ func TestHandler_Login(t *testing.T) {
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := r.NewContext(req, rec)
+			c.Set("lang", "en")
 
 			err := handler.Login(c)
 
@@ -689,6 +698,7 @@ func TestHandler_VerifyRecoveryCode(t *testing.T) {
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := r.NewContext(req, rec)
+			c.Set("lang", "en")
 
 			err := handler.VerifyRecoveryCode(c)
 
@@ -762,6 +772,7 @@ func TestHandler_NewRecoveryCodes(t *testing.T) {
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := r.NewContext(req, rec)
+			c.Set("lang", "en")
 
 			c.Set("userId", user.Id)
 
@@ -831,6 +842,7 @@ func TestHandler_NewOTP(t *testing.T) {
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := r.NewContext(req, rec)
+			c.Set("lang", "en")
 
 			c.Set("userId", tt.user.Id)
 
@@ -915,6 +927,7 @@ func TestHandler_Logout(t *testing.T) {
 			})
 			rec := httptest.NewRecorder()
 			c := r.NewContext(req, rec)
+			c.Set("lang", "en")
 
 			c.Set("userId", tt.user.Id)
 
@@ -1003,6 +1016,7 @@ func TestHandler_ChangePassword(t *testing.T) {
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := r.NewContext(req, rec)
+			c.Set("lang", "en")
 
 			c.Set("userId", tt.user.Id)
 
@@ -1089,6 +1103,7 @@ func TestHandler_ForgotPassword(t *testing.T) {
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := r.NewContext(req, rec)
+			c.Set("lang", "en")
 
 			err := handler.ForgotPassword(c)
 
@@ -1112,6 +1127,7 @@ func TestHandler_ForgotPassword(t *testing.T) {
 					req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 					rec := httptest.NewRecorder()
 					c := r.NewContext(req, rec)
+					c.Set("lang", "en")
 
 					err = handler.ForgotPassword(c)
 
@@ -1186,6 +1202,7 @@ func TestHandler_ResetPassword(t *testing.T) {
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := r.NewContext(req, rec)
+			c.Set("lang", "en")
 
 			err := handler.ResetPassword(c)
 
@@ -1291,6 +1308,7 @@ func TestHandler_Refresh(t *testing.T) {
 
 				rec := httptest.NewRecorder()
 				c := r.NewContext(req, rec)
+				c.Set("lang", "en")
 
 				err := handler.Refresh(c)
 
@@ -1389,6 +1407,7 @@ func TestHandler_RequestChangeEmail(t *testing.T) {
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := r.NewContext(req, rec)
+			c.Set("lang", "en")
 			c.Set("userId", tt.user.Id)
 
 			err := handler.RequestChangeEmail(c)
@@ -1467,6 +1486,7 @@ func TestHandler_ChangeEmail(t *testing.T) {
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := r.NewContext(req, rec)
+			c.Set("lang", "en")
 
 			c.Set("userId", tt.user.Id)
 

@@ -70,6 +70,7 @@ func TestHandler_GetUser(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
 			rec := httptest.NewRecorder()
 			c := r.NewContext(req, rec)
+			c.Set("lang", "en")
 
 			c.SetParamNames("id")
 			if tt.user != nil {
@@ -189,6 +190,7 @@ func TestHandler_DeleteUser(t *testing.T) {
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := r.NewContext(req, rec)
+			c.Set("lang", "en")
 
 			c.Set("userId", tt.user.Id)
 
@@ -307,6 +309,7 @@ func TestHandler_DeleteUserByConfirmEmailCode(t *testing.T) {
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := r.NewContext(req, rec)
+			c.Set("lang", "en")
 			c.SetParamNames("id")
 			c.SetParamValues(tt.userId)
 
