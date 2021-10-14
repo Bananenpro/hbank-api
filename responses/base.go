@@ -7,23 +7,25 @@ type Base struct {
 	Message string `json:"message"`
 }
 
+func New(success bool, message string) Base {
+	return Base{
+		Success: success,
+		Message: message,
+	}
+}
+
 func NewUnexpectedError(err error) Base {
 	if config.Data.Debug {
-		return Base{
-			Success: false,
-			Message: "Error: " + err.Error(),
-		}
+		return New(false, "Error: "+err.Error())
 	} else {
-		return Base{
-			Success: false,
-			Message: "An unexpected error occurred",
-		}
+		return New(false, "An unexpected error occured")
 	}
 }
 
 func NewNotFound() Base {
-	return Base{
-		Success: false,
-		Message: "Resource not found",
-	}
+	return New(false, "Resource not found")
+}
+
+func NewInvalidRequestBody() Base {
+	return New(false, "Invalid request body")
 }

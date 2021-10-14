@@ -43,8 +43,9 @@ func NewRegisterInvalid(message string) RegisterInvalid {
 }
 
 func NewInvalidCredentials() Base {
-	return Base{
-		Success: false,
-		Message: "Invalid credentials",
-	}
+	return New(false, "Invalid credentials")
+}
+
+func NewUserNoLongerExists() Base {
+	return New(false, "The user does no longer exist")
 }

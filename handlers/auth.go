@@ -25,26 +25,17 @@ import (
 func (h *Handler) Register(c echo.Context) error {
 	var body bindings.Register
 	if err := c.Bind(&body); err != nil {
-		return c.JSON(http.StatusBadRequest, responses.Base{
-			Success: false,
-			Message: "Invalid request body",
-		})
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
 	}
 
 	if !services.VerifyCaptcha(body.CaptchaToken) {
-		return c.JSON(http.StatusOK, responses.Base{
-			Success: false,
-			Message: "Invalid captcha token",
-		})
+		return c.JSON(http.StatusOK, responses.New(false, "Invalid captcha token"))
 	}
 
 	body.Email = strings.ToLower(body.Email)
 
 	if !services.IsValidEmail(body.Email) {
-		return c.JSON(http.StatusOK, responses.Base{
-			Success: false,
-			Message: "Invalid email",
-		})
+		return c.JSON(http.StatusOK, responses.New(false, "Invalid email"))
 	}
 
 	if len(body.Name) > config.Data.UserMaxNameLength {
@@ -64,10 +55,7 @@ func (h *Handler) Register(c echo.Context) error {
 	}
 
 	if u, _ := h.userStore.GetByEmail(body.Email); u != nil {
-		return c.JSON(http.StatusOK, responses.Base{
-			Success: false,
-			Message: "The user with this email does already exist",
-		})
+		return c.JSON(http.StatusOK, responses.New(false, "The user with this email does already exist"))
 	}
 
 	user := &models.User{
@@ -107,10 +95,7 @@ func (h *Handler) Register(c echo.Context) error {
 func (h *Handler) SendConfirmEmail(c echo.Context) error {
 	email := c.Param("email")
 	if !services.IsValidEmail(email) {
-		return c.JSON(http.StatusBadRequest, responses.Base{
-			Success: false,
-			Message: "Missing or invalid email parameter",
-		})
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing or invalid email parameter"))
 	}
 
 	lastSend, err := h.userStore.GetConfirmEmailLastSent(email)
@@ -162,10 +147,7 @@ func (h *Handler) SendConfirmEmail(c echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, responses.Base{
-		Success: true,
-		Message: "If the email address is linked to a user whose email has not yet been confirmed, a code has been sent to the specified address",
-	})
+	return c.JSON(http.StatusOK, responses.New(true, "If the email address is linked to a user whose email has not yet been confirmed, a code has been sent to the specified address"))
 }
 
 // /v1/auth/confirmEmail (POST)
@@ -173,10 +155,7 @@ func (h *Handler) VerifyConfirmEmailCode(c echo.Context) error {
 	var body bindings.ConfirmEmail
 	err := c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.Base{
-			Success: false,
-			Message: "Invalid request body",
-		})
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
 	}
 
 	user, err := h.userStore.GetByEmail(body.Email)
@@ -198,18 +177,12 @@ func (h *Handler) VerifyConfirmEmailCode(c echo.Context) error {
 				}
 
 				h.userStore.DeleteConfirmEmailCode(confirmEmailCode)
-				return c.JSON(http.StatusOK, responses.Base{
-					Success: true,
-					Message: "Successfully confirmed email address",
-				})
+				return c.JSON(http.StatusOK, responses.New(true, "Successfully confirmed email address"))
 			}
 		}
 	}
 
-	return c.JSON(http.StatusOK, responses.Base{
-		Success: false,
-		Message: "Email was not confirmed",
-	})
+	return c.JSON(http.StatusOK, responses.New(false, "Email was not confirmed"))
 }
 
 // /v1/auth/twoFactor/otp/activate (POST)
@@ -217,10 +190,7 @@ func (h *Handler) Activate2FAOTP(c echo.Context) error {
 	var body bindings.Activate2FAOTP
 	err := c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.Base{
-			Success: false,
-			Message: "Invalid request body",
-		})
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
 	}
 
 	user, err := h.userStore.GetByEmail(body.Email)
@@ -266,10 +236,7 @@ func (h *Handler) Activate2FAOTP(c echo.Context) error {
 		return c.Blob(http.StatusOK, "image/png", user.OtpQrCode)
 	}
 
-	return c.JSON(http.StatusOK, responses.Base{
-		Success: false,
-		Message: "TwoFaOTP is already activated",
-	})
+	return c.JSON(http.StatusOK, responses.New(false, "TwoFaOTP is already activated"))
 }
 
 // /v1/auth/twoFactor/otp/get (POST)
@@ -279,19 +246,13 @@ func (h *Handler) GetOTPQRCode(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 	}
 	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.Base{
-			Success: false,
-			Message: "The user does no longer exist",
-		})
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists())
 	}
 
 	var body bindings.Password
 	err = c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.Base{
-			Success: false,
-			Message: "Invalid request body",
-		})
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
 	}
 
 	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.Password)) != nil {
@@ -306,10 +267,7 @@ func (h *Handler) VerifyOTPCode(c echo.Context) error {
 	var body bindings.VerifyCode
 	err := c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.Base{
-			Success: false,
-			Message: "Invalid request body",
-		})
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
 	}
 
 	user, err := h.userStore.GetByEmail(body.Email)
@@ -357,10 +315,7 @@ func (h *Handler) VerifyOTPCode(c echo.Context) error {
 		})
 	}
 
-	return c.JSON(http.StatusUnauthorized, responses.Base{
-		Success: false,
-		Message: "Invalid credentials",
-	})
+	return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
 }
 
 // /v1/auth/twoFactor/otp/new
@@ -368,10 +323,7 @@ func (h *Handler) NewOTP(c echo.Context) error {
 	var body bindings.Password
 	err := c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.Base{
-			Success: false,
-			Message: "Invalid request body",
-		})
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
 	}
 
 	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
@@ -379,10 +331,7 @@ func (h *Handler) NewOTP(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 	}
 	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.Base{
-			Success: false,
-			Message: "The user does no longer exist",
-		})
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists())
 	}
 
 	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.Password)) != nil {
@@ -420,10 +369,7 @@ func (h *Handler) NewOTP(c echo.Context) error {
 		return c.Blob(http.StatusOK, "image/png", user.OtpQrCode)
 	}
 
-	return c.JSON(http.StatusOK, responses.Base{
-		Success: false,
-		Message: "Please enable otp first",
-	})
+	return c.JSON(http.StatusOK, responses.New(false, "Please enable otp first"))
 }
 
 // /v1/auth/passwordAuth (POST)
@@ -431,10 +377,7 @@ func (h *Handler) PasswordAuth(c echo.Context) error {
 	var body bindings.PasswordAuth
 	err := c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.Base{
-			Success: false,
-			Message: "Invalid request body",
-		})
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
 	}
 
 	user, err := h.userStore.GetByEmail(body.Email)
@@ -484,10 +427,7 @@ func (h *Handler) Login(c echo.Context) error {
 	var body bindings.Login
 	err := c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.Base{
-			Success: false,
-			Message: "Invalid request body",
-		})
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
 	}
 
 	user, err := h.userStore.GetByEmail(body.Email)
@@ -528,17 +468,11 @@ func (h *Handler) Login(c echo.Context) error {
 	h.userStore.DeleteTwoFAToken(twoFAToken)
 
 	if !user.EmailConfirmed {
-		return c.JSON(http.StatusOK, responses.Base{
-			Success: false,
-			Message: "Email is not confirmed",
-		})
+		return c.JSON(http.StatusOK, responses.New(false, "Email is not confirmed"))
 	}
 
 	if !user.TwoFaOTPEnabled {
-		return c.JSON(http.StatusOK, responses.Base{
-			Success: false,
-			Message: "Two factor authentication is not enabled",
-		})
+		return c.JSON(http.StatusOK, responses.New(false, "Two factor authentication is not enabled"))
 	}
 
 	code := services.GenerateRandomString(64)
@@ -604,10 +538,7 @@ func (h *Handler) Refresh(c echo.Context) error {
 	err := c.Bind(&body)
 	if err != nil {
 		fmt.Println(err)
-		return c.JSON(http.StatusBadRequest, responses.Base{
-			Success: false,
-			Message: "Invalid request body",
-		})
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
 	}
 
 	userId, err := uuid.Parse(body.UserId)
@@ -689,10 +620,7 @@ func (h *Handler) Refresh(c echo.Context) error {
 		Path:     "/v1",
 	})
 
-	return c.JSON(http.StatusOK, responses.Base{
-		Success: true,
-		Message: "Successfully refreshed tokens",
-	})
+	return c.JSON(http.StatusOK, responses.New(true, "Successfully refreshed tokens"))
 }
 
 // /v1/auth/logout?all=bool (POST)
@@ -702,10 +630,7 @@ func (h *Handler) Logout(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 	}
 	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.Base{
-			Success: false,
-			Message: "The user does no longer exist",
-		})
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists())
 	}
 
 	if services.StrToBool(c.QueryParams().Get("all")) {
@@ -733,10 +658,7 @@ func (h *Handler) Logout(c echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, responses.Base{
-		Success: true,
-		Message: "Successfully signed out",
-	})
+	return c.JSON(http.StatusOK, responses.New(true, "Successfully signed out"))
 }
 
 // /v1/auth/twoFactor/recovery/verify (POST)
@@ -744,10 +666,7 @@ func (h *Handler) VerifyRecoveryCode(c echo.Context) error {
 	var body bindings.VerifyCode
 	err := c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.Base{
-			Success: false,
-			Message: "Invalid request body",
-		})
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
 	}
 
 	user, err := h.userStore.GetByEmail(body.Email)
@@ -808,19 +727,13 @@ func (h *Handler) NewRecoveryCodes(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 	}
 	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.Base{
-			Success: false,
-			Message: "The user does no longer exist",
-		})
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists())
 	}
 
 	var body bindings.Password
 	err = c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.Base{
-			Success: false,
-			Message: "Invalid request body",
-		})
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
 	}
 
 	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.Password)) != nil {
@@ -847,19 +760,13 @@ func (h *Handler) ChangePassword(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 	}
 	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.Base{
-			Success: false,
-			Message: "The user does no longer exist",
-		})
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists())
 	}
 
 	var body bindings.ChangePassword
 	err = c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.Base{
-			Success: false,
-			Message: "Invalid request body",
-		})
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
 	}
 
 	if len(body.NewPassword) > config.Data.UserMaxPasswordLength {
@@ -901,10 +808,7 @@ func (h *Handler) ChangePassword(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 	}
 
-	return c.JSON(http.StatusOK, responses.Base{
-		Success: true,
-		Message: "Successfully changed password",
-	})
+	return c.JSON(http.StatusOK, responses.New(true, "Successfully changed password"))
 }
 
 // /v1/auth/forgotPassword (POST)
@@ -912,17 +816,11 @@ func (h *Handler) ForgotPassword(c echo.Context) error {
 	var body bindings.ForgotPassword
 	err := c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.Base{
-			Success: false,
-			Message: "Invalid request body",
-		})
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
 	}
 
 	if !services.IsValidEmail(body.Email) {
-		return c.JSON(http.StatusBadRequest, responses.Base{
-			Success: false,
-			Message: "Invalid email",
-		})
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid email"))
 	}
 
 	if services.VerifyCaptcha(body.CaptchaToken) {
@@ -984,16 +882,10 @@ func (h *Handler) ForgotPassword(c echo.Context) error {
 			}
 			go services.SendEmail([]string{user.Email}, "H-Bank Reset Password", body)
 		}
-		return c.JSON(http.StatusOK, responses.Base{
-			Success: true,
-			Message: "An email with a reset password link has been sent to the specified address",
-		})
+		return c.JSON(http.StatusOK, responses.New(true, "An email with a reset password link has been sent to the specified address"))
 	}
 
-	return c.JSON(http.StatusOK, responses.Base{
-		Success: false,
-		Message: "Invalid captcha token",
-	})
+	return c.JSON(http.StatusOK, responses.New(false, "Invalid captcha token"))
 }
 
 // /v1/auth/resetPassword (POST)
@@ -1001,17 +893,11 @@ func (h *Handler) ResetPassword(c echo.Context) error {
 	var body bindings.ResetPassword
 	err := c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.Base{
-			Success: false,
-			Message: "Invalid request body",
-		})
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
 	}
 
 	if !services.IsValidEmail(body.Email) {
-		return c.JSON(http.StatusBadRequest, responses.Base{
-			Success: false,
-			Message: "Invalid email",
-		})
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid email"))
 	}
 
 	if len(body.NewPassword) > config.Data.UserMaxPasswordLength {
@@ -1057,10 +943,7 @@ func (h *Handler) ResetPassword(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 	}
 
-	return c.JSON(http.StatusOK, responses.Base{
-		Success: true,
-		Message: "Successfully changed password",
-	})
+	return c.JSON(http.StatusOK, responses.New(true, "Successfully changed password"))
 }
 
 // /v1/auth/requestChangeEmail (POST)
@@ -1070,34 +953,22 @@ func (h *Handler) RequestChangeEmail(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 	}
 	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.Base{
-			Success: false,
-			Message: "The user does no longer exist",
-		})
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists())
 	}
 
 	var body bindings.ChangeEmailRequest
 	err = c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.Base{
-			Success: false,
-			Message: "Invalid request body",
-		})
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
 	}
 
 	if !services.IsValidEmail(body.NewEmail) {
-		return c.JSON(http.StatusBadRequest, responses.Base{
-			Success: false,
-			Message: "Invalid new email",
-		})
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid new email"))
 	}
 
 	if services.VerifyCaptcha(body.CaptchaToken) {
 		if u, _ := h.userStore.GetByEmail(body.NewEmail); u != nil {
-			return c.JSON(http.StatusOK, responses.Base{
-				Success: false,
-				Message: "The user with this email does already exist",
-			})
+			return c.JSON(http.StatusOK, responses.New(false, "The user with this email does already exist"))
 		}
 
 		if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.Password)) != nil {
@@ -1150,16 +1021,10 @@ func (h *Handler) RequestChangeEmail(c echo.Context) error {
 			}
 			go services.SendEmail([]string{body.NewEmail}, "H-Bank Change Email", emailBody)
 		}
-		return c.JSON(http.StatusOK, responses.Base{
-			Success: true,
-			Message: "An email with a change email link has been sent to the new email address",
-		})
+		return c.JSON(http.StatusOK, responses.New(true, "An email with a change email link has been sent to the new email address"))
 	}
 
-	return c.JSON(http.StatusOK, responses.Base{
-		Success: false,
-		Message: "Invalid captcha token",
-	})
+	return c.JSON(http.StatusOK, responses.New(false, "Invalid captcha token"))
 }
 
 // /v1/auth/changeEmail (POST)
@@ -1169,19 +1034,13 @@ func (h *Handler) ChangeEmail(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 	}
 	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.Base{
-			Success: false,
-			Message: "The user does no longer exist",
-		})
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists())
 	}
 
 	var body bindings.ChangeEmail
 	err = c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.Base{
-			Success: false,
-			Message: "Invalid request body",
-		})
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
 	}
 
 	token, err := h.userStore.GetChangeEmailCode(user)
@@ -1197,10 +1056,7 @@ func (h *Handler) ChangeEmail(c echo.Context) error {
 	}
 
 	if u, _ := h.userStore.GetByEmail(token.NewEmail); u != nil {
-		return c.JSON(http.StatusOK, responses.Base{
-			Success: false,
-			Message: "The user with this email does already exist",
-		})
+		return c.JSON(http.StatusOK, responses.New(false, "The user with this email does already exist"))
 	}
 
 	user.Email = token.NewEmail
@@ -1211,8 +1067,5 @@ func (h *Handler) ChangeEmail(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 	}
 
-	return c.JSON(http.StatusOK, responses.Base{
-		Success: true,
-		Message: "Successfully changed email address",
-	})
+	return c.JSON(http.StatusOK, responses.New(true, "Successfully changed email address"))
 }

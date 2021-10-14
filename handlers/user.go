@@ -23,10 +23,7 @@ func (h *Handler) GetUsers(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 	}
 	if authUser == nil {
-		return c.JSON(http.StatusUnauthorized, responses.Base{
-			Success: false,
-			Message: "The user does no longer exist",
-		})
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists())
 	}
 
 	var users []models.User
@@ -50,18 +47,12 @@ func (h *Handler) GetUser(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 	}
 	if authUser == nil {
-		return c.JSON(http.StatusUnauthorized, responses.Base{
-			Success: false,
-			Message: "The user does no longer exist",
-		})
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists())
 	}
 
 	userId, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.Base{
-			Success: false,
-			Message: "Invalid or missing id parameter",
-		})
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter"))
 	}
 
 	user, err := h.userStore.GetById(userId)
@@ -86,19 +77,13 @@ func (h *Handler) DeleteUser(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 	}
 	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.Base{
-			Success: false,
-			Message: "The user does no longer exist",
-		})
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists())
 	}
 
 	var body bindings.DeleteUser
 	err = c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.Base{
-			Success: false,
-			Message: "Invalid request body",
-		})
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
 	}
 
 	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.Password)) != nil {
@@ -118,10 +103,7 @@ func (h *Handler) DeleteUser(c echo.Context) error {
 	}
 
 	h.userStore.Delete(user)
-	return c.JSON(http.StatusOK, responses.Base{
-		Success: true,
-		Message: "Successfully deleted account",
-	})
+	return c.JSON(http.StatusOK, responses.New(true, "Successfully deleted account"))
 }
 
 // /v1/user/:email (DELETE)
@@ -129,18 +111,12 @@ func (h *Handler) DeleteUserByConfirmEmailCode(c echo.Context) error {
 	var body bindings.DeleteUserByConfirmEmailCode
 	err := c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.Base{
-			Success: false,
-			Message: "Invalid request body",
-		})
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
 	}
 
 	userId, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.Base{
-			Success: false,
-			Message: "Invalid or missing id parameter",
-		})
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter"))
 	}
 
 	user, err := h.userStore.GetById(userId)
@@ -159,10 +135,7 @@ func (h *Handler) DeleteUserByConfirmEmailCode(c echo.Context) error {
 	if subtle.ConstantTimeCompare(code.CodeHash, services.HashToken(body.ConfirmEmailCode)) == 1 {
 		if !user.EmailConfirmed {
 			h.userStore.Delete(user)
-			return c.JSON(http.StatusOK, responses.Base{
-				Success: true,
-				Message: "Successfully deleted account",
-			})
+			return c.JSON(http.StatusOK, responses.New(true, "Successfully deleted account"))
 		}
 		h.userStore.DeleteConfirmEmailCode(code)
 	}
