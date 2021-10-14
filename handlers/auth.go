@@ -578,6 +578,14 @@ func (h *Handler) Refresh(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 	}
 
+	if refreshToken.ExpirationTime < time.Now().Unix() {
+		err = h.userStore.DeleteRefreshToken(refreshToken)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
+	}
+
 	if refreshToken.Used {
 		err = h.userStore.DeleteRefreshTokens(user)
 		if err != nil {
