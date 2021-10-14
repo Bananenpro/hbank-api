@@ -17,13 +17,14 @@ import (
 
 // /v1/user?includeSelf=bool (GET)
 func (h *Handler) GetUsers(c echo.Context) error {
+	lang := c.Get("lang").(string)
 	authUserId := c.Get("userId").(uuid.UUID)
 	authUser, err := h.userStore.GetById(authUserId)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if authUser == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists())
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
 	var users []models.User
@@ -33,7 +34,7 @@ func (h *Handler) GetUsers(c echo.Context) error {
 		users, err = h.userStore.GetAll(authUser)
 	}
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
 	return c.JSON(http.StatusOK, responses.NewUsers(users))
@@ -41,26 +42,27 @@ func (h *Handler) GetUsers(c echo.Context) error {
 
 // /v1/user/:id (GET)
 func (h *Handler) GetUser(c echo.Context) error {
+	lang := c.Get("lang").(string)
 	authUserId := c.Get("userId").(uuid.UUID)
 	authUser, err := h.userStore.GetById(authUserId)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if authUser == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists())
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
 	userId, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter"))
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
 	}
 
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if user == nil {
-		return c.JSON(http.StatusNotFound, responses.NewNotFound())
+		return c.JSON(http.StatusNotFound, responses.NewNotFound(lang))
 	}
 
 	if bytes.Equal(authUserId[:], userId[:]) {
@@ -71,73 +73,75 @@ func (h *Handler) GetUser(c echo.Context) error {
 
 // /v1/user (DELETE)
 func (h *Handler) DeleteUser(c echo.Context) error {
+	lang := c.Get("lang").(string)
 	userId := c.Get("userId").(uuid.UUID)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists())
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
 	var body bindings.DeleteUser
 	err = c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
 	}
 
 	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.Password)) != nil {
-		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials(lang))
 	}
 
 	twoFAToken, err := h.userStore.GetTwoFATokenByCode(user, body.TwoFAToken)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if twoFAToken == nil {
-		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials(lang))
 	}
 	h.userStore.DeleteTwoFAToken(twoFAToken)
 	if twoFAToken.ExpirationTime < time.Now().Unix() {
-		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials(lang))
 	}
 
 	h.userStore.Delete(user)
-	return c.JSON(http.StatusOK, responses.New(true, "Successfully deleted account"))
+	return c.JSON(http.StatusOK, responses.New(true, "Successfully deleted account", lang))
 }
 
 // /v1/user/:email (DELETE)
 func (h *Handler) DeleteUserByConfirmEmailCode(c echo.Context) error {
+	lang := c.Get("lang").(string)
 	var body bindings.DeleteUserByConfirmEmailCode
 	err := c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
 	}
 
 	userId, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter"))
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
 	}
 
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 	}
 
 	code, err := h.userStore.GetConfirmEmailCode(user)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
 	if subtle.ConstantTimeCompare(code.CodeHash, services.HashToken(body.ConfirmEmailCode)) == 1 {
 		if !user.EmailConfirmed {
 			h.userStore.Delete(user)
-			return c.JSON(http.StatusOK, responses.New(true, "Successfully deleted account"))
+			return c.JSON(http.StatusOK, responses.New(true, "Successfully deleted account", lang))
 		}
 		h.userStore.DeleteConfirmEmailCode(code)
 	}
-	return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+	return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 }

@@ -23,39 +23,40 @@ import (
 
 // /v1/auth/register (POST)
 func (h *Handler) Register(c echo.Context) error {
+	lang := c.Get("lang").(string)
 	var body bindings.Register
 	if err := c.Bind(&body); err != nil {
-		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
 	}
 
 	if !services.VerifyCaptcha(body.CaptchaToken) {
-		return c.JSON(http.StatusOK, responses.New(false, "Invalid captcha token"))
+		return c.JSON(http.StatusOK, responses.New(false, "Invalid captcha token", lang))
 	}
 
 	body.Email = strings.ToLower(body.Email)
 
 	if !services.IsValidEmail(body.Email) {
-		return c.JSON(http.StatusOK, responses.New(false, "Invalid email"))
+		return c.JSON(http.StatusOK, responses.New(false, "Invalid email", lang))
 	}
 
 	if len(body.Name) > config.Data.UserMaxNameLength {
-		return c.JSON(http.StatusOK, responses.NewRegisterInvalid("Name too long"))
+		return c.JSON(http.StatusOK, responses.NewRegisterInvalid("Name too long", lang))
 	}
 
 	if utf8.RuneCountInString(body.Name) < config.Data.UserMinNameLength {
-		return c.JSON(http.StatusOK, responses.NewRegisterInvalid("Name too short"))
+		return c.JSON(http.StatusOK, responses.NewRegisterInvalid("Name too short", lang))
 	}
 
 	if len(body.Password) > config.Data.UserMaxPasswordLength {
-		return c.JSON(http.StatusOK, responses.NewRegisterInvalid("Password too long"))
+		return c.JSON(http.StatusOK, responses.NewRegisterInvalid("Password too long", lang))
 	}
 
 	if utf8.RuneCountInString(body.Password) < config.Data.UserMinPasswordLength {
-		return c.JSON(http.StatusOK, responses.NewRegisterInvalid("Password too short"))
+		return c.JSON(http.StatusOK, responses.NewRegisterInvalid("Password too short", lang))
 	}
 
 	if u, _ := h.userStore.GetByEmail(body.Email); u != nil {
-		return c.JSON(http.StatusOK, responses.New(false, "The user with this email does already exist"))
+		return c.JSON(http.StatusOK, responses.New(false, "The user with this email does already exist", lang))
 	}
 
 	user := &models.User{
@@ -67,23 +68,23 @@ func (h *Handler) Register(c echo.Context) error {
 	var err error
 	user.PasswordHash, err = bcrypt.GenerateFromPassword([]byte(body.Password), config.Data.BcryptCost)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
 	err = h.userStore.Create(user)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
 	codes, err := h.userStore.NewRecoveryCodes(user)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
 	return c.JSON(http.StatusCreated, responses.RegisterSuccess{
 		Base: responses.Base{
 			Success: true,
-			Message: "Successfully registered new user",
+			Message: services.Tr("Successfully registered new user", lang),
 		},
 		UserId:    user.Id.String(),
 		UserEmail: body.Email,
@@ -93,28 +94,29 @@ func (h *Handler) Register(c echo.Context) error {
 
 // /v1/auth/confirmEmail/:email (GET)
 func (h *Handler) SendConfirmEmail(c echo.Context) error {
+	lang := c.Get("lang").(string)
 	email := c.Param("email")
 	if !services.IsValidEmail(email) {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing or invalid email parameter"))
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing or invalid email parameter", lang))
 	}
 
 	lastSend, err := h.userStore.GetConfirmEmailLastSent(email)
 	if lastSend+config.Data.SendEmailTimeout > time.Now().Unix() {
 		return c.JSON(http.StatusTooManyRequests, responses.Base{
 			Success: false,
-			Message: fmt.Sprintf("Please wait at least %d minutes between confirm email requests", config.Data.SendEmailTimeout/60),
+			Message: fmt.Sprintf(services.Tr("Please wait at least %d minutes between confirm email requests", lang), config.Data.SendEmailTimeout/60),
 		})
 	}
 	h.userStore.SetConfirmEmailLastSent(email, time.Now().Unix())
 
 	user, err := h.userStore.GetByEmail(email)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if user != nil {
 		emailCode, err := h.userStore.GetConfirmEmailCode(user)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 
 		if !user.EmailConfirmed {
@@ -125,7 +127,7 @@ func (h *Handler) SendConfirmEmail(c echo.Context) error {
 			}
 			err = h.userStore.Update(user)
 			if err != nil {
-				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 			}
 
 			if config.Data.EmailEnabled {
@@ -140,69 +142,71 @@ func (h *Handler) SendConfirmEmail(c echo.Context) error {
 					DeleteUrl: fmt.Sprintf("https://%s/account/delete?code=%s", config.Data.DomainName, code),
 				})
 				if err != nil {
-					return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+					return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 				}
-				go services.SendEmail([]string{user.Email}, "H-Bank Confirm Email", body)
+				go services.SendEmail([]string{user.Email}, services.Tr("H-Bank Confirm Email", lang), body)
 			}
 		}
 	}
 
-	return c.JSON(http.StatusOK, responses.New(true, "If the email address is linked to a user whose email has not yet been confirmed, a code has been sent to the specified address"))
+	return c.JSON(http.StatusOK, responses.New(true, "If the email address is linked to a user whose email has not yet been confirmed, a code has been sent to the specified address", lang))
 }
 
 // /v1/auth/confirmEmail (POST)
 func (h *Handler) VerifyConfirmEmailCode(c echo.Context) error {
+	lang := c.Get("lang").(string)
 	var body bindings.ConfirmEmail
 	err := c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
 	}
 
 	user, err := h.userStore.GetByEmail(body.Email)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
 	if user != nil {
 		confirmEmailCode, err := h.userStore.GetConfirmEmailCode(user)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 		if confirmEmailCode != nil {
 			if subtle.ConstantTimeCompare(confirmEmailCode.CodeHash, services.HashToken(body.Code)) == 1 {
 				user.EmailConfirmed = true
 				err = h.userStore.Update(user)
 				if err != nil {
-					return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+					return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 				}
 
 				h.userStore.DeleteConfirmEmailCode(confirmEmailCode)
-				return c.JSON(http.StatusOK, responses.New(true, "Successfully confirmed email address"))
+				return c.JSON(http.StatusOK, responses.New(true, "Successfully confirmed email address", lang))
 			}
 		}
 	}
 
-	return c.JSON(http.StatusOK, responses.New(false, "Email was not confirmed"))
+	return c.JSON(http.StatusOK, responses.New(false, "Email was not confirmed", lang))
 }
 
 // /v1/auth/twoFactor/otp/activate (POST)
 func (h *Handler) Activate2FAOTP(c echo.Context) error {
+	lang := c.Get("lang").(string)
 	var body bindings.Activate2FAOTP
 	err := c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
 	}
 
 	user, err := h.userStore.GetByEmail(body.Email)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 	}
 
 	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.Password)) != nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 	}
 
 	if !user.TwoFaOTPEnabled {
@@ -211,12 +215,12 @@ func (h *Handler) Activate2FAOTP(c echo.Context) error {
 			AccountName: user.Email,
 		})
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 
 		img, err := key.Image(200, 200)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 
 		var qr bytes.Buffer
@@ -230,33 +234,34 @@ func (h *Handler) Activate2FAOTP(c echo.Context) error {
 
 		err = h.userStore.Update(user)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 
 		return c.Blob(http.StatusOK, "image/png", user.OtpQrCode)
 	}
 
-	return c.JSON(http.StatusOK, responses.New(false, "TwoFaOTP is already activated"))
+	return c.JSON(http.StatusOK, responses.New(false, "TwoFaOTP is already activated", lang))
 }
 
 // /v1/auth/twoFactor/otp/get (POST)
 func (h *Handler) GetOTPQRCode(c echo.Context) error {
+	lang := c.Get("lang").(string)
 	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists())
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
 	var body bindings.Password
 	err = c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
 	}
 
 	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.Password)) != nil {
-		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials(lang))
 	}
 
 	return c.Blob(http.StatusOK, "image/png", user.OtpQrCode)
@@ -264,25 +269,26 @@ func (h *Handler) GetOTPQRCode(c echo.Context) error {
 
 // /v1/auth/twoFactor/otp/verify (POST)
 func (h *Handler) VerifyOTPCode(c echo.Context) error {
+	lang := c.Get("lang").(string)
 	var body bindings.VerifyCode
 	err := c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
 	}
 
 	user, err := h.userStore.GetByEmail(body.Email)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 	}
 
 	if totp.Validate(body.Code, user.OtpSecret) {
 		user.TwoFaOTPEnabled = true
 		err = h.userStore.Update(user)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 
 		code := ""
@@ -292,7 +298,7 @@ func (h *Handler) VerifyOTPCode(c echo.Context) error {
 			code = services.GenerateRandomString(64)
 			t, err := h.userStore.GetTwoFATokenByCode(user, code)
 			if err != nil {
-				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 			}
 			exists = t != nil
 		}
@@ -303,39 +309,40 @@ func (h *Handler) VerifyOTPCode(c echo.Context) error {
 		})
 		err = h.userStore.Update(user)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 
 		return c.JSON(http.StatusOK, responses.Token{
 			Base: responses.Base{
 				Success: true,
-				Message: "Successfully aquired two factor token",
+				Message: services.Tr("Successfully aquired two factor token", lang),
 			},
 			Token: code,
 		})
 	}
 
-	return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+	return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 }
 
 // /v1/auth/twoFactor/otp/new
 func (h *Handler) NewOTP(c echo.Context) error {
+	lang := c.Get("lang").(string)
 	var body bindings.Password
 	err := c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
 	}
 
 	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists())
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
 	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.Password)) != nil {
-		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials(lang))
 	}
 
 	if user.TwoFaOTPEnabled {
@@ -344,12 +351,12 @@ func (h *Handler) NewOTP(c echo.Context) error {
 			AccountName: user.Email,
 		})
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 
 		img, err := key.Image(200, 200)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 
 		var qr bytes.Buffer
@@ -363,33 +370,34 @@ func (h *Handler) NewOTP(c echo.Context) error {
 
 		err = h.userStore.Update(user)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 
 		return c.Blob(http.StatusOK, "image/png", user.OtpQrCode)
 	}
 
-	return c.JSON(http.StatusOK, responses.New(false, "Please enable otp first"))
+	return c.JSON(http.StatusOK, responses.New(false, "Please enable otp first", lang))
 }
 
 // /v1/auth/passwordAuth (POST)
 func (h *Handler) PasswordAuth(c echo.Context) error {
+	lang := c.Get("lang").(string)
 	var body bindings.PasswordAuth
 	err := c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
 	}
 
 	user, err := h.userStore.GetByEmail(body.Email)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 	}
 
 	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.Password)) != nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 	}
 
 	code := ""
@@ -399,7 +407,7 @@ func (h *Handler) PasswordAuth(c echo.Context) error {
 		code = services.GenerateRandomString(64)
 		t, err := h.userStore.GetPasswordTokenByCode(user, code)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 		exists = t != nil
 	}
@@ -410,13 +418,13 @@ func (h *Handler) PasswordAuth(c echo.Context) error {
 	})
 	err = h.userStore.Update(user)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
 	return c.JSON(http.StatusOK, responses.Token{
 		Base: responses.Base{
 			Success: true,
-			Message: "Successfully aquired password token",
+			Message: services.Tr("Successfully aquired password token", lang),
 		},
 		Token: code,
 	})
@@ -424,34 +432,35 @@ func (h *Handler) PasswordAuth(c echo.Context) error {
 
 // /v1/auth/login (POST)
 func (h *Handler) Login(c echo.Context) error {
+	lang := c.Get("lang").(string)
 	var body bindings.Login
 	err := c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
 	}
 
 	user, err := h.userStore.GetByEmail(body.Email)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 	}
 
 	passwordToken, err := h.userStore.GetPasswordTokenByCode(user, body.PasswordToken)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if passwordToken == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 	}
 
 	twoFAToken, err := h.userStore.GetTwoFATokenByCode(user, body.TwoFAToken)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if twoFAToken == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 	}
 
 	if passwordToken.ExpirationTime < time.Now().Unix() {
@@ -461,24 +470,24 @@ func (h *Handler) Login(c echo.Context) error {
 		h.userStore.DeleteTwoFAToken(twoFAToken)
 	}
 	if passwordToken.ExpirationTime < time.Now().Unix() || twoFAToken.ExpirationTime < time.Now().Unix() {
-		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 	}
 
 	h.userStore.DeletePasswordToken(passwordToken)
 	h.userStore.DeleteTwoFAToken(twoFAToken)
 
 	if !user.EmailConfirmed {
-		return c.JSON(http.StatusOK, responses.New(false, "Email is not confirmed"))
+		return c.JSON(http.StatusOK, responses.New(false, "Email is not confirmed", lang))
 	}
 
 	if !user.TwoFaOTPEnabled {
-		return c.JSON(http.StatusOK, responses.New(false, "Two factor authentication is not enabled"))
+		return c.JSON(http.StatusOK, responses.New(false, "Two factor authentication is not enabled", lang))
 	}
 
 	code := services.GenerateRandomString(64)
 	hash, err := bcrypt.GenerateFromPassword([]byte(code), config.Data.BcryptCost)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
 	refreshToken := &models.RefreshToken{
@@ -487,13 +496,13 @@ func (h *Handler) Login(c echo.Context) error {
 	}
 	err = h.userStore.AddRefreshToken(user, refreshToken)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
 	authToken, authTokenSignature, err := services.NewAuthToken(user)
 	if err != nil {
 		h.userStore.DeleteRefreshToken(refreshToken)
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
 	c.SetCookie(&http.Cookie{
@@ -526,68 +535,66 @@ func (h *Handler) Login(c echo.Context) error {
 		Path:     "/v1",
 	})
 
-	return c.JSON(http.StatusOK, responses.Base{
-		Success: true,
-		Message: "Successfully signed in",
-	})
+	return c.JSON(http.StatusOK, responses.New(true, "Successfully signed in", lang))
 }
 
 // /v1/auth/refresh (POST)
 func (h *Handler) Refresh(c echo.Context) error {
+	lang := c.Get("lang").(string)
 	var body bindings.Refresh
 	err := c.Bind(&body)
 	if err != nil {
 		fmt.Println(err)
-		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
 	}
 
 	userId, err := uuid.Parse(body.UserId)
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 	}
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 	}
 
 	refreshCookie, err := c.Cookie("Refresh-Token")
 	if err != nil || len(refreshCookie.Value) <= 36 {
-		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 	}
 
 	refreshTokenId, err := uuid.Parse(refreshCookie.Value[:36])
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 	}
 
 	refreshToken, err := h.userStore.GetRefreshToken(user, refreshTokenId)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if refreshToken == nil || bcrypt.CompareHashAndPassword(refreshToken.CodeHash, []byte(refreshCookie.Value[36:])) != nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 	}
 
 	if refreshToken.Used {
 		err = h.userStore.DeleteRefreshTokens(user)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
-		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 	}
 
 	newRefreshToken, code, err := h.userStore.RotateRefreshToken(user, refreshToken)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
 	authToken, authTokenSignature, err := services.NewAuthToken(user)
 	if err != nil {
 		h.userStore.DeleteRefreshToken(newRefreshToken)
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
 	c.SetCookie(&http.Cookie{
@@ -620,69 +627,71 @@ func (h *Handler) Refresh(c echo.Context) error {
 		Path:     "/v1",
 	})
 
-	return c.JSON(http.StatusOK, responses.New(true, "Successfully refreshed tokens"))
+	return c.JSON(http.StatusOK, responses.New(true, "Successfully refreshed tokens", lang))
 }
 
 // /v1/auth/logout?all=bool (POST)
 func (h *Handler) Logout(c echo.Context) error {
+	lang := c.Get("lang").(string)
 	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists())
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
 	if services.StrToBool(c.QueryParams().Get("all")) {
 		err = h.userStore.DeleteRefreshTokens(user)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 	} else {
 		refreshCookie, err := c.Cookie("Refresh-Token")
 		if err != nil || len(refreshCookie.Value) <= 36 {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 		tokenId, err := uuid.Parse(refreshCookie.Value[:36])
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 		refreshToken, err := h.userStore.GetRefreshToken(user, tokenId)
 		if err != nil || refreshToken == nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 
 		err = h.userStore.DeleteRefreshToken(refreshToken)
 		if err != nil || refreshToken == nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 	}
 
-	return c.JSON(http.StatusOK, responses.New(true, "Successfully signed out"))
+	return c.JSON(http.StatusOK, responses.New(true, "Successfully signed out", lang))
 }
 
 // /v1/auth/twoFactor/recovery/verify (POST)
 func (h *Handler) VerifyRecoveryCode(c echo.Context) error {
+	lang := c.Get("lang").(string)
 	var body bindings.VerifyCode
 	err := c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
 	}
 
 	user, err := h.userStore.GetByEmail(body.Email)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 	}
 
 	code, err := h.userStore.GetRecoveryCodeByCode(user, body.Code)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if code == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 	}
 
 	token := ""
@@ -692,14 +701,14 @@ func (h *Handler) VerifyRecoveryCode(c echo.Context) error {
 		token = services.GenerateRandomString(64)
 		t, err := h.userStore.GetTwoFATokenByCode(user, token)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 		exists = t != nil
 	}
 
 	err = h.userStore.DeleteRecoveryCode(code)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
 	user.TwoFATokens = append(user.TwoFATokens, models.TwoFAToken{
@@ -708,13 +717,13 @@ func (h *Handler) VerifyRecoveryCode(c echo.Context) error {
 	})
 	err = h.userStore.Update(user)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
 	return c.JSON(http.StatusOK, responses.Token{
 		Base: responses.Base{
 			Success: true,
-			Message: "Successfully aquired two factor token",
+			Message: services.Tr("Successfully aquired two factor token", lang),
 		},
 		Token: token,
 	})
@@ -722,27 +731,28 @@ func (h *Handler) VerifyRecoveryCode(c echo.Context) error {
 
 // /v1/auth/twoFactor/recovery/new (POST)
 func (h *Handler) NewRecoveryCodes(c echo.Context) error {
+	lang := c.Get("lang").(string)
 	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists())
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
 	var body bindings.Password
 	err = c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
 	}
 
 	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.Password)) != nil {
-		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials(lang))
 	}
 
 	codes, err := h.userStore.NewRecoveryCodes(user)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
 	return c.JSON(http.StatusOK, responses.RecoveryCodes{
@@ -755,106 +765,108 @@ func (h *Handler) NewRecoveryCodes(c echo.Context) error {
 
 // /v1/auth/changePassword (POST)
 func (h *Handler) ChangePassword(c echo.Context) error {
+	lang := c.Get("lang").(string)
 	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists())
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
 	var body bindings.ChangePassword
 	err = c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
 	}
 
 	if len(body.NewPassword) > config.Data.UserMaxPasswordLength {
 		return c.JSON(http.StatusOK, responses.Base{
 			Success: false,
-			Message: fmt.Sprintf("New password too long (max %d)", config.Data.UserMaxPasswordLength),
+			Message: fmt.Sprintf(services.Tr("New password too long (max %d)", lang), config.Data.UserMaxPasswordLength),
 		})
 	}
 
 	if utf8.RuneCountInString(body.NewPassword) < config.Data.UserMinPasswordLength {
 		return c.JSON(http.StatusOK, responses.Base{
 			Success: false,
-			Message: fmt.Sprintf("New password too short (min %d)", config.Data.UserMinPasswordLength),
+			Message: fmt.Sprintf(services.Tr("New password too short (min %d)", lang), config.Data.UserMinPasswordLength),
 		})
 	}
 
 	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.OldPassword)) != nil {
-		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials(lang))
 	}
 
 	twoFAToken, err := h.userStore.GetTwoFATokenByCode(user, body.TwoFAToken)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if twoFAToken == nil {
-		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials(lang))
 	}
 	h.userStore.DeleteTwoFAToken(twoFAToken)
 	if twoFAToken.ExpirationTime < time.Now().Unix() {
-		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials(lang))
 	}
 
 	user.PasswordHash, err = bcrypt.GenerateFromPassword([]byte(body.NewPassword), config.Data.BcryptCost)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	err = h.userStore.Update(user)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	return c.JSON(http.StatusOK, responses.New(true, "Successfully changed password"))
+	return c.JSON(http.StatusOK, responses.New(true, "Successfully changed password", lang))
 }
 
 // /v1/auth/forgotPassword (POST)
 func (h *Handler) ForgotPassword(c echo.Context) error {
+	lang := c.Get("lang").(string)
 	var body bindings.ForgotPassword
 	err := c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
 	}
 
 	if !services.IsValidEmail(body.Email) {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid email"))
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid email", lang))
 	}
 
 	if services.VerifyCaptcha(body.CaptchaToken) {
 		user, err := h.userStore.GetByEmail(body.Email)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 		if user == nil {
-			return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+			return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 		}
 		twoFAToken, err := h.userStore.GetTwoFATokenByCode(user, body.TwoFAToken)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 		if twoFAToken == nil {
-			return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+			return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 		}
 		h.userStore.DeleteTwoFAToken(twoFAToken)
 		if twoFAToken.ExpirationTime < time.Now().Unix() {
-			return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+			return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 		}
 
 		lastSend, err := h.userStore.GetForgotPasswordEmailLastSent(body.Email)
 		if lastSend+config.Data.SendEmailTimeout > time.Now().Unix() {
 			return c.JSON(http.StatusTooManyRequests, responses.Base{
 				Success: false,
-				Message: fmt.Sprintf("Please wait at least %d minutes between forgot password email requests", config.Data.SendEmailTimeout/60),
+				Message: fmt.Sprintf(services.Tr("Please wait at least %d minutes between forgot password email requests", lang), config.Data.SendEmailTimeout/60),
 			})
 		}
 		h.userStore.SetForgotPasswordEmailLastSent(body.Email, time.Now().Unix())
 
 		emailCode, err := h.userStore.GetResetPasswordCode(user)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 
 		h.userStore.DeleteResetPasswordCode(emailCode)
@@ -865,7 +877,7 @@ func (h *Handler) ForgotPassword(c echo.Context) error {
 		}
 		err = h.userStore.Update(user)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 
 		if config.Data.EmailEnabled {
@@ -878,118 +890,120 @@ func (h *Handler) ForgotPassword(c echo.Context) error {
 				Url:  fmt.Sprintf("https://%s/auth/forgotPassword?email=%s&token=%s", config.Data.DomainName, body.Email, code),
 			})
 			if err != nil {
-				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 			}
-			go services.SendEmail([]string{user.Email}, "H-Bank Reset Password", body)
+			go services.SendEmail([]string{user.Email}, services.Tr("H-Bank Reset Password", lang), body)
 		}
-		return c.JSON(http.StatusOK, responses.New(true, "An email with a reset password link has been sent to the specified address"))
+		return c.JSON(http.StatusOK, responses.New(true, "An email with a reset password link has been sent to the specified address", lang))
 	}
 
-	return c.JSON(http.StatusOK, responses.New(false, "Invalid captcha token"))
+	return c.JSON(http.StatusOK, responses.New(false, "Invalid captcha token", lang))
 }
 
 // /v1/auth/resetPassword (POST)
 func (h *Handler) ResetPassword(c echo.Context) error {
+	lang := c.Get("lang").(string)
 	var body bindings.ResetPassword
 	err := c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
 	}
 
 	if !services.IsValidEmail(body.Email) {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid email"))
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid email", lang))
 	}
 
 	if len(body.NewPassword) > config.Data.UserMaxPasswordLength {
 		return c.JSON(http.StatusOK, responses.Base{
 			Success: false,
-			Message: fmt.Sprintf("New password too long (max %d)", config.Data.UserMaxPasswordLength),
+			Message: fmt.Sprintf(services.Tr("New password too long (max %d)", lang), config.Data.UserMaxPasswordLength),
 		})
 	}
 
 	if utf8.RuneCountInString(body.NewPassword) < config.Data.UserMinPasswordLength {
 		return c.JSON(http.StatusOK, responses.Base{
 			Success: false,
-			Message: fmt.Sprintf("New password too short (min %d)", config.Data.UserMinPasswordLength),
+			Message: fmt.Sprintf(services.Tr("New password too short (min %d)", lang), config.Data.UserMinPasswordLength),
 		})
 	}
 
 	user, err := h.userStore.GetByEmail(body.Email)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 	}
 
 	token, err := h.userStore.GetResetPasswordCode(user)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if token == nil || subtle.ConstantTimeCompare(token.CodeHash, services.HashToken(body.Token)) == 0 {
-		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 	}
 	h.userStore.DeleteResetPasswordCode(token)
 	if token.ExpirationTime < time.Now().Unix() {
-		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 	}
 
 	user.PasswordHash, err = bcrypt.GenerateFromPassword([]byte(body.NewPassword), config.Data.BcryptCost)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	err = h.userStore.Update(user)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	return c.JSON(http.StatusOK, responses.New(true, "Successfully changed password"))
+	return c.JSON(http.StatusOK, responses.New(true, "Successfully changed password", lang))
 }
 
 // /v1/auth/requestChangeEmail (POST)
 func (h *Handler) RequestChangeEmail(c echo.Context) error {
+	lang := c.Get("lang").(string)
 	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists())
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
 	var body bindings.ChangeEmailRequest
 	err = c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
 	}
 
 	if !services.IsValidEmail(body.NewEmail) {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid new email"))
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid new email", lang))
 	}
 
 	if services.VerifyCaptcha(body.CaptchaToken) {
 		if u, _ := h.userStore.GetByEmail(body.NewEmail); u != nil {
-			return c.JSON(http.StatusOK, responses.New(false, "The user with this email does already exist"))
+			return c.JSON(http.StatusOK, responses.New(false, "The user with this email does already exist", lang))
 		}
 
 		if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.Password)) != nil {
-			return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+			return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials(lang))
 		}
 
 		twoFAToken, err := h.userStore.GetTwoFATokenByCode(user, body.TwoFAToken)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 		if twoFAToken == nil {
-			return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+			return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials(lang))
 		}
 		h.userStore.DeleteTwoFAToken(twoFAToken)
 		if twoFAToken.ExpirationTime < time.Now().Unix() {
-			return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+			return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials(lang))
 		}
 
 		emailCode, err := h.userStore.GetChangeEmailCode(user)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 
 		h.userStore.DeleteChangeEmailCode(emailCode)
@@ -1001,7 +1015,7 @@ func (h *Handler) RequestChangeEmail(c echo.Context) error {
 		}
 		err = h.userStore.Update(user)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 
 		if config.Data.EmailEnabled {
@@ -1014,46 +1028,47 @@ func (h *Handler) RequestChangeEmail(c echo.Context) error {
 				Url:  fmt.Sprintf("https://%s/auth/changeEmail?token=%s", config.Data.DomainName, code),
 			})
 			if err != nil {
-				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 			}
-			go services.SendEmail([]string{body.NewEmail}, "H-Bank Change Email", emailBody)
+			go services.SendEmail([]string{body.NewEmail}, services.Tr("H-Bank Change Email", lang), emailBody)
 		}
-		return c.JSON(http.StatusOK, responses.New(true, "An email with a change email link has been sent to the new email address"))
+		return c.JSON(http.StatusOK, responses.New(true, "An email with a change email link has been sent to the new email address", lang))
 	}
 
-	return c.JSON(http.StatusOK, responses.New(false, "Invalid captcha token"))
+	return c.JSON(http.StatusOK, responses.New(false, "Invalid captcha token", lang))
 }
 
 // /v1/auth/changeEmail (POST)
 func (h *Handler) ChangeEmail(c echo.Context) error {
+	lang := c.Get("lang").(string)
 	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists())
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
 	var body bindings.ChangeEmail
 	err = c.Bind(&body)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody())
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
 	}
 
 	token, err := h.userStore.GetChangeEmailCode(user)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if token == nil || subtle.ConstantTimeCompare(token.CodeHash, services.HashToken(body.Token)) == 0 {
-		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials(lang))
 	}
 	h.userStore.DeleteChangeEmailCode(token)
 	if token.ExpirationTime < time.Now().Unix() {
-		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
+		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials(lang))
 	}
 
 	if u, _ := h.userStore.GetByEmail(token.NewEmail); u != nil {
-		return c.JSON(http.StatusOK, responses.New(false, "The user with this email does already exist"))
+		return c.JSON(http.StatusOK, responses.New(false, "The user with this email does already exist", lang))
 	}
 
 	user.Email = token.NewEmail
@@ -1061,8 +1076,8 @@ func (h *Handler) ChangeEmail(c echo.Context) error {
 
 	err = h.userStore.Update(user)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	return c.JSON(http.StatusOK, responses.New(true, "Successfully changed email address"))
+	return c.JSON(http.StatusOK, responses.New(true, "Successfully changed email address", lang))
 }

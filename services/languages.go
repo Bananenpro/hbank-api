@@ -13,7 +13,7 @@ var supportedTranslations []string
 
 var translations map[string]map[string]string
 
-func Tr(lang string, text string) string {
+func Tr(text string, lang string) string {
 	langTranslations, ok := translations[lang]
 	if ok {
 		translation, ok := langTranslations[text]

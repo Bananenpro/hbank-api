@@ -1,31 +1,34 @@
 package responses
 
-import "github.com/Bananenpro/hbank-api/config"
+import (
+	"github.com/Bananenpro/hbank-api/config"
+	"github.com/Bananenpro/hbank-api/services"
+)
 
 type Base struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 }
 
-func New(success bool, message string) Base {
+func New(success bool, message string, lang string) Base {
 	return Base{
 		Success: success,
-		Message: message,
+		Message: services.Tr(message, lang),
 	}
 }
 
-func NewUnexpectedError(err error) Base {
+func NewUnexpectedError(err error, lang string) Base {
 	if config.Data.Debug {
-		return New(false, "Error: "+err.Error())
+		return New(false, "Error: "+err.Error(), lang)
 	} else {
-		return New(false, "An unexpected error occured")
+		return New(false, "An unexpected error occured", lang)
 	}
 }
 
-func NewNotFound() Base {
-	return New(false, "Resource not found")
+func NewNotFound(lang string) Base {
+	return New(false, "Resource not found", lang)
 }
 
-func NewInvalidRequestBody() Base {
-	return New(false, "Invalid request body")
+func NewInvalidRequestBody(lang string) Base {
+	return New(false, "Invalid request body", lang)
 }

@@ -2,6 +2,7 @@ package responses
 
 import (
 	"github.com/Bananenpro/hbank-api/config"
+	"github.com/Bananenpro/hbank-api/services"
 )
 
 type RegisterSuccess struct {
@@ -29,11 +30,11 @@ type RecoveryCodes struct {
 	Codes []string `json:"recovery_codes"`
 }
 
-func NewRegisterInvalid(message string) RegisterInvalid {
+func NewRegisterInvalid(message string, lang string) RegisterInvalid {
 	return RegisterInvalid{
 		Base: Base{
 			Success: false,
-			Message: message,
+			Message: services.Tr(message, lang),
 		},
 		MinNameLength:     config.Data.UserMinNameLength,
 		MinPasswordLength: config.Data.UserMinPasswordLength,
@@ -42,10 +43,10 @@ func NewRegisterInvalid(message string) RegisterInvalid {
 	}
 }
 
-func NewInvalidCredentials() Base {
-	return New(false, "Invalid credentials")
+func NewInvalidCredentials(lang string) Base {
+	return New(false, "Invalid credentials", lang)
 }
 
-func NewUserNoLongerExists() Base {
-	return New(false, "The user does no longer exist")
+func NewUserNoLongerExists(lang string) Base {
+	return New(false, "The user does no longer exist", lang)
 }
