@@ -972,7 +972,6 @@ func (h *Handler) RequestChangeEmail(c echo.Context) error {
 		}
 
 		if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.Password)) != nil {
-			fmt.Println("password")
 			return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
 		}
 
@@ -981,12 +980,10 @@ func (h *Handler) RequestChangeEmail(c echo.Context) error {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err))
 		}
 		if twoFAToken == nil {
-			fmt.Println("token")
 			return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
 		}
 		h.userStore.DeleteTwoFAToken(twoFAToken)
 		if twoFAToken.ExpirationTime < time.Now().Unix() {
-			fmt.Println("expired")
 			return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials())
 		}
 
