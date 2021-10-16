@@ -1,14 +1,13 @@
 ![H-Bank](images/logo.png)
 <h1 align="center">H-Bank REST API</h1>
 
-![Build](https://img.shields.io/github/workflow/status/Bananenpro/hbank-api/Tests)
+![License](https://img.shields.io/github/license/Bananenpro/hbank-api)
+![Commit Activity](https://img.shields.io/github/commit-activity/m/Bananenpro/hbank-api)
 ![Go Version](https://img.shields.io/github/go-mod/go-version/Bananenpro/hbank-api)
 ![Total Lines](https://img.shields.io/tokei/lines/github/Bananenpro/hbank-api)
-![Commit Activity](https://img.shields.io/github/commit-activity/m/Bananenpro/hbank-api)
 ![Issues](https://img.shields.io/github/issues/Bananenpro/hbank-api)
 ![Stars](https://img.shields.io/github/stars/Bananenpro/hbank-api)
 ![Forks](https://img.shields.io/github/forks/Bananenpro/hbank-api)
-![License](https://img.shields.io/github/license/Bananenpro/hbank-api)
 
 ## Description
 
