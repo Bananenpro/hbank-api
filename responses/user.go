@@ -3,12 +3,13 @@ package responses
 import "github.com/Bananenpro/hbank-api/models"
 
 type AuthUser struct {
-	Id               string `json:"id"`
-	Name             string `json:"name"`
-	Email            string `json:"email"`
-	EmailConfirmed   bool   `json:"email_confirmed"`
-	TwoFAOTPEnabled  bool   `json:"two_fa_otp_enabled"`
-	ProfilePictureId string `json:"profile_picture_id"`
+	Id                    string `json:"id"`
+	Name                  string `json:"name"`
+	Email                 string `json:"email"`
+	EmailConfirmed        bool   `json:"email_confirmed"`
+	TwoFAOTPEnabled       bool   `json:"two_fa_otp_enabled"`
+	ProfilePictureId      string `json:"profile_picture_id"`
+	ProfilePicturePrivacy string `json:"profile_picture_privacy"`
 }
 
 type User struct {
@@ -27,12 +28,13 @@ func NewAuthUser(user *models.User) interface{} {
 			Success: true,
 		},
 		AuthUser: AuthUser{
-			Id:               user.Id.String(),
-			Name:             user.Name,
-			Email:            user.Email,
-			EmailConfirmed:   user.EmailConfirmed,
-			TwoFAOTPEnabled:  user.TwoFaOTPEnabled,
-			ProfilePictureId: user.ProfilePictureId.String(),
+			Id:                    user.Id.String(),
+			Name:                  user.Name,
+			Email:                 user.Email,
+			EmailConfirmed:        user.EmailConfirmed,
+			TwoFAOTPEnabled:       user.TwoFaOTPEnabled,
+			ProfilePictureId:      user.ProfilePictureId.String(),
+			ProfilePicturePrivacy: user.ProfilePicturePrivacy,
 		},
 	}
 }
