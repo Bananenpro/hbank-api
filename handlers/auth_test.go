@@ -1250,8 +1250,8 @@ func TestHandler_Refresh(t *testing.T) {
 		Name:  "bob",
 		Email: "bob@gmail.com",
 		RefreshTokens: []models.RefreshToken{
-			{CodeHash: code1},
-			{CodeHash: code2, Used: true},
+			{CodeHash: code1, ExpirationTime: time.Now().Unix() + config.Data.RefreshTokenLifetime},
+			{CodeHash: code2, Used: true, ExpirationTime: time.Now().Unix() + config.Data.RefreshTokenLifetime},
 		},
 	}
 	us.Create(user1)
@@ -1260,8 +1260,8 @@ func TestHandler_Refresh(t *testing.T) {
 		Name:  "peter",
 		Email: "peter@gmail.com",
 		RefreshTokens: []models.RefreshToken{
-			{CodeHash: code1},
-			{CodeHash: code2, Used: true},
+			{CodeHash: code1, ExpirationTime: time.Now().Unix() + config.Data.RefreshTokenLifetime},
+			{CodeHash: code2, Used: true, ExpirationTime: time.Now().Unix() + config.Data.RefreshTokenLifetime},
 		},
 	}
 	us.Create(user2)
@@ -1270,11 +1270,21 @@ func TestHandler_Refresh(t *testing.T) {
 		Name:  "paul",
 		Email: "paul@gmail.com",
 		RefreshTokens: []models.RefreshToken{
+			{CodeHash: code1, ExpirationTime: time.Now().Unix() + config.Data.RefreshTokenLifetime},
+			{CodeHash: code2, Used: true, ExpirationTime: time.Now().Unix() + config.Data.RefreshTokenLifetime},
+		},
+	}
+	us.Create(user3)
+
+	user4 := &models.User{
+		Name:  "hans",
+		Email: "hans@gmail.com",
+		RefreshTokens: []models.RefreshToken{
 			{CodeHash: code1},
 			{CodeHash: code2, Used: true},
 		},
 	}
-	us.Create(user1)
+	us.Create(user4)
 
 	handler := New(us)
 
@@ -1291,6 +1301,7 @@ func TestHandler_Refresh(t *testing.T) {
 		{tName: "Used token", userId: user3.Id, refreshCode: codeStr2, refreshCodeIndex: 1, wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
 		{tName: "Non existing user", userId: uuid.New(), refreshCode: codeStr1, refreshCodeIndex: 0, wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
 		{tName: "Wrong token code", userId: user2.Id, refreshCode: "asudfjasiefjsualkejfuosiaefjulaskejfs", refreshCodeIndex: 0, wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
+		{tName: "Expired token", userId: user4.Id, refreshCode: codeStr1, refreshCodeIndex: 0, wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.tName, func(t *testing.T) {
@@ -1299,48 +1310,49 @@ func TestHandler_Refresh(t *testing.T) {
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
 			user, _ := us.GetById(tt.userId)
+			var rTokens []models.RefreshToken
 			if user != nil {
-				rTokens, _ := us.GetRefreshTokens(user)
+				rTokens, _ = us.GetRefreshTokens(user)
 				req.AddCookie(&http.Cookie{
 					Name:  "Refresh-Token",
 					Value: rTokens[tt.refreshCodeIndex].Id.String() + tt.refreshCode,
 				})
+			}
 
-				rec := httptest.NewRecorder()
-				c := r.NewContext(req, rec)
-				c.Set("lang", "en")
+			rec := httptest.NewRecorder()
+			c := r.NewContext(req, rec)
+			c.Set("lang", "en")
 
-				err := handler.Refresh(c)
+			err := handler.Refresh(c)
 
-				assert.NoError(t, err)
-				assert.Equal(t, tt.wantCode, rec.Code)
-				assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"success":%t`, tt.wantSuccess))
-				assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantCode, rec.Code)
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"success":%t`, tt.wantSuccess))
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
 
-				if tt.wantSuccess {
-					cookies := rec.Result().Cookies()
-					assert.Equal(t, 3, len(cookies), "Three new auth cookies were returned")
-					for _, cookie := range cookies {
-						assert.True(t, cookie.Secure)
-						assert.Equal(t, http.SameSiteStrictMode, cookie.SameSite)
-					}
-
-					refreshTokens, _ := us.GetRefreshTokens(user)
-					assert.Equal(t, 3, len(refreshTokens), "A new refresh token has been created")
-
-					notUsed := 0
-					for _, r := range refreshTokens {
-						if !r.Used {
-							notUsed++
-						}
-					}
-					assert.Equal(t, 1, notUsed, "The old refresh token has been marked as used")
+			if tt.wantSuccess {
+				cookies := rec.Result().Cookies()
+				assert.Equal(t, 3, len(cookies), "Three new auth cookies were returned")
+				for _, cookie := range cookies {
+					assert.True(t, cookie.Secure)
+					assert.Equal(t, http.SameSiteStrictMode, cookie.SameSite)
 				}
 
-				if tt.refreshCodeIndex == 1 {
-					refreshTokens, _ := us.GetRefreshTokens(user)
-					assert.Empty(t, refreshTokens, "All refresh tokens were deleted")
+				refreshTokens, _ := us.GetRefreshTokens(user)
+				assert.Equal(t, 3, len(refreshTokens), "A new refresh token has been created")
+
+				notUsed := 0
+				for _, r := range refreshTokens {
+					if !r.Used {
+						notUsed++
+					}
 				}
+				assert.Equal(t, 1, notUsed, "The old refresh token has been marked as used")
+			}
+
+			if tt.refreshCodeIndex == 1 {
+				refreshTokens, _ := us.GetRefreshTokens(user)
+				assert.Empty(t, refreshTokens, "All refresh tokens were deleted")
 			}
 		})
 	}
