@@ -8,6 +8,7 @@ import (
 
 func New() *echo.Echo {
 	e := echo.New()
+	e.HideBanner = true
 
 	e.Pre(middleware.RemoveTrailingSlash())
 
