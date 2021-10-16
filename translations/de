@@ -31,7 +31,7 @@
 "Successfully changed password"="Das Passwort wurde erfolgreich geändert"
 "Please wait at least %d minutes between forgot password email requests"="Bitte warte mindestens %d Minuten zwichen Passwortvergessen-Anfragen"
 "H-Bank Reset Password"="H-Bank Passwort Zurücksetzen"
-"An email with a reset password link has been sent to the specified address"="Eine Email mit einem Zurücksetzungslink wurde an die angegebene Adresseq versendet"
+"An email with a reset password link has been sent to the specified address"="Eine Email mit einem Zurücksetzungslink wurde an die angegebene Adresse versendet"
 "Invalid new email"="Ungültige neue Email-Adresse"
 "H-Bank Change Email"="H-Bank Email-Adresse Ändern"
 "An email with a change email link has been sent to the new email address"="Eine Email mit einem Emailänderungslink wurde an die neue Email-Adresse versendet"
