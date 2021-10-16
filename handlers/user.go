@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Bananenpro/hbank-api/bindings"
@@ -228,6 +229,15 @@ func (h *Handler) SetProfilePicture(c echo.Context) error {
 func (h *Handler) GetProfilePicture(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
+	authUserId := c.Get("userId").(uuid.UUID)
+	authUser, err := h.userStore.GetById(authUserId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if authUser == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
+	}
+
 	userId, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
@@ -239,6 +249,13 @@ func (h *Handler) GetProfilePicture(c echo.Context) error {
 	}
 	if user == nil {
 		return c.JSON(http.StatusNotFound, responses.NewNotFound(lang))
+	}
+
+	switch user.ProfilePicturePrivacy {
+	case models.ProfilePictureHide:
+		if user.Id.String() != authUser.Id.String() {
+			return c.JSON(http.StatusNotFound, responses.New(false, "Profile picture hidden", lang))
+		}
 	}
 
 	if c.QueryParam("id") != "" && c.QueryParam("id") != user.ProfilePictureId.String() {
@@ -268,4 +285,38 @@ func (h *Handler) GetProfilePicture(c echo.Context) error {
 	data, err := bimg.NewImage(profilePicture).Thumbnail(size)
 
 	return c.Blob(http.StatusOK, "image/jpeg", data)
+}
+
+// /v1/user (PUT)
+func (h *Handler) UpdateUser(c echo.Context) error {
+	lang := c.Get("lang").(string)
+
+	userId := c.Get("userId").(uuid.UUID)
+	user, err := h.userStore.GetById(userId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
+	}
+
+	var body bindings.UpdateUser
+	err = c.Bind(&body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
+	}
+
+	body.ProfilePicturePrivacy = strings.ToLower(body.ProfilePicturePrivacy)
+	switch body.ProfilePicturePrivacy {
+	case "":
+		break
+	case models.ProfilePictureShow, models.ProfilePictureHide:
+		user.ProfilePicturePrivacy = body.ProfilePicturePrivacy
+	default:
+		return c.JSON(http.StatusOK, responses.New(false, "Invalid profile picture privacy", lang))
+	}
+
+	h.userStore.Update(user)
+
+	return c.JSON(http.StatusOK, responses.New(true, "Successfully updated user", lang))
 }

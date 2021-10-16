@@ -8,3 +8,7 @@ type DeleteUser struct {
 type DeleteUserByConfirmEmailCode struct {
 	ConfirmEmailCode string `json:"code"`
 }
+
+type UpdateUser struct {
+	ProfilePicturePrivacy string `json:"profile_picture_privacy"`
+}

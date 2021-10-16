@@ -51,24 +51,30 @@ type UserStore interface {
 	SetForgotPasswordEmailLastSent(email string, time int64) error
 }
 
+const (
+	ProfilePictureShow = "show"
+	ProfilePictureHide = "hide"
+)
+
 type User struct {
 	Base
-	Name              string
-	Email             string `gorm:"unique"`
-	PasswordHash      []byte
-	ProfilePicture    []byte
-	ProfilePictureId  uuid.UUID `gorm:"type:uuid"`
-	EmailConfirmed    bool
-	TwoFaOTPEnabled   bool
-	OtpSecret         string
-	OtpQrCode         []byte
-	ConfirmEmailCode  ConfirmEmailCode  `gorm:"constraint:OnDelete:CASCADE"`
-	ResetPasswordCode ResetPasswordCode `gorm:"constraint:OnDelete:CASCADE"`
-	ChangeEmailCode   ChangeEmailCode   `gorm:"constraint:OnDelete:CASCADE"`
-	RefreshTokens     []RefreshToken
-	PasswordTokens    []PasswordToken
-	TwoFATokens       []TwoFAToken
-	RecoveryCodes     []RecoveryCode
+	Name                  string
+	Email                 string `gorm:"unique"`
+	PasswordHash          []byte
+	ProfilePicture        []byte
+	ProfilePictureId      uuid.UUID `gorm:"type:uuid"`
+	ProfilePicturePrivacy string    `gorm:"default:show"`
+	EmailConfirmed        bool
+	TwoFaOTPEnabled       bool
+	OtpSecret             string
+	OtpQrCode             []byte
+	ConfirmEmailCode      ConfirmEmailCode  `gorm:"constraint:OnDelete:CASCADE"`
+	ResetPasswordCode     ResetPasswordCode `gorm:"constraint:OnDelete:CASCADE"`
+	ChangeEmailCode       ChangeEmailCode   `gorm:"constraint:OnDelete:CASCADE"`
+	RefreshTokens         []RefreshToken
+	PasswordTokens        []PasswordToken
+	TwoFATokens           []TwoFAToken
+	RecoveryCodes         []RecoveryCode
 }
 
 type ConfirmEmailLastSent struct {
