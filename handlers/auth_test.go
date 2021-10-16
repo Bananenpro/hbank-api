@@ -970,7 +970,6 @@ func TestHandler_ChangePassword(t *testing.T) {
 		Name:         "bob",
 		Email:        "bob@gmail.com",
 		PasswordHash: hash,
-		TwoFATokens:  []models.TwoFAToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
 	}
 	us.Create(user1)
 
@@ -978,40 +977,28 @@ func TestHandler_ChangePassword(t *testing.T) {
 		Name:         "bob2",
 		Email:        "bob2@gmail.com",
 		PasswordHash: hash,
-		TwoFATokens:  []models.TwoFAToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
 	}
 	us.Create(user2)
-
-	user3 := &models.User{
-		Name:         "bob3",
-		Email:        "bob3@gmail.com",
-		PasswordHash: hash,
-		TwoFATokens:  []models.TwoFAToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: 0}},
-	}
-	us.Create(user3)
 
 	handler := New(us)
 
 	tests := []struct {
 		tName       string
 		user        *models.User
-		twoFAToken  string
 		oldPassword string
 		newPassword string
 		wantCode    int
 		wantSuccess bool
 		wantMessage string
 	}{
-		{tName: "Success", user: user1, twoFAToken: "1234567890", oldPassword: "123456", newPassword: "abcdef", wantCode: http.StatusOK, wantSuccess: true, wantMessage: "Successfully changed password"},
-		{tName: "Wrong password", user: user2, twoFAToken: "1234567890", oldPassword: "654321", newPassword: "abcdef", wantCode: http.StatusForbidden, wantSuccess: false, wantMessage: "Invalid credentials"},
-		{tName: "New password too short", user: user2, twoFAToken: "1234567890", oldPassword: "123456", newPassword: "abcde", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "New password too short (min 6)"},
-		{tName: "New password too long", user: user2, twoFAToken: "1234567890", oldPassword: "123456", newPassword: strings.Repeat("a", 70), wantCode: http.StatusOK, wantSuccess: false, wantMessage: "New password too long (max 64)"},
-		{tName: "Wrong two factor token", user: user2, twoFAToken: "0987654321", oldPassword: "123456", newPassword: "abcdef", wantCode: http.StatusForbidden, wantSuccess: false, wantMessage: "Invalid credentials"},
-		{tName: "Expired two factor token", user: user3, twoFAToken: "1234567890", oldPassword: "123456", newPassword: "abcdef", wantCode: http.StatusForbidden, wantSuccess: false, wantMessage: "Invalid credentials"},
+		{tName: "Success", user: user1, oldPassword: "123456", newPassword: "abcdef", wantCode: http.StatusOK, wantSuccess: true, wantMessage: "Successfully changed password"},
+		{tName: "Wrong password", user: user2, oldPassword: "654321", newPassword: "abcdef", wantCode: http.StatusForbidden, wantSuccess: false, wantMessage: "Invalid credentials"},
+		{tName: "New password too short", user: user2, oldPassword: "123456", newPassword: "abcde", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "New password too short (min 6)"},
+		{tName: "New password too long", user: user2, oldPassword: "123456", newPassword: strings.Repeat("a", 70), wantCode: http.StatusOK, wantSuccess: false, wantMessage: "New password too long (max 64)"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.tName, func(t *testing.T) {
-			jsonBody := fmt.Sprintf(`{"old_password": "%s", "new_password": "%s", "two_fa_token": "%s"}`, tt.oldPassword, tt.newPassword, tt.twoFAToken)
+			jsonBody := fmt.Sprintf(`{"old_password": "%s", "new_password": "%s"}`, tt.oldPassword, tt.newPassword)
 			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
@@ -1034,11 +1021,6 @@ func TestHandler_ChangePassword(t *testing.T) {
 			} else {
 				assert.NoError(t, bcrypt.CompareHashAndPassword(user.PasswordHash, []byte("123456")))
 				assert.Error(t, bcrypt.CompareHashAndPassword(user.PasswordHash, []byte("abcdef")))
-			}
-
-			if tt.twoFAToken == "1234567890" && tt.oldPassword == "123456" && tt.newPassword == "abcdef" {
-				tokens, _ := us.GetTwoFATokens(user)
-				assert.Empty(t, tokens)
 			}
 		})
 	}
@@ -1386,13 +1368,9 @@ func TestHandler_RequestChangeEmail(t *testing.T) {
 	}
 	us.Create(bob)
 
-	peter := &models.User{
-		Name:         "peter",
-		Email:        "peter@gmail.com",
-		PasswordHash: passwordHash,
-		TwoFATokens:  []models.TwoFAToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: 0}},
-	}
-	us.Create(peter)
+	us.Create(&models.User{
+		Email: "peter@gmail.com",
+	})
 
 	handler := New(us)
 
@@ -1401,20 +1379,17 @@ func TestHandler_RequestChangeEmail(t *testing.T) {
 		user        *models.User
 		newEmail    string
 		password    string
-		twoFAToken  string
 		wantCode    int
 		wantSuccess bool
 		wantMessage string
 	}{
-		{tName: "Success", user: bob, newEmail: "hans@gmail.com", password: "123456", twoFAToken: "1234567890", wantCode: http.StatusOK, wantSuccess: true, wantMessage: "An email with a change email link has been sent to the new email address"},
-		{tName: "Expired two factor token", user: peter, newEmail: "hans@gmail.com", password: "123456", twoFAToken: "1234567890", wantCode: http.StatusForbidden, wantSuccess: false, wantMessage: "Invalid credentials"},
-		{tName: "Wrong password", user: bob, newEmail: "hans@gmail.com", password: "654321", twoFAToken: "1234567890", wantCode: http.StatusForbidden, wantSuccess: false, wantMessage: "Invalid credentials"},
-		{tName: "Wrong two factor token", user: bob, newEmail: "hans@gmail.com", password: "123456", twoFAToken: "0987654321", wantCode: http.StatusForbidden, wantSuccess: false, wantMessage: "Invalid credentials"},
-		{tName: "Already existing email", user: bob, newEmail: "peter@gmail.com", password: "123456", twoFAToken: "1234567890", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "The user with this email does already exist"},
+		{tName: "Success", user: bob, newEmail: "hans@gmail.com", password: "123456", wantCode: http.StatusOK, wantSuccess: true, wantMessage: "An email with a change email link has been sent to the new email address"},
+		{tName: "Wrong password", user: bob, newEmail: "hans@gmail.com", password: "654321", wantCode: http.StatusForbidden, wantSuccess: false, wantMessage: "Invalid credentials"},
+		{tName: "Already existing email", user: bob, newEmail: "peter@gmail.com", password: "123456", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "The user with this email does already exist"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.tName, func(t *testing.T) {
-			jsonBody := fmt.Sprintf(`{"new_email": "%s", "two_fa_token": "%s", "password": "%s"})`, tt.newEmail, tt.twoFAToken, tt.password)
+			jsonBody := fmt.Sprintf(`{"new_email": "%s", "password": "%s"})`, tt.newEmail, tt.password)
 			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()

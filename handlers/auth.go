@@ -806,18 +806,6 @@ func (h *Handler) ChangePassword(c echo.Context) error {
 		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials(lang))
 	}
 
-	twoFAToken, err := h.userStore.GetTwoFATokenByCode(user, body.TwoFAToken)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-	if twoFAToken == nil {
-		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials(lang))
-	}
-	h.userStore.DeleteTwoFAToken(twoFAToken)
-	if twoFAToken.ExpirationTime < time.Now().Unix() {
-		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials(lang))
-	}
-
 	user.PasswordHash, err = bcrypt.GenerateFromPassword([]byte(body.NewPassword), config.Data.BcryptCost)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -994,18 +982,6 @@ func (h *Handler) RequestChangeEmail(c echo.Context) error {
 		}
 
 		if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.Password)) != nil {
-			return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials(lang))
-		}
-
-		twoFAToken, err := h.userStore.GetTwoFATokenByCode(user, body.TwoFAToken)
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-		}
-		if twoFAToken == nil {
-			return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials(lang))
-		}
-		h.userStore.DeleteTwoFAToken(twoFAToken)
-		if twoFAToken.ExpirationTime < time.Now().Unix() {
 			return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials(lang))
 		}
 

@@ -40,7 +40,6 @@ type Password struct {
 type ChangePassword struct {
 	OldPassword string `json:"old_password" form:"old_password"`
 	NewPassword string `json:"new_password" form:"new_password"`
-	TwoFAToken  string `json:"two_fa_token" form:"two_fa_token"`
 }
 
 type ForgotPassword struct {
@@ -58,7 +57,6 @@ type ResetPassword struct {
 type ChangeEmailRequest struct {
 	Password     string `json:"password" form:"password"`
 	CaptchaToken string `json:"h-captcha-response" form:"h-captcha-response"`
-	TwoFAToken   string `json:"two_fa_token" form:"two_fa_token"`
 	NewEmail     string `json:"new_email" form:"new_email"`
 }
 
