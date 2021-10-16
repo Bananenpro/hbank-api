@@ -76,6 +76,7 @@ func (us *UserStore) Delete(user *models.User) error {
 	us.db.Delete(&models.PasswordToken{}, "user_id = ?", user.Id)
 	us.db.Delete(&models.TwoFAToken{}, "user_id = ?", user.Id)
 	us.db.Delete(&models.RecoveryCode{}, "user_id = ?", user.Id)
+	us.db.Delete(&models.CashLogEntry{}, "user_id = ?", user.Id)
 	return us.db.Delete(user).Error
 }
 
@@ -383,4 +384,87 @@ func (us *UserStore) SetForgotPasswordEmailLastSent(email string, time int64) er
 
 	lastSent.LastSent = time
 	return us.db.Updates(&lastSent).Error
+}
+
+func (us *UserStore) GetCashLog(user *models.User, page, pageSize int, oldestFirst bool) ([]models.CashLogEntry, error) {
+	var cashLog []models.CashLogEntry
+	var err error
+	if page < 0 || pageSize < 0 {
+		if oldestFirst {
+			err = us.db.Where("user_id = ?", user.Id).Order("created ASC").Find(&cashLog).Error
+		} else {
+			err = us.db.Where("user_id = ?", user.Id).Order("created DESC").Find(&cashLog).Error
+		}
+	} else {
+		offset := page * pageSize
+		if oldestFirst {
+			err = us.db.Where("user_id = ?", user.Id).Order("created ASC").Offset(offset).Limit(pageSize).Find(&cashLog).Error
+		} else {
+			err = us.db.Where("user_id = ?", user.Id).Order("created DESC").Offset(offset).Limit(pageSize).Find(&cashLog).Error
+		}
+	}
+
+	return cashLog, err
+}
+
+func (us *UserStore) GetLastCashLogEntry(user *models.User) (*models.CashLogEntry, error) {
+	var cashLog []models.CashLogEntry
+	err := us.db.Where("user_id = ?", user.Id).Order("created desc").Limit(1).Find(&cashLog).Error
+	if err != nil {
+		return nil, err
+	}
+
+	if len(cashLog) == 0 {
+		return nil, nil
+	}
+
+	return &cashLog[0], nil
+}
+
+func (us *UserStore) GetCashLogEntryById(user *models.User, id uuid.UUID) (*models.CashLogEntry, error) {
+	var cashLogEntry models.CashLogEntry
+	err := us.db.First(&cashLogEntry, "id = ? AND user_id = ?", id, user.Id).Error
+	if err != nil {
+		switch err {
+		case gorm.ErrRecordNotFound:
+			return nil, nil
+		default:
+			return nil, err
+		}
+	}
+	return &cashLogEntry, nil
+}
+
+func (us *UserStore) AddCashLogEntry(user *models.User, entry *models.CashLogEntry) error {
+	lastEntry, err := us.GetLastCashLogEntry(user)
+	if err != nil {
+		return err
+	}
+
+	totalAmount := 0
+
+	totalAmount += 1 * entry.Ct1
+	totalAmount += 2 * entry.Ct2
+	totalAmount += 5 * entry.Ct5
+	totalAmount += 10 * entry.Ct10
+	totalAmount += 20 * entry.Ct20
+	totalAmount += 50 * entry.Ct50
+
+	totalAmount += 100 * entry.Eur1
+	totalAmount += 200 * entry.Eur2
+	totalAmount += 500 * entry.Eur5
+	totalAmount += 1000 * entry.Eur10
+	totalAmount += 2000 * entry.Eur20
+	totalAmount += 5000 * entry.Eur50
+	totalAmount += 10000 * entry.Eur100
+	totalAmount += 20000 * entry.Eur200
+	totalAmount += 50000 * entry.Eur500
+
+	entry.TotalAmount = totalAmount
+
+	if lastEntry != nil {
+		entry.ChangeDifference = entry.TotalAmount - lastEntry.TotalAmount
+	}
+
+	return us.db.Model(&user).Association("CashLog").Append(entry)
 }

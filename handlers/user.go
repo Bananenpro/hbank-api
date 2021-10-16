@@ -320,3 +320,143 @@ func (h *Handler) UpdateUser(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, responses.New(true, "Successfully updated user", lang))
 }
+
+// /v1/user/cash/current (GET)
+func (h *Handler) GetCurrentCash(c echo.Context) error {
+	lang := c.Get("lang").(string)
+
+	userId := c.Get("userId").(uuid.UUID)
+	user, err := h.userStore.GetById(userId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
+	}
+
+	entry, err := h.userStore.GetLastCashLogEntry(user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if entry == nil {
+		return c.JSON(http.StatusNotFound, responses.New(false, "Cash log is empty", lang))
+	}
+
+	return c.JSON(http.StatusOK, responses.NewCashLogEntry(entry))
+}
+
+// /v1/user/cash/:id (GET)
+func (h *Handler) GetCashLogEntryById(c echo.Context) error {
+	lang := c.Get("lang").(string)
+
+	userId := c.Get("userId").(uuid.UUID)
+	user, err := h.userStore.GetById(userId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
+	}
+
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	}
+
+	entry, err := h.userStore.GetCashLogEntryById(user, id)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if entry == nil {
+		return c.JSON(http.StatusNotFound, responses.NewNotFound(lang))
+	}
+
+	return c.JSON(http.StatusOK, responses.NewCashLogEntry(entry))
+}
+
+// /v1/user/cash?page=int&pageSize=int&oldestFirst=bool (GET)
+func (h *Handler) GetCashLog(c echo.Context) error {
+	lang := c.Get("lang").(string)
+
+	userId := c.Get("userId").(uuid.UUID)
+	user, err := h.userStore.GetById(userId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
+	}
+
+	page := 0
+	pageSize := 20
+
+	if c.QueryParam("page") != "" {
+		page, err = strconv.Atoi(c.QueryParam("page"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "'page' query parameter not a number", lang))
+		}
+	}
+
+	if c.QueryParam("pageSize") != "" {
+		pageSize, err = strconv.Atoi(c.QueryParam("pageSize"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "'pageSize' query parameter not a number", lang))
+		}
+	}
+
+	oldestFirst := services.StrToBool(c.QueryParam("oldestFirst"))
+
+	entries, err := h.userStore.GetCashLog(user, page, pageSize, oldestFirst)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	return c.JSON(http.StatusOK, responses.NewCashLog(entries))
+}
+
+// /v1/user/cash (POST)
+func (h *Handler) AddCashLogEntry(c echo.Context) error {
+	lang := c.Get("lang").(string)
+
+	userId := c.Get("userId").(uuid.UUID)
+	user, err := h.userStore.GetById(userId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
+	}
+
+	var body bindings.AddCashLogEntry
+	err = c.Bind(&body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
+	}
+
+	cashLogEntry := models.CashLogEntry{
+		ChangeTitle:       body.Title,
+		ChangeDescription: body.Description,
+		Ct1:               int(body.Ct1),
+		Ct2:               int(body.Ct2),
+		Ct5:               int(body.Ct5),
+		Ct10:              int(body.Ct10),
+		Ct20:              int(body.Ct20),
+		Ct50:              int(body.Ct50),
+		Eur1:              int(body.Eur1),
+		Eur2:              int(body.Eur2),
+		Eur5:              int(body.Eur5),
+		Eur10:             int(body.Eur10),
+		Eur20:             int(body.Eur20),
+		Eur50:             int(body.Eur50),
+		Eur100:            int(body.Eur100),
+		Eur200:            int(body.Eur200),
+		Eur500:            int(body.Eur500),
+	}
+
+	err = h.userStore.AddCashLogEntry(user, &cashLogEntry)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	return c.JSON(http.StatusCreated, responses.New(true, "Successfully added new cash log entry", lang))
+}

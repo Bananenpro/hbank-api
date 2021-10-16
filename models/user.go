@@ -16,6 +16,11 @@ type UserStore interface {
 
 	GetProfilePicture(user *User) ([]byte, error)
 
+	GetCashLog(user *User, page, pageSize int, oldestFirst bool) ([]CashLogEntry, error)
+	GetLastCashLogEntry(user *User) (*CashLogEntry, error)
+	GetCashLogEntryById(user *User, id uuid.UUID) (*CashLogEntry, error)
+	AddCashLogEntry(user *User, entry *CashLogEntry) error
+
 	GetConfirmEmailCode(user *User) (*ConfirmEmailCode, error)
 	DeleteConfirmEmailCode(code *ConfirmEmailCode) error
 
@@ -62,8 +67,9 @@ type User struct {
 	Email                 string `gorm:"unique"`
 	PasswordHash          []byte
 	ProfilePicture        []byte
-	ProfilePictureId      uuid.UUID `gorm:"type:uuid"`
-	ProfilePicturePrivacy string    `gorm:"default:show"`
+	ProfilePictureId      uuid.UUID      `gorm:"type:uuid"`
+	ProfilePicturePrivacy string         `gorm:"default:show"`
+	CashLog               []CashLogEntry `gorm:"constraint:OnDelete:CASCADE"`
 	EmailConfirmed        bool
 	TwoFaOTPEnabled       bool
 	OtpSecret             string
@@ -75,6 +81,33 @@ type User struct {
 	PasswordTokens        []PasswordToken
 	TwoFATokens           []TwoFAToken
 	RecoveryCodes         []RecoveryCode
+}
+
+type CashLogEntry struct {
+	Base
+	ChangeTitle       string
+	ChangeDescription string
+	TotalAmount       int
+	ChangeDifference  int
+
+	Ct1  int
+	Ct2  int
+	Ct5  int
+	Ct10 int
+	Ct20 int
+	Ct50 int
+
+	Eur1   int
+	Eur2   int
+	Eur5   int
+	Eur10  int
+	Eur20  int
+	Eur50  int
+	Eur100 int
+	Eur200 int
+	Eur500 int
+
+	UserId uuid.UUID `gorm:"type:uuid"`
 }
 
 type ConfirmEmailLastSent struct {

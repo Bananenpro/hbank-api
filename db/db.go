@@ -31,6 +31,7 @@ func AutoMigrate(db *gorm.DB) error {
 		&models.PasswordToken{},
 		&models.TwoFAToken{},
 		&models.RecoveryCode{},
+		&models.CashLogEntry{},
 	)
 }
 

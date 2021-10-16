@@ -38,4 +38,10 @@ func (h *Handler) RegisterV1(v1 *echo.Group) {
 	v1.DELETE("/user", h.DeleteUser, middlewares.JWT)
 	v1.POST("/user/profilePicture", h.SetProfilePicture, middlewares.JWT)
 	v1.GET("/user/:id/profilePicture", h.GetProfilePicture, middlewares.JWT)
+
+	user := v1.Group("/user")
+	user.GET("/cash/current", h.GetCurrentCash, middlewares.JWT)
+	user.GET("/cash/:id", h.GetCashLogEntryById, middlewares.JWT)
+	user.GET("/cash", h.GetCashLog, middlewares.JWT)
+	user.POST("/cash", h.AddCashLogEntry, middlewares.JWT)
 }

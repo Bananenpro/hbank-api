@@ -146,6 +146,10 @@ func TestHandler_DeleteUser(t *testing.T) {
 			{CodeHash: services.HashToken("abcde")},
 			{CodeHash: services.HashToken("edcba")},
 		},
+		CashLog: []models.CashLogEntry{
+			{ChangeTitle: "Hello"},
+			{ChangeTitle: "Hello2"},
+		},
 	}
 	us.Create(user1)
 	us.SetConfirmEmailLastSent(user1.Email, time.Now().Unix())
@@ -232,6 +236,10 @@ func TestHandler_DeleteUser(t *testing.T) {
 				recoveryCodes, err := us.GetRecoveryCodes(tt.user)
 				assert.NoError(t, err)
 				assert.Empty(t, recoveryCodes, "RecoveryCodes")
+
+				cashLog, err := us.GetCashLog(tt.user, -1, -1, false)
+				assert.NoError(t, err)
+				assert.Empty(t, cashLog, "CashLog")
 
 				confirmEmailLastSent, err := us.GetConfirmEmailLastSent(tt.user.Email)
 				assert.NoError(t, err)

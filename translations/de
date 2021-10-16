@@ -45,3 +45,8 @@
 "The 'size' query parameter is not a number"="Der 'size' Anfrageparameter ist keine Zahl"
 "Wrong profile picture id"="Falsche Profilbild-ID"
 "Max allowed size is %d"="Die maximal erlaubte Größe ist %d"
+"Profile picture hidden"="Profilbild ist versteckt"
+"Cash log is empty"="Bargeldprotokoll ist leer"
+"'page' query parameter not a number"="'page' Anfrageparameter ist keine Zahl"
+"'pageSize' query parameter not a number"="'pageSize' Anfrageparameter ist keine Zahl"
+"Successfully added new cash log entry"="Ein neuer Bargeldprotokolleintrag wurde erstellt"

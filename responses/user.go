@@ -18,6 +18,104 @@ type User struct {
 	ProfilePictureId string `json:"profile_picture_id"`
 }
 
+type CashLogEntryDetailed struct {
+	Id          string `json:"id"`
+	Time        int64  `json:"time"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+
+	Ct1    int `json:"ct1"`
+	Ct2    int `json:"ct2"`
+	Ct5    int `json:"ct5"`
+	Ct10   int `json:"ct10"`
+	Ct20   int `json:"ct20"`
+	Ct50   int `json:"ct50"`
+	Eur1   int `json:"eur1"`
+	Eur2   int `json:"eur2"`
+	Eur5   int `json:"eur5"`
+	Eur10  int `json:"eur10"`
+	Eur20  int `json:"eur20"`
+	Eur50  int `json:"eur50"`
+	Eur100 int `json:"eur100"`
+	Eur200 int `json:"eur200"`
+	Eur500 int `json:"eur500"`
+
+	Amount     int `json:"amount"`
+	Difference int `json:"difference"`
+}
+
+type CashLogEntry struct {
+	Id         string `json:"id"`
+	Time       int64  `json:"time"`
+	Title      string `json:"title"`
+	Amount     int    `json:"amount"`
+	Difference int    `json:"difference"`
+}
+
+func NewCashLogEntry(entry *models.CashLogEntry) interface{} {
+	type cashLogEntryResp struct {
+		Base
+		CashLogEntryDetailed
+	}
+	return cashLogEntryResp{
+		Base: Base{
+			Success: true,
+		},
+		CashLogEntryDetailed: CashLogEntryDetailed{
+			Id:          entry.Id.String(),
+			Time:        entry.Created,
+			Title:       entry.ChangeTitle,
+			Description: entry.ChangeDescription,
+
+			Ct1:    entry.Ct1,
+			Ct2:    entry.Ct2,
+			Ct5:    entry.Ct5,
+			Ct10:   entry.Ct10,
+			Ct20:   entry.Ct20,
+			Ct50:   entry.Ct50,
+			Eur1:   entry.Eur1,
+			Eur2:   entry.Eur2,
+			Eur5:   entry.Eur5,
+			Eur10:  entry.Eur10,
+			Eur20:  entry.Eur20,
+			Eur50:  entry.Eur50,
+			Eur100: entry.Eur100,
+			Eur200: entry.Eur200,
+			Eur500: entry.Eur500,
+
+			Amount:     entry.TotalAmount,
+			Difference: entry.ChangeDifference,
+		},
+	}
+}
+
+func NewCashLog(log []models.CashLogEntry) interface{} {
+	type cashLogResp struct {
+		Base
+		CashLog []CashLogEntry
+	}
+
+	entries := make([]CashLogEntry, len(log))
+
+	for i, entry := range log {
+		entries[i] = CashLogEntry{
+			Id:    entry.Id.String(),
+			Time:  entry.Created,
+			Title: entry.ChangeTitle,
+
+			Amount:     entry.TotalAmount,
+			Difference: entry.ChangeDifference,
+		}
+	}
+
+	return cashLogResp{
+		Base: Base{
+			Success: true,
+		},
+		CashLog: entries,
+	}
+}
+
 func NewAuthUser(user *models.User) interface{} {
 	type authUserResp struct {
 		Base
