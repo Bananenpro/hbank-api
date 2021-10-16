@@ -1,6 +1,7 @@
 package router
 
 import (
+	"github.com/Bananenpro/hbank-api/responses"
 	"github.com/Bananenpro/hbank-api/router/middlewares"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -9,6 +10,8 @@ import (
 func New() *echo.Echo {
 	e := echo.New()
 	e.HideBanner = true
+
+	e.HTTPErrorHandler = responses.HandleHTTPError
 
 	e.Pre(middleware.RemoveTrailingSlash())
 

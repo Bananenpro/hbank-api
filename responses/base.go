@@ -1,8 +1,11 @@
 package responses
 
 import (
+	"net/http"
+
 	"github.com/Bananenpro/hbank-api/config"
 	"github.com/Bananenpro/hbank-api/services"
+	"github.com/labstack/echo/v4"
 )
 
 type Base struct {
@@ -15,6 +18,11 @@ func New(success bool, message string, lang string) Base {
 		Success: success,
 		Message: services.Tr(message, lang),
 	}
+}
+
+func HandleHTTPError(err error, c echo.Context) {
+	c.JSON(http.StatusInternalServerError, NewUnexpectedError(err, ""))
+	c.Logger().Error(err)
 }
 
 func NewUnexpectedError(err error, lang string) Base {
