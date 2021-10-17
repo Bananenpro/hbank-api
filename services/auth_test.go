@@ -26,7 +26,7 @@ func Test_IsValidEmail(t *testing.T) {
 		{"Missing domain", "test@com", false},
 		{"Non-existant domain", "test@foomail.abc", false},
 		{"Two @ signs", "test@foomail@abc", false},
-		{"Too long", strings.Repeat("a", config.Data.UserMaxEmailLength) + "@gmail.com", false},
+		{"Too long", strings.Repeat("a", config.Data.MaxEmailLength) + "@gmail.com", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

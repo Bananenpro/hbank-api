@@ -81,6 +81,7 @@ type User struct {
 	PasswordTokens        []PasswordToken
 	TwoFATokens           []TwoFAToken
 	RecoveryCodes         []RecoveryCode
+	MemberGroups          []Group `gorm:"many2many:group_members"`
 }
 
 type CashLogEntry struct {

@@ -23,14 +23,16 @@ type ConfigData struct {
 	EmailPort                 int    `json:"email_port"`
 	EmailUsername             string `json:"email_username"`
 	EmailPassword             string `json:"email_password"`
-	UserMinNameLength         int    `json:"user_min_name_length"`
-	UserMinPasswordLength     int    `json:"user_min_password_length"`
-	UserMinEmailLength        int    `json:"user_min_email_length"`
-	UserMaxNameLength         int    `json:"user_max_name_length"`
-	UserMaxPasswordLength     int    `json:"user_max_password_length"`
-	UserMaxEmailLength        int    `json:"user_max_email_length"`
-	UserMaxProfilePictureSize int64  `json:"user_max_profile_picture_size"`
-	UserProfilePictureSize    int    `json:"user_profile_picture_size"`
+	MinNameLength             int    `json:"min_name_length"`
+	MaxNameLength             int    `json:"max_name_length"`
+	MinDescriptionLength      int    `json:"min_description_length"`
+	MaxDescriptionLength      int    `json:"max_description_length"`
+	MinPasswordLength         int    `json:"min_password_length"`
+	MaxPasswordLength         int    `json:"max_password_length"`
+	MinEmailLength            int    `json:"min_email_length"`
+	MaxEmailLength            int    `json:"max_email_length"`
+	MaxProfilePictureFileSize int64  `json:"max_profile_picture_file_size"`
+	ProfilePictureSize        int    `json:"profile_picture_size"`
 	BcryptCost                int    `json:"bcrypt_cost"`
 	PBKDF2Iterations          int    `json:"pbkdf2_iterations"`
 	LoginTokenLifetime        int64  `json:"login_token_lifetime"`
@@ -43,14 +45,16 @@ type ConfigData struct {
 var defaultData = ConfigData{
 	ServerPort:                8080,
 	DomainName:                "hbank",
-	UserMinNameLength:         3,
-	UserMinPasswordLength:     6,
-	UserMinEmailLength:        3,
-	UserMaxNameLength:         64,
-	UserMaxPasswordLength:     64,
-	UserMaxEmailLength:        64,
-	UserMaxProfilePictureSize: 10000000, // 10 MB
-	UserProfilePictureSize:    500,
+	MinNameLength:             3,
+	MaxNameLength:             15,
+	MinDescriptionLength:      0,
+	MaxDescriptionLength:      256,
+	MinPasswordLength:         6,
+	MinEmailLength:            3,
+	MaxPasswordLength:         64,
+	MaxEmailLength:            64,
+	MaxProfilePictureFileSize: 10000000, // 10 MB
+	ProfilePictureSize:        500,
 	BcryptCost:                10,
 	PBKDF2Iterations:          10000,
 	LoginTokenLifetime:        5 * 60,

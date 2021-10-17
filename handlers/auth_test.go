@@ -43,7 +43,7 @@ func TestRegister(t *testing.T) {
 		Email: "exists@gmail.com",
 	})
 
-	handler := New(us)
+	handler := New(us, nil)
 
 	tests := []struct {
 		tName       string
@@ -56,10 +56,10 @@ func TestRegister(t *testing.T) {
 	}{
 		{tName: "Successful register", name: "bob", email: "bob@gmail.com", password: "123456", wantCode: http.StatusCreated, wantSuccess: true, wantMessage: "Successfully registered new user"},
 		{tName: "User does already exist", name: "bob", email: "exists@gmail.com", password: "123456", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "The user with this email does already exist"},
-		{tName: "Name too short", name: strings.Repeat("a", config.Data.UserMinNameLength-1), email: "bob@gmail.com", password: "123456", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Name too short"},
-		{tName: "Name too long", name: strings.Repeat("a", config.Data.UserMaxNameLength+1), email: "bob@gmail.com", password: "123456", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Name too long"},
-		{tName: "Password too short", name: "bob", email: "bob@gmail.com", password: strings.Repeat("a", config.Data.UserMinPasswordLength-1), wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Password too short"},
-		{tName: "Password too long", name: "bob", email: "bob@gmail.com", password: strings.Repeat("a", config.Data.UserMaxPasswordLength+1), wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Password too long"},
+		{tName: "Name too short", name: strings.Repeat("a", config.Data.MinNameLength-1), email: "bob@gmail.com", password: "123456", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Name too short"},
+		{tName: "Name too long", name: strings.Repeat("a", config.Data.MaxNameLength+1), email: "bob@gmail.com", password: "123456", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Name too long"},
+		{tName: "Password too short", name: "bob", email: "bob@gmail.com", password: strings.Repeat("a", config.Data.MinPasswordLength-1), wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Password too short"},
+		{tName: "Password too long", name: "bob", email: "bob@gmail.com", password: strings.Repeat("a", config.Data.MaxPasswordLength+1), wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Password too long"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.tName, func(t *testing.T) {
@@ -106,7 +106,7 @@ func TestHandler_SendConfirmEmail(t *testing.T) {
 		Email: "bob@gmail.com",
 	})
 
-	handler := New(us)
+	handler := New(us, nil)
 
 	tests := []struct {
 		tName       string
@@ -197,7 +197,7 @@ func TestHandler_VerifyConfirmEmailCode(t *testing.T) {
 		},
 	})
 
-	handler := New(us)
+	handler := New(us, nil)
 
 	tests := []struct {
 		tName       string
@@ -277,7 +277,7 @@ func TestHandler_Activate2FAOTP(t *testing.T) {
 		TwoFaOTPEnabled: true,
 	})
 
-	handler := New(us)
+	handler := New(us, nil)
 
 	tests := []struct {
 		tName       string
@@ -346,7 +346,7 @@ func TestHandler_GetOTPQRCode(t *testing.T) {
 	}
 	us.Create(user)
 
-	handler := New(us)
+	handler := New(us, nil)
 
 	tests := []struct {
 		tName       string
@@ -417,7 +417,7 @@ func TestHandler_VerifyOTPCode(t *testing.T) {
 	pastCode, _ := totp.GenerateCode(key.Secret(), time.Unix(0, 0))
 	currentCode, _ := totp.GenerateCode(key.Secret(), time.Now())
 
-	handler := New(us)
+	handler := New(us, nil)
 
 	tests := []struct {
 		tName       string
@@ -484,7 +484,7 @@ func TestHandler_PasswordAuth(t *testing.T) {
 		TwoFaOTPEnabled: true,
 	})
 
-	handler := New(us)
+	handler := New(us, nil)
 
 	tests := []struct {
 		tName       string
@@ -587,7 +587,7 @@ func TestHandler_Login(t *testing.T) {
 		TwoFATokens:     []models.TwoFAToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: 0}},
 	})
 
-	handler := New(us)
+	handler := New(us, nil)
 
 	tests := []struct {
 		tName          string
@@ -676,7 +676,7 @@ func TestHandler_VerifyRecoveryCode(t *testing.T) {
 		},
 	})
 
-	handler := New(us)
+	handler := New(us, nil)
 
 	tests := []struct {
 		tName       string
@@ -753,7 +753,7 @@ func TestHandler_NewRecoveryCodes(t *testing.T) {
 	}
 	us.Create(user)
 
-	handler := New(us)
+	handler := New(us, nil)
 
 	tests := []struct {
 		tName       string
@@ -821,7 +821,7 @@ func TestHandler_NewOTP(t *testing.T) {
 	}
 	us.Create(user2)
 
-	handler := New(us)
+	handler := New(us, nil)
 
 	tests := []struct {
 		tName       string
@@ -903,7 +903,7 @@ func TestHandler_Logout(t *testing.T) {
 	}
 	us.Create(user2)
 
-	handler := New(us)
+	handler := New(us, nil)
 
 	tests := []struct {
 		tName       string
@@ -980,7 +980,7 @@ func TestHandler_ChangePassword(t *testing.T) {
 	}
 	us.Create(user2)
 
-	handler := New(us)
+	handler := New(us, nil)
 
 	tests := []struct {
 		tName       string
@@ -1063,7 +1063,7 @@ func TestHandler_ForgotPassword(t *testing.T) {
 		TwoFATokens: []models.TwoFAToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
 	})
 
-	handler := New(us)
+	handler := New(us, nil)
 
 	tests := []struct {
 		tName       string
@@ -1160,7 +1160,7 @@ func TestHandler_ResetPassword(t *testing.T) {
 	}
 	us.Create(user3)
 
-	handler := New(us)
+	handler := New(us, nil)
 
 	tests := []struct {
 		tName       string
@@ -1268,7 +1268,7 @@ func TestHandler_Refresh(t *testing.T) {
 	}
 	us.Create(user4)
 
-	handler := New(us)
+	handler := New(us, nil)
 
 	tests := []struct {
 		tName            string
@@ -1372,7 +1372,7 @@ func TestHandler_RequestChangeEmail(t *testing.T) {
 		Email: "peter@gmail.com",
 	})
 
-	handler := New(us)
+	handler := New(us, nil)
 
 	tests := []struct {
 		tName       string
@@ -1451,7 +1451,7 @@ func TestHandler_ChangeEmail(t *testing.T) {
 	}
 	us.Create(user3)
 
-	handler := New(us)
+	handler := New(us, nil)
 
 	tests := []struct {
 		tName       string

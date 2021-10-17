@@ -1,6 +1,7 @@
 package db
 
 import (
+	"github.com/Bananenpro/hbank-api/config"
 	"github.com/Bananenpro/hbank-api/models"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -8,9 +9,15 @@ import (
 )
 
 func NewSqlite(filepath string) (*gorm.DB, error) {
-	return gorm.Open(sqlite.Open(filepath), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
-	})
+	if config.Data.Debug {
+		return gorm.Open(sqlite.Open(filepath), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Info),
+		})
+	} else {
+		return gorm.Open(sqlite.Open(filepath), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Silent),
+		})
+	}
 }
 
 func NewInMemory() (*gorm.DB, error) {
@@ -32,6 +39,8 @@ func AutoMigrate(db *gorm.DB) error {
 		&models.TwoFAToken{},
 		&models.RecoveryCode{},
 		&models.CashLogEntry{},
+
+		&models.Group{},
 	)
 }
 

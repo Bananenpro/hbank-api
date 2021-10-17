@@ -51,7 +51,7 @@ func TestHandler_GetUser(t *testing.T) {
 	}
 	us.Create(user2)
 
-	handler := New(us)
+	handler := New(us, nil)
 
 	tests := []struct {
 		tName       string
@@ -171,7 +171,7 @@ func TestHandler_DeleteUser(t *testing.T) {
 	}
 	us.Create(user3)
 
-	handler := New(us)
+	handler := New(us, nil)
 
 	tests := []struct {
 		tName       string
@@ -294,7 +294,7 @@ func TestHandler_DeleteUserByConfirmEmailCode(t *testing.T) {
 	}
 	us.Create(user2)
 
-	handler := New(us)
+	handler := New(us, nil)
 
 	tests := []struct {
 		tName       string

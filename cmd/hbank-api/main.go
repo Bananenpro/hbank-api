@@ -30,7 +30,8 @@ func main() {
 	}
 
 	us := db.NewUserStore(database)
-	handler := handlers.New(us)
+	gs := db.NewGroupStore(database)
+	handler := handlers.New(us, gs)
 
 	v1 := r.Group("/v1")
 	handler.RegisterV1(v1)

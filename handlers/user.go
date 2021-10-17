@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/Bananenpro/hbank-api/bindings"
 	"github.com/Bananenpro/hbank-api/config"
@@ -172,7 +173,7 @@ func (h *Handler) DeleteUserByConfirmEmailCode(c echo.Context) error {
 	return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 }
 
-// /v1/user/profilePicture (POST)
+// /v1/user/picture (POST)
 func (h *Handler) SetProfilePicture(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -190,8 +191,8 @@ func (h *Handler) SetProfilePicture(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing profile picture file", lang))
 	}
 
-	if file.Size > config.Data.UserMaxProfilePictureSize {
-		return c.JSON(http.StatusBadRequest, responses.New(false, fmt.Sprintf(services.Tr("File too big (max %d bytes)", lang), config.Data.UserMaxProfilePictureSize), ""))
+	if file.Size > config.Data.MaxProfilePictureFileSize {
+		return c.JSON(http.StatusBadRequest, responses.New(false, fmt.Sprintf(services.Tr("File too big (max %d bytes)", lang), config.Data.MaxProfilePictureFileSize), ""))
 	}
 
 	src, err := file.Open()
@@ -223,7 +224,7 @@ func (h *Handler) SetProfilePicture(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	data, err = bimg.NewImage(data).Thumbnail(config.Data.UserProfilePictureSize)
+	data, err = bimg.NewImage(data).Thumbnail(config.Data.ProfilePictureSize)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
@@ -244,7 +245,7 @@ func (h *Handler) SetProfilePicture(c echo.Context) error {
 	})
 }
 
-// /v1/user/:id/profilePicture?id=string&size=int (GET)
+// /v1/user/:id/picture?id=uuid&size=int (GET)
 func (h *Handler) GetProfilePicture(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -281,15 +282,15 @@ func (h *Handler) GetProfilePicture(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, responses.New(false, "Wrong profile picture id", lang))
 	}
 
-	size := config.Data.UserProfilePictureSize
+	size := config.Data.ProfilePictureSize
 	if c.QueryParam("size") != "" {
 		size, err = strconv.Atoi(c.QueryParam("size"))
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, responses.New(false, "The 'size' query parameter is not a number", lang))
 		}
 
-		if size > config.Data.UserProfilePictureSize {
-			return c.JSON(http.StatusBadRequest, responses.New(false, fmt.Sprintf(services.Tr("Max allowed size is %d", lang), config.Data.UserProfilePictureSize), ""))
+		if size > config.Data.ProfilePictureSize {
+			return c.JSON(http.StatusBadRequest, responses.New(false, fmt.Sprintf(services.Tr("Max allowed size is %d", lang), config.Data.ProfilePictureSize), ""))
 		}
 	}
 
@@ -450,6 +451,25 @@ func (h *Handler) AddCashLogEntry(c echo.Context) error {
 	err = c.Bind(&body)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
+	}
+
+	body.Title = strings.TrimSpace(body.Title)
+	body.Description = strings.TrimSpace(body.Description)
+
+	if len(body.Title) > config.Data.MaxNameLength {
+		return c.JSON(http.StatusOK, responses.New(false, "Title too long", lang))
+	}
+
+	if utf8.RuneCountInString(body.Title) < config.Data.MinNameLength {
+		return c.JSON(http.StatusOK, responses.New(false, "Title too short", lang))
+	}
+
+	if len(body.Description) > config.Data.MaxDescriptionLength {
+		return c.JSON(http.StatusOK, responses.New(false, "Description too long", lang))
+	}
+
+	if utf8.RuneCountInString(body.Description) < config.Data.MinDescriptionLength {
+		return c.JSON(http.StatusOK, responses.New(false, "Description too short", lang))
 	}
 
 	cashLogEntry := models.CashLogEntry{

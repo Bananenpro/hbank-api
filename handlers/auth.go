@@ -33,26 +33,27 @@ func (h *Handler) Register(c echo.Context) error {
 		return c.JSON(http.StatusOK, responses.New(false, "Invalid captcha token", lang))
 	}
 
+	body.Name = strings.ToLower(body.Name)
 	body.Email = strings.ToLower(body.Email)
 
 	if !services.IsValidEmail(body.Email) {
 		return c.JSON(http.StatusOK, responses.New(false, "Invalid email", lang))
 	}
 
-	if len(body.Name) > config.Data.UserMaxNameLength {
-		return c.JSON(http.StatusOK, responses.NewRegisterInvalid("Name too long", lang))
+	if len(body.Name) > config.Data.MaxNameLength {
+		return c.JSON(http.StatusOK, responses.New(false, "Name too long", lang))
 	}
 
-	if utf8.RuneCountInString(body.Name) < config.Data.UserMinNameLength {
-		return c.JSON(http.StatusOK, responses.NewRegisterInvalid("Name too short", lang))
+	if utf8.RuneCountInString(body.Name) < config.Data.MinNameLength {
+		return c.JSON(http.StatusOK, responses.New(false, "Name too short", lang))
 	}
 
-	if len(body.Password) > config.Data.UserMaxPasswordLength {
-		return c.JSON(http.StatusOK, responses.NewRegisterInvalid("Password too long", lang))
+	if len(body.Password) > config.Data.MaxPasswordLength {
+		return c.JSON(http.StatusOK, responses.New(false, "Password too long", lang))
 	}
 
-	if utf8.RuneCountInString(body.Password) < config.Data.UserMinPasswordLength {
-		return c.JSON(http.StatusOK, responses.NewRegisterInvalid("Password too short", lang))
+	if utf8.RuneCountInString(body.Password) < config.Data.MinPasswordLength {
+		return c.JSON(http.StatusOK, responses.New(false, "Password too short", lang))
 	}
 
 	if u, _ := h.userStore.GetByEmail(body.Email); u != nil {
@@ -788,17 +789,17 @@ func (h *Handler) ChangePassword(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
 	}
 
-	if len(body.NewPassword) > config.Data.UserMaxPasswordLength {
+	if len(body.NewPassword) > config.Data.MaxPasswordLength {
 		return c.JSON(http.StatusOK, responses.Base{
 			Success: false,
-			Message: fmt.Sprintf(services.Tr("New password too long (max %d)", lang), config.Data.UserMaxPasswordLength),
+			Message: fmt.Sprintf(services.Tr("New password too long (max %d)", lang), config.Data.MaxPasswordLength),
 		})
 	}
 
-	if utf8.RuneCountInString(body.NewPassword) < config.Data.UserMinPasswordLength {
+	if utf8.RuneCountInString(body.NewPassword) < config.Data.MinPasswordLength {
 		return c.JSON(http.StatusOK, responses.Base{
 			Success: false,
-			Message: fmt.Sprintf(services.Tr("New password too short (min %d)", lang), config.Data.UserMinPasswordLength),
+			Message: fmt.Sprintf(services.Tr("New password too short (min %d)", lang), config.Data.MinPasswordLength),
 		})
 	}
 
@@ -909,17 +910,17 @@ func (h *Handler) ResetPassword(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid email", lang))
 	}
 
-	if len(body.NewPassword) > config.Data.UserMaxPasswordLength {
+	if len(body.NewPassword) > config.Data.MaxPasswordLength {
 		return c.JSON(http.StatusOK, responses.Base{
 			Success: false,
-			Message: fmt.Sprintf(services.Tr("New password too long (max %d)", lang), config.Data.UserMaxPasswordLength),
+			Message: fmt.Sprintf(services.Tr("New password too long (max %d)", lang), config.Data.MaxPasswordLength),
 		})
 	}
 
-	if utf8.RuneCountInString(body.NewPassword) < config.Data.UserMinPasswordLength {
+	if utf8.RuneCountInString(body.NewPassword) < config.Data.MinPasswordLength {
 		return c.JSON(http.StatusOK, responses.Base{
 			Success: false,
-			Message: fmt.Sprintf(services.Tr("New password too short (min %d)", lang), config.Data.UserMinPasswordLength),
+			Message: fmt.Sprintf(services.Tr("New password too short (min %d)", lang), config.Data.MinPasswordLength),
 		})
 	}
 

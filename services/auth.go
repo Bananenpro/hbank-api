@@ -82,7 +82,7 @@ func GenerateRandomString(length int) string {
 }
 
 func IsValidEmail(email string) bool {
-	if len(email) > config.Data.UserMaxEmailLength || utf8.RuneCountInString(email) < config.Data.UserMinEmailLength {
+	if len(email) > config.Data.MaxEmailLength || utf8.RuneCountInString(email) < config.Data.MinEmailLength {
 		return false
 	}
 

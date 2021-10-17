@@ -36,12 +36,18 @@ func (h *Handler) RegisterV1(v1 *echo.Group) {
 	v1.PUT("/user", h.UpdateUser, middlewares.JWT)
 	v1.DELETE("/user/:id", h.DeleteUserByConfirmEmailCode)
 	v1.DELETE("/user", h.DeleteUser, middlewares.JWT)
-	v1.POST("/user/profilePicture", h.SetProfilePicture, middlewares.JWT)
-	v1.GET("/user/:id/profilePicture", h.GetProfilePicture, middlewares.JWT)
+	v1.POST("/user/picture", h.SetProfilePicture, middlewares.JWT)
+	v1.GET("/user/:id/picture", h.GetProfilePicture, middlewares.JWT)
 
 	user := v1.Group("/user")
 	user.GET("/cash/current", h.GetCurrentCash, middlewares.JWT)
 	user.GET("/cash/:id", h.GetCashLogEntryById, middlewares.JWT)
 	user.GET("/cash", h.GetCashLog, middlewares.JWT)
 	user.POST("/cash", h.AddCashLogEntry, middlewares.JWT)
+
+	v1.GET("/group", h.GetGroups, middlewares.JWT)
+	v1.GET("/group/:id", h.GetGroupById, middlewares.JWT)
+	v1.POST("/group", h.CreateGroup, middlewares.JWT)
+	v1.GET("/group/:id/member", h.GetGroupMembers, middlewares.JWT)
+	v1.GET("/group/:id/picture", h.GetGroupPicture, middlewares.JWT)
 }

@@ -1,6 +1,8 @@
 package models
 
 import (
+	"bytes"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -11,6 +13,9 @@ type Base struct {
 }
 
 func (b *Base) BeforeCreate(tx *gorm.DB) (err error) {
-	b.Id = uuid.New()
+	emptyId := uuid.UUID{}
+	if bytes.Equal(b.Id[:], emptyId[:]) {
+		b.Id = uuid.New()
+	}
 	return
 }
