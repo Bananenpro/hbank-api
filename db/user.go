@@ -464,6 +464,8 @@ func (us *UserStore) AddCashLogEntry(user *models.User, entry *models.CashLogEnt
 
 	if lastEntry != nil {
 		entry.ChangeDifference = entry.TotalAmount - lastEntry.TotalAmount
+	} else {
+		entry.ChangeDifference = entry.TotalAmount
 	}
 
 	return us.db.Model(&user).Association("CashLog").Append(entry)
