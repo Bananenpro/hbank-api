@@ -2,6 +2,7 @@ package responses
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/Bananenpro/hbank-api/config"
 	"github.com/Bananenpro/hbank-api/services"
@@ -21,8 +22,22 @@ func New(success bool, message string, lang string) Base {
 }
 
 func HandleHTTPError(err error, c echo.Context) {
-	c.JSON(http.StatusInternalServerError, NewUnexpectedError(err, ""))
-	c.Logger().Error(err)
+	headerValues := c.Request().Header["Accept-Language"]
+	headerValue := strings.Join(headerValues, ",")
+	lang := services.GetLanguageFromAcceptLanguageHeader(headerValue)
+
+	code := http.StatusInternalServerError
+	message := NewUnexpectedError(err, "").Message
+	if he, ok := err.(*echo.HTTPError); ok {
+		code = he.Code
+		message = he.Message.(string)
+	}
+
+	c.JSON(code, New(false, message, lang))
+
+	if code != http.StatusNotFound {
+		c.Logger().Error(err)
+	}
 }
 
 func NewUnexpectedError(err error, lang string) Base {
