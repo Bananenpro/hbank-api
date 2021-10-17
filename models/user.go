@@ -5,7 +5,7 @@ import (
 )
 
 type UserStore interface {
-	GetAll(except *User) ([]User, error)
+	GetAll(except *User, page, pageSize int, descending bool) ([]User, error)
 	GetById(id uuid.UUID) (*User, error)
 	GetByEmail(email string) (*User, error)
 	Create(user *User) error
@@ -67,9 +67,9 @@ type User struct {
 	Email                 string `gorm:"unique"`
 	PasswordHash          []byte
 	ProfilePicture        []byte
-	ProfilePictureId      uuid.UUID      `gorm:"type:uuid"`
-	ProfilePicturePrivacy string         `gorm:"default:everybody"`
-	CashLog               []CashLogEntry `gorm:"constraint:OnDelete:CASCADE"`
+	ProfilePictureId      uuid.UUID `gorm:"type:uuid"`
+	ProfilePicturePrivacy string    `gorm:"default:everybody"`
+	CashLog               []CashLogEntry
 	EmailConfirmed        bool
 	TwoFaOTPEnabled       bool
 	OtpSecret             string

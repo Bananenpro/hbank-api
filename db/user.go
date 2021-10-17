@@ -22,13 +22,27 @@ func NewUserStore(db *gorm.DB) *UserStore {
 	}
 }
 
-func (us *UserStore) GetAll(except *models.User) ([]models.User, error) {
+func (us *UserStore) GetAll(except *models.User, page, pageSize int, descending bool) ([]models.User, error) {
 	var users []models.User
 	var err error
+
+	order := "ASC"
+	if descending {
+		order = "DESC"
+	}
+
 	if except == nil {
-		err = us.db.Omit("profile_picture").Find(&users).Error
+		if page < 0 || pageSize < 0 {
+			err = us.db.Omit("profile_picture").Order("name " + order).Find(&users).Error
+		} else {
+			err = us.db.Omit("profile_picture").Order("name " + order).Offset(page * pageSize).Limit(pageSize).Find(&users).Error
+		}
 	} else {
-		err = us.db.Not("id = ?", except.Id).Find(&users).Error
+		if page < 0 || pageSize < 0 {
+			err = us.db.Omit("profile_picture").Not("id = ?", except.Id).Order("name " + order).Find(&users).Error
+		} else {
+			err = us.db.Omit("profile_picture").Not("id = ?", except.Id).Order("name " + order).Offset(page * pageSize).Limit(pageSize).Find(&users).Error
+		}
 	}
 	return users, err
 }

@@ -22,7 +22,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// /v1/user?includeSelf=bool (GET)
+// /v1/user?includeSelf=bool&page=int&pageSize=int&descending=bool (GET)
 func (h *Handler) GetUsers(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	authUserId := c.Get("userId").(uuid.UUID)
@@ -34,11 +34,30 @@ func (h *Handler) GetUsers(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
+	page := 0
+	pageSize := 20
+
+	if c.QueryParam("page") != "" {
+		page, err = strconv.Atoi(c.QueryParam("page"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "'page' query parameter not a number", lang))
+		}
+	}
+
+	if c.QueryParam("pageSize") != "" {
+		pageSize, err = strconv.Atoi(c.QueryParam("pageSize"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "'pageSize' query parameter not a number", lang))
+		}
+	}
+
+	descending := services.StrToBool(c.QueryParam("descending"))
+
 	var users []models.User
 	if services.StrToBool(c.QueryParams().Get("includeSelf")) {
-		users, err = h.userStore.GetAll(nil)
+		users, err = h.userStore.GetAll(nil, page, pageSize, descending)
 	} else {
-		users, err = h.userStore.GetAll(authUser)
+		users, err = h.userStore.GetAll(authUser, page, pageSize, descending)
 	}
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
