@@ -95,11 +95,29 @@ func (us *UserStore) Delete(user *models.User) error {
 }
 
 func (us *UserStore) DeleteById(id uuid.UUID) error {
-	return us.db.Delete(models.User{}, id).Error
+	user, err := us.GetById(id)
+	if err != nil {
+		return err
+	}
+
+	if user != nil {
+		return us.Delete(user)
+	}
+
+	return nil
 }
 
 func (us *UserStore) DeleteByEmail(email string) error {
-	return us.db.Delete(models.User{}, "email = ?", email).Error
+	user, err := us.GetByEmail(email)
+	if err != nil {
+		return err
+	}
+
+	if user != nil {
+		return us.Delete(user)
+	}
+
+	return nil
 }
 
 func (us *UserStore) GetProfilePicture(user *models.User) ([]byte, error) {
