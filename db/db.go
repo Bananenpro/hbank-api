@@ -1,6 +1,9 @@
 package db
 
 import (
+	"log"
+	"os"
+
 	"github.com/Bananenpro/hbank-api/config"
 	"github.com/Bananenpro/hbank-api/models"
 	"gorm.io/driver/sqlite"
@@ -20,10 +23,17 @@ func NewSqlite(filepath string) (*gorm.DB, error) {
 	}
 }
 
-func NewInMemory() (*gorm.DB, error) {
-	return gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
+func NewTestDB() (*gorm.DB, error) {
+	return gorm.Open(sqlite.Open("database_test.sqlite"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
+}
+
+func DeleteTestDB() {
+	err := os.Remove("database_test.sqlite")
+	if err != nil {
+		log.Fatalln("Failed to delete test database:", err)
+	}
 }
 
 func AutoMigrate(db *gorm.DB) error {
@@ -42,19 +52,4 @@ func AutoMigrate(db *gorm.DB) error {
 
 		&models.Group{},
 	)
-}
-
-func Clear(db *gorm.DB) error {
-	var users []models.User
-	err := db.Find(&users).Error
-	if err != nil {
-		return err
-	}
-
-	err = db.Delete(&users).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

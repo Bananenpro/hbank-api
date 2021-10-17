@@ -23,7 +23,7 @@ func TestHandler_GetUser(t *testing.T) {
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewInMemory()
+	database, err := db.NewTestDB()
 	if err != nil {
 		t.Fatalf("Couldn't create in memory database")
 	}
@@ -31,7 +31,6 @@ func TestHandler_GetUser(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
 	}
-	db.Clear(database)
 
 	us := db.NewUserStore(database)
 
@@ -103,13 +102,15 @@ func TestHandler_GetUser(t *testing.T) {
 			}
 		})
 	}
+
+	db.DeleteTestDB()
 }
 
 func TestHandler_DeleteUser(t *testing.T) {
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewInMemory()
+	database, err := db.NewTestDB()
 	if err != nil {
 		t.Fatalf("Couldn't create in memory database")
 	}
@@ -117,7 +118,6 @@ func TestHandler_DeleteUser(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
 	}
-	db.Clear(database)
 
 	us := db.NewUserStore(database)
 
@@ -258,13 +258,15 @@ func TestHandler_DeleteUser(t *testing.T) {
 			}
 		})
 	}
+
+	db.DeleteTestDB()
 }
 
 func TestHandler_DeleteUserByConfirmEmailCode(t *testing.T) {
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewInMemory()
+	database, err := db.NewTestDB()
 	if err != nil {
 		t.Fatalf("Couldn't create in memory database")
 	}
@@ -272,7 +274,6 @@ func TestHandler_DeleteUserByConfirmEmailCode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
 	}
-	db.Clear(database)
 
 	us := db.NewUserStore(database)
 	user1 := &models.User{
@@ -337,4 +338,6 @@ func TestHandler_DeleteUserByConfirmEmailCode(t *testing.T) {
 			}
 		})
 	}
+
+	db.DeleteTestDB()
 }
