@@ -252,7 +252,7 @@ func (h *Handler) GetProfilePicture(c echo.Context) error {
 	}
 
 	switch user.ProfilePicturePrivacy {
-	case models.ProfilePictureHide:
+	case models.ProfilePictureNobody:
 		if user.Id.String() != authUser.Id.String() {
 			return c.JSON(http.StatusNotFound, responses.New(false, "Profile picture hidden", lang))
 		}
@@ -310,7 +310,7 @@ func (h *Handler) UpdateUser(c echo.Context) error {
 	switch body.ProfilePicturePrivacy {
 	case "":
 		break
-	case models.ProfilePictureShow, models.ProfilePictureHide:
+	case models.ProfilePictureEverybody, models.ProfilePictureNobody:
 		user.ProfilePicturePrivacy = body.ProfilePicturePrivacy
 	default:
 		return c.JSON(http.StatusOK, responses.New(false, "Invalid profile picture privacy", lang))

@@ -57,8 +57,8 @@ type UserStore interface {
 }
 
 const (
-	ProfilePictureShow = "show"
-	ProfilePictureHide = "hide"
+	ProfilePictureEverybody = "everybody"
+	ProfilePictureNobody    = "nobody"
 )
 
 type User struct {
@@ -68,7 +68,7 @@ type User struct {
 	PasswordHash          []byte
 	ProfilePicture        []byte
 	ProfilePictureId      uuid.UUID      `gorm:"type:uuid"`
-	ProfilePicturePrivacy string         `gorm:"default:show"`
+	ProfilePicturePrivacy string         `gorm:"default:everybody"`
 	CashLog               []CashLogEntry `gorm:"constraint:OnDelete:CASCADE"`
 	EmailConfirmed        bool
 	TwoFaOTPEnabled       bool
