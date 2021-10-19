@@ -2,7 +2,6 @@ package responses
 
 import (
 	"github.com/Bananenpro/hbank-api/models"
-	"github.com/Bananenpro/hbank-api/services"
 )
 
 type CreateGroupSuccess struct {
@@ -26,7 +25,7 @@ type GroupDetailed struct {
 	Admin          bool   `json:"admin"`
 }
 
-func NewGroups(groups []models.Group, msg string, lang string) interface{} {
+func NewGroups(groups []models.Group) interface{} {
 	groupDTOs := make([]Group, len(groups))
 	for i, g := range groups {
 		groupDTOs[i].Id = g.Id.String()
@@ -43,7 +42,6 @@ func NewGroups(groups []models.Group, msg string, lang string) interface{} {
 	return groupsResp{
 		Base: Base{
 			Success: true,
-			Message: services.Tr(msg, lang),
 		},
 		Groups: groupDTOs,
 	}

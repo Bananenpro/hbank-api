@@ -5,10 +5,9 @@ import (
 )
 
 type GroupStore interface {
-	GetAllByMember(member *User, page, pageSize int, descending bool) ([]Group, error)
-	GetAllByAdmin(admin *User, page, pageSize int, descending bool) ([]Group, error)
+	GetAllByUser(user *User, page, pageSize int, descending bool) ([]Group, error)
 	GetById(id uuid.UUID) (*Group, error)
-	Create(user *User, group *Group) error
+	Create(group *Group) error
 	Update(group *Group) error
 	Delete(group *Group) error
 	DeleteById(id uuid.UUID) error
@@ -35,6 +34,15 @@ type Group struct {
 	GroupPicture   []byte
 	GroupPictureId uuid.UUID `gorm:"type:uuid"`
 
-	Members []User `gorm:"many2many:group_members"`
-	Admins  []User `gorm:"many2many:group_admins"`
+	Memberships []GroupMembership
+}
+
+type GroupMembership struct {
+	Base
+	GroupName string
+	GroupId   uuid.UUID `gorm:"type:uuid"`
+	UserName  string
+	UserId    uuid.UUID `gorm:"type:uuid"`
+	IsMember  bool
+	IsAdmin   bool
 }
