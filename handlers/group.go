@@ -17,8 +17,16 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// /v1/group?page=int&pageSize=int&descending=bool (GET)
+// /v1/group?admin=bool&page=int&pageSize=int&descending=bool (GET)
 func (h *Handler) GetGroups(c echo.Context) error {
+	if services.StrToBool(c.QueryParam("admin")) {
+		return h.GetAdminGroups(c)
+	} else {
+		return h.GetMemberGroups(c)
+	}
+}
+
+func (h *Handler) GetMemberGroups(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	userId := c.Get("userId").(uuid.UUID)
 	user, err := h.userStore.GetById(userId)
@@ -48,12 +56,50 @@ func (h *Handler) GetGroups(c echo.Context) error {
 
 	descending := services.StrToBool(c.QueryParam("descending"))
 
-	groups, err := h.groupStore.GetAllByUser(user, page, pageSize, descending)
+	groups, err := h.groupStore.GetAllByMember(user, page, pageSize, descending)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	return c.JSON(http.StatusOK, responses.NewGroups(groups))
+	return c.JSON(http.StatusOK, responses.NewGroups(groups, "All groups in which the current user is a member", lang))
+}
+
+func (h *Handler) GetAdminGroups(c echo.Context) error {
+	lang := c.Get("lang").(string)
+	userId := c.Get("userId").(uuid.UUID)
+	user, err := h.userStore.GetById(userId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
+	}
+
+	page := 0
+	pageSize := 20
+
+	if c.QueryParam("page") != "" {
+		page, err = strconv.Atoi(c.QueryParam("page"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "'page' query parameter not a number", lang))
+		}
+	}
+
+	if c.QueryParam("pageSize") != "" {
+		pageSize, err = strconv.Atoi(c.QueryParam("pageSize"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "'pageSize' query parameter not a number", lang))
+		}
+	}
+
+	descending := services.StrToBool(c.QueryParam("descending"))
+
+	groups, err := h.groupStore.GetAllByAdmin(user, page, pageSize, descending)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	return c.JSON(http.StatusOK, responses.NewGroups(groups, "All groups in which the current user is an admin", lang))
 }
 
 // /v1/group/:id (GET)
@@ -86,10 +132,15 @@ func (h *Handler) GetGroupById(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	if isMember {
-		return c.JSON(http.StatusOK, responses.NewGroup(group))
+	isAdmin, err := h.groupStore.IsAdmin(group, user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	if isMember || isAdmin {
+		return c.JSON(http.StatusOK, responses.NewGroup(group, isMember, isAdmin))
 	} else {
-		return c.JSON(http.StatusForbidden, responses.New(false, "Not a member of the group", lang))
+		return c.JSON(http.StatusForbidden, responses.New(false, "Not a member/admin of the group", lang))
 	}
 }
 
@@ -137,9 +188,15 @@ func (h *Handler) CreateGroup(c echo.Context) error {
 	}
 
 	err = h.groupStore.Create(user, group)
-
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	if !body.OnlyAdmin {
+		err = h.groupStore.AddMember(group, user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
 	}
 
 	return c.JSON(http.StatusCreated, responses.CreateGroupSuccess{
@@ -195,15 +252,75 @@ func (h *Handler) GetGroupMembers(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, responses.NewNotFound(lang))
 	}
 
-	isMember, err := h.groupStore.IsMember(group, user)
+	isInGroup, err := h.groupStore.IsInGroup(group, user)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
-	if !isMember {
-		return c.JSON(http.StatusForbidden, responses.New(false, "Not a member of the group", lang))
+	if !isInGroup {
+		return c.JSON(http.StatusForbidden, responses.New(false, "Not a member/admin of the group", lang))
 	}
 
 	members, err := h.groupStore.GetMembers(group, page, pageSize, descending)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	return c.JSON(http.StatusOK, responses.NewUsers(members))
+}
+
+// /v1/group/:id/admin (GET)
+func (h *Handler) GetGroupAdmins(c echo.Context) error {
+	lang := c.Get("lang").(string)
+	userId := c.Get("userId").(uuid.UUID)
+	user, err := h.userStore.GetById(userId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
+	}
+
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	}
+
+	page := 0
+	pageSize := 20
+
+	if c.QueryParam("page") != "" {
+		page, err = strconv.Atoi(c.QueryParam("page"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "'page' query parameter not a number", lang))
+		}
+	}
+
+	if c.QueryParam("pageSize") != "" {
+		pageSize, err = strconv.Atoi(c.QueryParam("pageSize"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "'pageSize' query parameter not a number", lang))
+		}
+	}
+
+	descending := services.StrToBool(c.QueryParam("descending"))
+
+	group, err := h.groupStore.GetById(id)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if group == nil {
+		return c.JSON(http.StatusNotFound, responses.NewNotFound(lang))
+	}
+
+	isInGroup, err := h.groupStore.IsInGroup(group, user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if !isInGroup {
+		return c.JSON(http.StatusForbidden, responses.New(false, "Not a member/admin of the group", lang))
+	}
+
+	members, err := h.groupStore.GetAdmins(group, page, pageSize, descending)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
@@ -236,12 +353,12 @@ func (h *Handler) GetGroupPicture(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, responses.NewNotFound(lang))
 	}
 
-	isMember, err := h.groupStore.IsMember(group, user)
+	isInGroup, err := h.groupStore.IsInGroup(group, user)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
-	if !isMember {
-		return c.JSON(http.StatusForbidden, responses.New(false, "Not a member of the group", lang))
+	if !isInGroup {
+		return c.JSON(http.StatusForbidden, responses.New(false, "Not a member/admin of the group", lang))
 	}
 
 	if c.QueryParam("id") != "" && c.QueryParam("id") != user.ProfilePictureId.String() {

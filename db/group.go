@@ -16,7 +16,7 @@ func NewGroupStore(db *gorm.DB) *GroupStore {
 	}
 }
 
-func (gs *GroupStore) GetAllByUser(user *models.User, page int, pageSize int, descending bool) ([]models.Group, error) {
+func (gs *GroupStore) GetAllByMember(member *models.User, page int, pageSize int, descending bool) ([]models.Group, error) {
 	var groups []models.Group
 	var err error
 
@@ -26,9 +26,27 @@ func (gs *GroupStore) GetAllByUser(user *models.User, page int, pageSize int, de
 	}
 
 	if page < 0 || pageSize < 0 {
-		err = gs.db.Model(user).Order("name " + order).Omit("group_picture").Association("MemberGroups").Find(&groups)
+		err = gs.db.Model(member).Order("name " + order).Omit("group_picture").Association("MemberGroups").Find(&groups)
 	} else {
-		err = gs.db.Model(user).Order("name " + order).Omit("group_picture").Offset(page * pageSize).Limit(pageSize).Association("MemberGroups").Find(&groups)
+		err = gs.db.Model(member).Order("name " + order).Omit("group_picture").Offset(page * pageSize).Limit(pageSize).Association("MemberGroups").Find(&groups)
+	}
+
+	return groups, err
+}
+
+func (gs *GroupStore) GetAllByAdmin(admin *models.User, page int, pageSize int, descending bool) ([]models.Group, error) {
+	var groups []models.Group
+	var err error
+
+	order := "ASC"
+	if descending {
+		order = "DESC"
+	}
+
+	if page < 0 || pageSize < 0 {
+		err = gs.db.Model(admin).Order("name " + order).Omit("group_picture").Association("AdminGroups").Find(&groups)
+	} else {
+		err = gs.db.Model(admin).Order("name " + order).Omit("group_picture").Offset(page * pageSize).Limit(pageSize).Association("AdminGroups").Find(&groups)
 	}
 
 	return groups, err
@@ -49,7 +67,7 @@ func (gs *GroupStore) GetById(id uuid.UUID) (*models.Group, error) {
 }
 
 func (gs *GroupStore) Create(user *models.User, group *models.Group) error {
-	return gs.db.Model(user).Association("MemberGroups").Append(group)
+	return gs.db.Model(user).Association("AdminGroups").Append(group)
 }
 
 func (gs *GroupStore) Update(group *models.Group) error {
@@ -118,4 +136,51 @@ func (gs *GroupStore) AddMember(group *models.Group, user *models.User) error {
 
 func (gs *GroupStore) RemoveMember(group *models.Group, user *models.User) error {
 	return gs.db.Model(group).Association("Members").Delete(user)
+}
+
+func (gs *GroupStore) GetAdmins(group *models.Group, page int, pageSize int, descending bool) ([]models.User, error) {
+	var admins []models.User
+	var err error
+
+	order := "ASC"
+	if descending {
+		order = "DESC"
+	}
+
+	if page < 0 || pageSize < 0 {
+		err = gs.db.Model(group).Order("name " + order).Omit("profile_picture").Association("Admins").Find(&admins)
+	} else {
+		err = gs.db.Model(group).Order("name " + order).Omit("profile_picture").Offset(page * pageSize).Limit(pageSize).Association("Admins").Find(&admins)
+	}
+
+	return admins, err
+}
+
+func (gs *GroupStore) IsAdmin(group *models.Group, user *models.User) (bool, error) {
+	var admins []models.User
+	err := gs.db.Model(group).Omit("profile_picture").Limit(1).Association("Admins").Find(&admins, "id = ?", user.Id)
+
+	return len(admins) == 1, err
+}
+
+func (gs *GroupStore) AddAdmin(group *models.Group, user *models.User) error {
+	return gs.db.Model(group).Association("Admins").Append(user)
+}
+
+func (gs *GroupStore) RemoveAdmin(group *models.Group, user *models.User) error {
+	return gs.db.Model(group).Association("Admins").Delete(user)
+}
+
+func (gs *GroupStore) IsInGroup(group *models.Group, user *models.User) (bool, error) {
+	isMember, err := gs.IsMember(group, user)
+	if err != nil {
+		return false, err
+	}
+	if isMember {
+		return true, nil
+	}
+
+	isAdmin, err := gs.IsAdmin(group, user)
+
+	return isAdmin, err
 }

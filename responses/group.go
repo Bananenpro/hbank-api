@@ -1,6 +1,9 @@
 package responses
 
-import "github.com/Bananenpro/hbank-api/models"
+import (
+	"github.com/Bananenpro/hbank-api/models"
+	"github.com/Bananenpro/hbank-api/services"
+)
 
 type CreateGroupSuccess struct {
 	Base
@@ -14,7 +17,16 @@ type Group struct {
 	GroupPictureId string `json:"group_picture_id"`
 }
 
-func NewGroups(groups []models.Group) interface{} {
+type GroupDetailed struct {
+	Id             string `json:"id"`
+	Name           string `json:"name"`
+	Description    string `json:"description"`
+	GroupPictureId string `json:"group_picture_id"`
+	Member         bool   `json:"member"`
+	Admin          bool   `json:"admin"`
+}
+
+func NewGroups(groups []models.Group, msg string, lang string) interface{} {
 	groupDTOs := make([]Group, len(groups))
 	for i, g := range groups {
 		groupDTOs[i].Id = g.Id.String()
@@ -31,26 +43,29 @@ func NewGroups(groups []models.Group) interface{} {
 	return groupsResp{
 		Base: Base{
 			Success: true,
+			Message: services.Tr(msg, lang),
 		},
 		Groups: groupDTOs,
 	}
 }
 
-func NewGroup(group *models.Group) interface{} {
+func NewGroup(group *models.Group, isMember, isAdmin bool) interface{} {
 	type groupResp struct {
 		Base
-		Group
+		GroupDetailed
 	}
 
 	return groupResp{
 		Base: Base{
 			Success: true,
 		},
-		Group: Group{
+		GroupDetailed: GroupDetailed{
 			Id:             group.Id.String(),
 			Name:           group.Name,
 			Description:    group.Description,
 			GroupPictureId: group.GroupPictureId.String(),
+			Member:         isMember,
+			Admin:          isAdmin,
 		},
 	}
 }
