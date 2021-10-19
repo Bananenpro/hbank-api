@@ -9,6 +9,7 @@ import (
 
 type ConfigData struct {
 	Debug                     bool   `json:"debug"`
+	DBVerbose                 bool   `json:"db_verbose"`
 	ServerPort                int    `json:"server_port"`
 	SSLCertPath               string `json:"ssl_cert_path"`
 	SSLKeyPath                string `json:"ssl_key_path"`

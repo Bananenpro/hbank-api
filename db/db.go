@@ -12,7 +12,7 @@ import (
 )
 
 func NewSqlite(filepath string) (*gorm.DB, error) {
-	if config.Data.Debug {
+	if config.Data.DBVerbose {
 		return gorm.Open(sqlite.Open(filepath), &gorm.Config{
 			Logger: logger.Default.LogMode(logger.Info),
 		})
