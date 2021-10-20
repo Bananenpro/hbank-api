@@ -48,7 +48,14 @@ func (h *Handler) RegisterV1(v1 *echo.Group) {
 	v1.GET("/group", h.GetGroups, middlewares.JWT)
 	v1.GET("/group/:id", h.GetGroupById, middlewares.JWT)
 	v1.POST("/group", h.CreateGroup, middlewares.JWT)
-	v1.GET("/group/:id/member", h.GetGroupMembers, middlewares.JWT)
-	v1.GET("/group/:id/admin", h.GetGroupAdmins, middlewares.JWT)
-	v1.GET("/group/:id/picture", h.GetGroupPicture, middlewares.JWT)
+
+	group := v1.Group("/group")
+	group.GET("/:id/member", h.GetGroupMembers, middlewares.JWT)
+	group.GET("/:id/admin", h.GetGroupAdmins, middlewares.JWT)
+	group.GET("/:id/picture", h.GetGroupPicture, middlewares.JWT)
+
+	group.GET("/:id/transaction/balance", h.GetBalance, middlewares.JWT)
+	group.GET("/:id/transaction/:transactionId", h.GetTransactionById, middlewares.JWT)
+	group.GET("/:id/transaction", h.GetTransactionLog, middlewares.JWT)
+	group.POST("/:id/transaction", h.CreateTransaction, middlewares.JWT)
 }

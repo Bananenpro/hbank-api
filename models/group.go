@@ -25,6 +25,12 @@ type GroupStore interface {
 	RemoveAdmin(group *Group, user *User) error
 
 	IsInGroup(group *Group, user *User) (bool, error)
+
+	GetTransactionLog(group *Group, user *User, page, pageSize int, oldestFirst bool) ([]TransactionLogEntry, error)
+	GetTransactionLogEntryById(group *Group, id uuid.UUID) (*TransactionLogEntry, error)
+	GetLastTransactionLogEntry(group *Group, user *User) (*TransactionLogEntry, error)
+	GetUserBalance(group *Group, user *User) (int, error)
+	CreateTransaction(group *Group, sender *User, receiver *User, title, description string, amount int) error
 }
 
 type Group struct {
@@ -45,4 +51,21 @@ type GroupMembership struct {
 	UserId    uuid.UUID `gorm:"type:uuid"`
 	IsMember  bool
 	IsAdmin   bool
+}
+
+type TransactionLogEntry struct {
+	Base
+	Title       string
+	Description string
+	Amount      int
+
+	GroupId uuid.UUID `gorm:"type:uuid"`
+
+	SenderId                uuid.UUID `gorm:"type:uuid"`
+	NewBalanceSender        int
+	BalanceDifferenceSender int
+
+	ReceiverId                uuid.UUID `gorm:"type:uuid"`
+	NewBalanceReceiver        int
+	BalanceDifferenceReceiver int
 }

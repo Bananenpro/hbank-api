@@ -22,11 +22,11 @@ func main() {
 
 	database, err := db.NewSqlite("database.sqlite")
 	if err != nil {
-		log.Fatalln("Couldn't connect to database")
+		log.Fatalln("Couldn't connect to database:", err)
 	}
 	err = db.AutoMigrate(database)
 	if err != nil {
-		log.Fatalln("Couldn't auto migrate database")
+		log.Fatalln("Couldn't auto migrate database:", err)
 	}
 
 	us := db.NewUserStore(database)

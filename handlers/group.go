@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -347,4 +348,272 @@ func (h *Handler) GetGroupPicture(c echo.Context) error {
 	data, err := bimg.NewImage(groupPicture).Thumbnail(size)
 
 	return c.Blob(http.StatusOK, "image/jpeg", data)
+}
+
+// /v1/group/:id/transaction/balance (GET)
+func (h *Handler) GetBalance(c echo.Context) error {
+	lang := c.Get("lang").(string)
+
+	userId := c.Get("userId").(uuid.UUID)
+	user, err := h.userStore.GetById(userId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
+	}
+
+	groupId, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	}
+	group, err := h.groupStore.GetById(groupId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if group == nil {
+		return c.JSON(http.StatusNotFound, responses.New(false, "Group not found", lang))
+	}
+
+	isMember, err := h.groupStore.IsMember(group, user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	if !isMember {
+		return c.JSON(http.StatusForbidden, responses.New(false, "Not a member of the group", lang))
+	}
+
+	balance, err := h.groupStore.GetUserBalance(group, user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	return c.JSON(http.StatusOK, responses.Balance{
+		Base: responses.Base{
+			Success: true,
+		},
+		Balance: balance,
+	})
+}
+
+// /v1/group/:id/transaction/:transactionId (GET)
+func (h *Handler) GetTransactionById(c echo.Context) error {
+	lang := c.Get("lang").(string)
+
+	userId := c.Get("userId").(uuid.UUID)
+	user, err := h.userStore.GetById(userId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
+	}
+
+	groupId, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	}
+	group, err := h.groupStore.GetById(groupId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if group == nil {
+		return c.JSON(http.StatusNotFound, responses.New(false, "Group not found", lang))
+	}
+
+	isMember, err := h.groupStore.IsMember(group, user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	if !isMember {
+		return c.JSON(http.StatusForbidden, responses.New(false, "Not a member of the group", lang))
+	}
+
+	transactionId, err := uuid.Parse(c.Param("transactionId"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing transactionId parameter", lang))
+	}
+
+	transaction, err := h.groupStore.GetTransactionLogEntryById(group, transactionId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if transaction == nil {
+		return c.JSON(http.StatusNotFound, responses.NewNotFound(lang))
+	}
+
+	isSender := bytes.Equal(user.Id[:], transaction.SenderId[:])
+	isReceiver := bytes.Equal(user.Id[:], transaction.ReceiverId[:])
+
+	if !isSender && !isReceiver {
+		return c.JSON(http.StatusForbidden, responses.New(false, "User not allowed to view transaction", lang))
+	}
+
+	return c.JSON(http.StatusOK, responses.NewTransaction(transaction, user))
+}
+
+// /v1/group/:id/transaction?page=int&pageSize=int&oldestFirst=bool (GET)
+func (h *Handler) GetTransactionLog(c echo.Context) error {
+	lang := c.Get("lang").(string)
+
+	userId := c.Get("userId").(uuid.UUID)
+	user, err := h.userStore.GetById(userId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
+	}
+
+	page := 0
+	pageSize := 20
+
+	if c.QueryParam("page") != "" {
+		page, err = strconv.Atoi(c.QueryParam("page"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "'page' query parameter not a number", lang))
+		}
+	}
+
+	if c.QueryParam("pageSize") != "" {
+		pageSize, err = strconv.Atoi(c.QueryParam("pageSize"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "'pageSize' query parameter not a number", lang))
+		}
+	}
+
+	oldestFirst := services.StrToBool(c.QueryParam("oldestFirst"))
+
+	groupId, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	}
+	group, err := h.groupStore.GetById(groupId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if group == nil {
+		return c.JSON(http.StatusNotFound, responses.New(false, "Group not found", lang))
+	}
+
+	isMember, err := h.groupStore.IsMember(group, user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	if !isMember {
+		return c.JSON(http.StatusForbidden, responses.New(false, "Not a member of the group", lang))
+	}
+
+	log, err := h.groupStore.GetTransactionLog(group, user, page, pageSize, oldestFirst)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	return c.JSON(http.StatusOK, responses.NewTransactionLog(log, user))
+}
+
+// /v1/group/:id/transaction (POST)
+func (h *Handler) CreateTransaction(c echo.Context) error {
+	lang := c.Get("lang").(string)
+
+	userId := c.Get("userId").(uuid.UUID)
+	user, err := h.userStore.GetById(userId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
+	}
+
+	groupId, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	}
+	group, err := h.groupStore.GetById(groupId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if group == nil {
+		return c.JSON(http.StatusNotFound, responses.New(false, "Group not found", lang))
+	}
+
+	isMember, err := h.groupStore.IsMember(group, user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	if !isMember {
+		return c.JSON(http.StatusForbidden, responses.New(false, "Not a member of the group", lang))
+	}
+
+	var body bindings.CreateTransaction
+	err = c.Bind(&body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
+	}
+	if body.Amount <= 0 {
+		return c.JSON(http.StatusOK, responses.New(false, "Amount must be >0", lang))
+	}
+
+	body.Title = strings.TrimSpace(body.Title)
+	body.Description = strings.TrimSpace(body.Description)
+
+	if len(body.Title) > config.Data.MaxNameLength {
+		return c.JSON(http.StatusOK, responses.New(false, "Title too long", lang))
+	}
+
+	if utf8.RuneCountInString(body.Title) < config.Data.MinNameLength {
+		return c.JSON(http.StatusOK, responses.New(false, "Title too short", lang))
+	}
+
+	if len(body.Description) > config.Data.MaxDescriptionLength {
+		return c.JSON(http.StatusOK, responses.New(false, "Description too long", lang))
+	}
+
+	if utf8.RuneCountInString(body.Description) < config.Data.MinDescriptionLength {
+		return c.JSON(http.StatusOK, responses.New(false, "Description too short", lang))
+	}
+
+	receiverId, err := uuid.Parse(body.ReceiverId)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid receiver id", lang))
+	}
+
+	if bytes.Equal(user.Id[:], receiverId[:]) {
+		return c.JSON(http.StatusOK, responses.New(false, "Sender is the receiver", lang))
+	}
+
+	receiver, err := h.userStore.GetById(receiverId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if receiver == nil {
+		return c.JSON(http.StatusNotFound, responses.New(false, "Couldn't find receiver", lang))
+	}
+	isReceiverMember, err := h.groupStore.IsMember(group, receiver)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if !isReceiverMember {
+		return c.JSON(http.StatusForbidden, responses.New(false, "Receiver not a member of the group", lang))
+	}
+
+	balanceSender, err := h.groupStore.GetUserBalance(group, user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	if balanceSender-int(body.Amount) < 0 {
+		return c.JSON(http.StatusOK, responses.New(false, "Not enough money", lang))
+	}
+
+	err = h.groupStore.CreateTransaction(group, user, receiver, body.Title, body.Description, int(body.Amount))
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	return c.JSON(http.StatusOK, responses.New(true, "Successfully completed transaction", lang))
 }

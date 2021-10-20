@@ -261,3 +261,95 @@ func (gs *GroupStore) IsInGroup(group *models.Group, user *models.User) (bool, e
 	}
 	return true, nil
 }
+
+func (gs *GroupStore) GetTransactionLog(group *models.Group, user *models.User, page, pageSize int, oldestFirst bool) ([]models.TransactionLogEntry, error) {
+	var log []models.TransactionLogEntry
+	var err error
+
+	order := "DESC"
+	if oldestFirst {
+		order = "ASC"
+	}
+
+	if page < 0 || pageSize < 0 {
+		err = gs.db.Order("created "+order).Where("group_id = ? AND sender_id = ?", user.Id, user.Id).Or("group_id = ? AND receiver_id = ?", user.Id, user.Id).Find(&log).Error
+	} else {
+		err = gs.db.Order("created "+order).Offset(page*pageSize).Limit(pageSize).Where("group_id = ? AND sender_id = ?", group.Id, user.Id).Or("group_id = ? AND receiver_id = ?", group.Id, user.Id).Find(&log).Find(&log).Error
+	}
+
+	return log, err
+}
+
+func (gs *GroupStore) GetTransactionLogEntryById(group *models.Group, id uuid.UUID) (*models.TransactionLogEntry, error) {
+	var entry models.TransactionLogEntry
+	err := gs.db.First(&entry, "group_id = ? AND id = ?", group.Id, id).Error
+	if err != nil {
+		switch err {
+		case gorm.ErrRecordNotFound:
+			return nil, nil
+		default:
+			return nil, err
+		}
+	}
+
+	return &entry, nil
+}
+
+func (gs *GroupStore) GetLastTransactionLogEntry(group *models.Group, user *models.User) (*models.TransactionLogEntry, error) {
+	var entry models.TransactionLogEntry
+	err := gs.db.Order("created DESC").Where("group_id = ? AND sender_id = ?", group.Id, user.Id).Or("group_id = ? AND receiver_id = ?", group.Id, user.Id).First(&entry).Error
+	if err != nil {
+		switch err {
+		case gorm.ErrRecordNotFound:
+			return nil, nil
+		default:
+			return nil, err
+		}
+	}
+	return &entry, nil
+}
+
+func (gs *GroupStore) GetUserBalance(group *models.Group, user *models.User) (int, error) {
+	lastLogEntry, err := gs.GetLastTransactionLogEntry(group, user)
+	if err != nil {
+		return 0, err
+	}
+	if lastLogEntry == nil {
+		return 0, nil
+	}
+
+	if lastLogEntry.SenderId.String() == user.Id.String() {
+		return lastLogEntry.NewBalanceSender, nil
+	} else {
+		return lastLogEntry.NewBalanceReceiver, nil
+	}
+}
+
+func (gs *GroupStore) CreateTransaction(group *models.Group, sender *models.User, receiver *models.User, title, description string, amount int) error {
+	oldBalanceSender, err := gs.GetUserBalance(group, sender)
+	if err != nil {
+		return err
+	}
+
+	oldBalanceReceiver, err := gs.GetUserBalance(group, receiver)
+	if err != nil {
+		return err
+	}
+
+	transaction := models.TransactionLogEntry{
+		Title:       title,
+		Description: description,
+		Amount:      int(amount),
+		GroupId:     group.Id,
+
+		SenderId:                sender.Id,
+		BalanceDifferenceSender: -amount,
+		NewBalanceSender:        oldBalanceSender - amount,
+
+		ReceiverId:                receiver.Id,
+		BalanceDifferenceReceiver: amount,
+		NewBalanceReceiver:        oldBalanceReceiver + amount,
+	}
+
+	return gs.db.Create(&transaction).Error
+}
