@@ -47,7 +47,7 @@ var defaultData = ConfigData{
 	ServerPort:                8080,
 	DomainName:                "hbank",
 	MinNameLength:             3,
-	MaxNameLength:             15,
+	MaxNameLength:             20,
 	MinDescriptionLength:      0,
 	MaxDescriptionLength:      256,
 	MinPasswordLength:         6,
