@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/subtle"
 	"fmt"
-	"image/png"
 	"io"
 	"net/http"
 	"strconv"
@@ -206,7 +205,6 @@ func (h *Handler) SetProfilePicture(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
-	_, err = png.Decode(src)
 	data := buffer.Bytes()
 
 	img := bimg.NewImage(data)

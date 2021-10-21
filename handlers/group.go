@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -348,6 +349,88 @@ func (h *Handler) GetGroupPicture(c echo.Context) error {
 	data, err := bimg.NewImage(groupPicture).Thumbnail(size)
 
 	return c.Blob(http.StatusOK, "image/jpeg", data)
+}
+
+// /v1/group/:id/picture?id=uuid (POST)
+func (h *Handler) SetGroupPicture(c echo.Context) error {
+	lang := c.Get("lang").(string)
+
+	userId := c.Get("userId").(uuid.UUID)
+	user, err := h.userStore.GetById(userId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
+	}
+
+	groupId, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	}
+	group, err := h.groupStore.GetById(groupId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if group == nil {
+		return c.JSON(http.StatusNotFound, responses.New(false, "Group not found", lang))
+	}
+
+	file, err := c.FormFile("group_picture")
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing group picture file", lang))
+	}
+
+	if file.Size > config.Data.MaxProfilePictureFileSize {
+		return c.JSON(http.StatusBadRequest, responses.New(false, fmt.Sprintf(services.Tr("File too big (max %d bytes)", lang), config.Data.MaxProfilePictureFileSize), ""))
+	}
+
+	src, err := file.Open()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	defer src.Close()
+
+	var buffer bytes.Buffer
+	_, err = io.Copy(&buffer, src)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	data := buffer.Bytes()
+
+	img := bimg.NewImage(data)
+	if img.Type() == "unknown" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "File is not an image", lang))
+	}
+
+	data, err = img.Convert(bimg.JPEG)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	data, err = bimg.NewImage(data).AutoRotate()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	data, err = bimg.NewImage(data).Thumbnail(config.Data.ProfilePictureSize)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	isAdmin, err := h.groupStore.IsAdmin(group, user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if !isAdmin {
+		return c.JSON(http.StatusForbidden, responses.New(false, "User is not an admin of the group", lang))
+	}
+
+	group.GroupPicture = data
+	group.GroupPictureId = uuid.New()
+	h.groupStore.Update(group)
+
+	return c.JSON(http.StatusOK, responses.New(true, "Successfully updated group picture", lang))
 }
 
 // /v1/group/:id/transaction/balance (GET)

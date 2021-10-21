@@ -76,3 +76,5 @@
 "Sender is the receiver"="Der Sender ist der Empfänger"
 "Successfully completed transaction"="Transaktion erfolgreich abgeschlossen"
 "Amount must be >0"="Betrag muss größer als 0 sein"
+"Invalid or missing group picture file"="Ungültige oder fehlende Gruppenbilddatei"
+"Successfully updated group picture"="Das Gruppenbild wurde erfolgreich aktualisiert"
