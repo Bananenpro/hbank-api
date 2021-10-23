@@ -82,6 +82,7 @@ type User struct {
 	TwoFATokens           []TwoFAToken
 	RecoveryCodes         []RecoveryCode
 	GroupMemberships      []GroupMembership
+	GroupInvitations      []GroupInvitation
 }
 
 type CashLogEntry struct {

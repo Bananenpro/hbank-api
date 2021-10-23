@@ -47,6 +47,57 @@ type transaction struct {
 	ReceiverId string `json:"receiver_id,omitempty"`
 }
 
+type invitation struct {
+	Id                string `json:"id"`
+	Created           int64  `json:"created"`
+	InvitationMessage string `json:"invitation_message"`
+	GroupId           string `json:"group_id,omitempty"`
+	UserId            string `json:"user_id,omitempty"`
+}
+
+func NewInvitations(invitations []models.GroupInvitation) interface{} {
+	dtos := make([]invitation, len(invitations))
+	for i, in := range invitations {
+		dtos[i].Id = in.Id.String()
+		dtos[i].Created = in.Created
+		dtos[i].InvitationMessage = in.Message
+		dtos[i].UserId = in.UserId.String()
+		dtos[i].GroupId = in.GroupId.String()
+	}
+
+	type invitationsResp struct {
+		Base
+		Invitations []invitation `json:"invitations"`
+	}
+
+	return invitationsResp{
+		Base: Base{
+			Success: true,
+		},
+		Invitations: dtos,
+	}
+}
+
+func NewInvitation(invitationModel *models.GroupInvitation) interface{} {
+	type invitationResp struct {
+		Base
+		invitation
+	}
+
+	return invitationResp{
+		Base: Base{
+			Success: true,
+		},
+		invitation: invitation{
+			Id:                invitationModel.Id.String(),
+			Created:           invitationModel.Created,
+			InvitationMessage: invitationModel.Message,
+			GroupId:           invitationModel.GroupId.String(),
+			UserId:            invitationModel.UserId.String(),
+		},
+	}
+}
+
 func NewGroups(groups []models.Group) interface{} {
 	groupDTOs := make([]group, len(groups))
 	for i, g := range groups {

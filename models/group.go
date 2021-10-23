@@ -31,6 +31,13 @@ type GroupStore interface {
 	GetLastTransactionLogEntry(group *Group, user *User) (*TransactionLogEntry, error)
 	GetUserBalance(group *Group, user *User) (int, error)
 	CreateTransaction(group *Group, sender *User, receiver *User, title, description string, amount int) error
+
+	CreateInvitation(group *Group, user *User, message string) error
+	GetInvitationById(id uuid.UUID) (*GroupInvitation, error)
+	GetInvitationsByGroup(group *Group, page, pageSize int, oldestFirst bool) ([]GroupInvitation, error)
+	GetInvitationsByUser(user *User, page, pageSize int, oldestFirst bool) ([]GroupInvitation, error)
+	GetInvitationByGroupAndUser(group *Group, user *User) (*GroupInvitation, error)
+	DeleteInvitation(invitation *GroupInvitation) error
 }
 
 type Group struct {
@@ -41,6 +48,7 @@ type Group struct {
 	GroupPictureId uuid.UUID `gorm:"type:uuid"`
 
 	Memberships []GroupMembership
+	Invitations []GroupInvitation
 }
 
 type GroupMembership struct {
@@ -51,6 +59,13 @@ type GroupMembership struct {
 	UserId    uuid.UUID `gorm:"type:uuid"`
 	IsMember  bool
 	IsAdmin   bool
+}
+
+type GroupInvitation struct {
+	Base
+	Message string
+	GroupId uuid.UUID `gorm:"type:uuid"`
+	UserId  uuid.UUID `gorm:"type:uuid"`
 }
 
 type TransactionLogEntry struct {

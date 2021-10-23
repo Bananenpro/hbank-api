@@ -52,6 +52,7 @@ func AutoMigrate(db *gorm.DB) error {
 
 		&models.Group{},
 		&models.GroupMembership{},
+		&models.GroupInvitation{},
 		&models.TransactionLogEntry{},
 	)
 }

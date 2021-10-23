@@ -12,3 +12,8 @@ type CreateTransaction struct {
 	Amount      uint   `json:"amount" form:"amount"`
 	ReceiverId  string `json:"receiver_id" form:"receiver_id"`
 }
+
+type CreateInvitation struct {
+	Message string
+	UserId  string `json:"user_id" form:"user_id"`
+}

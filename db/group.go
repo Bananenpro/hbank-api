@@ -353,3 +353,79 @@ func (gs *GroupStore) CreateTransaction(group *models.Group, sender *models.User
 
 	return gs.db.Create(&transaction).Error
 }
+
+func (gs *GroupStore) CreateInvitation(group *models.Group, user *models.User, message string) error {
+	return gs.db.Create(&models.GroupInvitation{
+		Message: message,
+		GroupId: group.Id,
+		UserId:  user.Id,
+	}).Error
+}
+
+func (gs *GroupStore) GetInvitationById(id uuid.UUID) (*models.GroupInvitation, error) {
+	var invitation models.GroupInvitation
+	err := gs.db.First(&invitation, id).Error
+	if err != nil {
+		switch err {
+		case gorm.ErrRecordNotFound:
+			return nil, nil
+		default:
+			return nil, err
+		}
+	}
+
+	return &invitation, nil
+}
+
+func (gs *GroupStore) GetInvitationsByGroup(group *models.Group, page, pageSize int, oldestFirst bool) ([]models.GroupInvitation, error) {
+	order := "DESC"
+	if oldestFirst {
+		order = "ASC"
+	}
+
+	var invitations []models.GroupInvitation
+	var err error
+	if page < 0 || pageSize < 0 {
+		err = gs.db.Order("created "+order).Find(&invitations, "group_id = ?", group.Id).Error
+	} else {
+		err = gs.db.Order("created "+order).Offset(page*pageSize).Limit(pageSize).Find(&invitations, "group_id = ?", group.Id).Error
+	}
+
+	return invitations, err
+}
+
+func (gs *GroupStore) GetInvitationsByUser(user *models.User, page, pageSize int, oldestFirst bool) ([]models.GroupInvitation, error) {
+	order := "DESC"
+	if oldestFirst {
+		order = "ASC"
+	}
+
+	var invitations []models.GroupInvitation
+	var err error
+	if page < 0 || pageSize < 0 {
+		err = gs.db.Order("created "+order).Find(&invitations, "user_id = ?", user.Id).Error
+	} else {
+		err = gs.db.Order("created "+order).Offset(page*pageSize).Limit(pageSize).Find(&invitations, "user_id = ?", user.Id).Error
+	}
+
+	return invitations, err
+}
+
+func (gs *GroupStore) GetInvitationByGroupAndUser(group *models.Group, user *models.User) (*models.GroupInvitation, error) {
+	var invitation models.GroupInvitation
+	err := gs.db.First(&invitation, "group_id = ? AND user_id = ?", group.Id, user.Id).Error
+	if err != nil {
+		switch err {
+		case gorm.ErrRecordNotFound:
+			return nil, nil
+		default:
+			return nil, err
+		}
+	}
+
+	return &invitation, nil
+}
+
+func (gs *GroupStore) DeleteInvitation(invitation *models.GroupInvitation) error {
+	return gs.db.Delete(invitation).Error
+}

@@ -40,6 +40,7 @@ func (h *Handler) RegisterV1(v1 *echo.Group) {
 	v1.GET("/user/:id/picture", h.GetProfilePicture, middlewares.JWT)
 
 	user := v1.Group("/user")
+
 	user.GET("/cash/current", h.GetCurrentCash, middlewares.JWT)
 	user.GET("/cash/:id", h.GetCashLogEntryById, middlewares.JWT)
 	user.GET("/cash", h.GetCashLog, middlewares.JWT)
@@ -59,4 +60,11 @@ func (h *Handler) RegisterV1(v1 *echo.Group) {
 	group.GET("/:id/transaction/:transactionId", h.GetTransactionById, middlewares.JWT)
 	group.GET("/:id/transaction", h.GetTransactionLog, middlewares.JWT)
 	group.POST("/:id/transaction", h.CreateTransaction, middlewares.JWT)
+
+	group.GET("/:id/invitation", h.GetInvitationsByGroup, middlewares.JWT)
+	group.GET("/invitation", h.GetInvitationsByUser, middlewares.JWT)
+	group.GET("/invitation/:id", h.GetInvitationById, middlewares.JWT)
+	group.POST("/:id/invitation", h.CreateInvitation, middlewares.JWT)
+	group.POST("/invitation/:id", h.AcceptInvitation, middlewares.JWT)
+	group.DELETE("/invitation/:id", h.DenyInvitation, middlewares.JWT)
 }
