@@ -71,6 +71,7 @@ func (gs *GroupStore) Update(group *models.Group) error {
 func (gs *GroupStore) Delete(group *models.Group) error {
 	gs.db.Delete(&models.GroupInvitation{}, "group_id = ?", group.Id)
 	gs.db.Delete(&models.GroupMembership{}, "group_id = ?", group.Id)
+	gs.db.Delete(&models.TransactionLogEntry{}, "group_id = ?", group.Id)
 	return gs.db.Delete(group).Error
 }
 
