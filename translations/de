@@ -96,3 +96,4 @@
 "Successfully left group"="Successfully left group"
 "Cannot remove admin rights of sole admin of group"="Administratorrechte können dem alleinigen Administrator nicht entfernt werden "
 "Successfully removed admin rights"="Erfolgreich Administratorrechte entfernt"
+"Failed to delete user because he is the only admin of one or more groups"="Konnte den Nutzer nicht löschen, weil er der einzige Admin einer oder mehrerer Gruppen ist"

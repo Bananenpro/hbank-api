@@ -126,12 +126,47 @@ func (h *Handler) DeleteUser(c echo.Context) error {
 	if twoFAToken == nil {
 		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials(lang))
 	}
-	h.userStore.DeleteTwoFAToken(twoFAToken)
 	if twoFAToken.ExpirationTime < time.Now().Unix() {
+		h.userStore.DeleteTwoFAToken(twoFAToken)
 		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials(lang))
 	}
 
+	groups, err := h.groupStore.GetAllByUser(user, -1, -1, false)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	ids := make([]uuid.UUID, 0)
+	for _, g := range groups {
+		isAdmin, err := h.groupStore.IsAdmin(&g, user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+		if isAdmin {
+			userCount, err := h.groupStore.GetUserCount(&g)
+			if err != nil {
+				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+			}
+
+			admins, err := h.groupStore.GetAdmins(&g, 0, 2, false)
+			if err != nil {
+				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+			}
+
+			if userCount > 1 && len(admins) == 1 {
+				ids = append(ids, g.Id)
+			} else if userCount == 1 {
+				h.groupStore.Delete(&g)
+			}
+		}
+	}
+	if len(ids) > 0 {
+		return c.JSON(http.StatusOK, responses.NewDeleteFailedBecauseOfSoleGroupAdmin(ids, lang))
+	}
+
+	h.userStore.DeleteTwoFAToken(twoFAToken)
 	h.userStore.Delete(user)
+
 	return c.JSON(http.StatusOK, responses.New(true, "Successfully deleted account", lang))
 }
 

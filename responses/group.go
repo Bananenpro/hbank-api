@@ -4,6 +4,8 @@ import (
 	"bytes"
 
 	"github.com/Bananenpro/hbank-api/models"
+	"github.com/Bananenpro/hbank-api/services"
+	"github.com/google/uuid"
 )
 
 type CreateGroupSuccess struct {
@@ -14,6 +16,11 @@ type CreateGroupSuccess struct {
 type Balance struct {
 	Base
 	Balance int `json:"balance"`
+}
+
+type DeleteFailedBecauseOfSoleGroupAdmin struct {
+	Base
+	GroupIds []string `json:"group_ids"`
 }
 
 type group struct {
@@ -228,5 +235,20 @@ func NewTransactionLog(log []models.TransactionLogEntry, user *models.User) inte
 			Success: true,
 		},
 		Transactions: transactionDTOs,
+	}
+}
+
+func NewDeleteFailedBecauseOfSoleGroupAdmin(groupIds []uuid.UUID, lang string) interface{} {
+	ids := make([]string, len(groupIds))
+	for i := range groupIds {
+		ids[i] = groupIds[i].String()
+	}
+
+	return &DeleteFailedBecauseOfSoleGroupAdmin{
+		Base: Base{
+			Success: false,
+			Message: services.Tr("Failed to delete user because he is the only admin of one or more groups", lang),
+		},
+		GroupIds: ids,
 	}
 }
