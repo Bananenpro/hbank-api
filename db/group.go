@@ -69,6 +69,8 @@ func (gs *GroupStore) Update(group *models.Group) error {
 }
 
 func (gs *GroupStore) Delete(group *models.Group) error {
+	gs.db.Delete(&models.GroupInvitation{}, "group_id = ?", group.Id)
+	gs.db.Delete(&models.GroupMembership{}, "group_id = ?", group.Id)
 	return gs.db.Delete(group).Error
 }
 
@@ -260,6 +262,12 @@ func (gs *GroupStore) IsInGroup(group *models.Group, user *models.User) (bool, e
 		}
 	}
 	return true, nil
+}
+
+func (gs *GroupStore) GetUserCount(group *models.Group) (int64, error) {
+	count := int64(0)
+	err := gs.db.Model(&models.GroupMembership{}).Where("group_id = ? AND is_member = ?", group.Id, true).Or("group_id = ? AND is_admin = ?", group.Id, true).Count(&count).Error
+	return count, err
 }
 
 func (gs *GroupStore) GetTransactionLog(group *models.Group, user *models.User, page, pageSize int, oldestFirst bool) ([]models.TransactionLogEntry, error) {

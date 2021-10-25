@@ -229,6 +229,47 @@ func (h *Handler) GetGroupMembers(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.NewUsers(members))
 }
 
+// /v1/group/:id/member (DELETE)
+func (h *Handler) LeaveGroup(c echo.Context) error {
+	lang := c.Get("lang").(string)
+	userId := c.Get("userId").(uuid.UUID)
+	user, err := h.userStore.GetById(userId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
+	}
+
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	}
+
+	group, err := h.groupStore.GetById(id)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if group == nil {
+		return c.JSON(http.StatusNotFound, responses.NewNotFound(lang))
+	}
+
+	isMember, err := h.groupStore.IsMember(group, user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if !isMember {
+		return c.JSON(http.StatusForbidden, responses.New(false, "Not a member of the group", lang))
+	}
+
+	err = h.groupStore.RemoveMember(group, user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	return c.JSON(http.StatusOK, responses.New(true, "Successfully left group", lang))
+}
+
 // /v1/group/:id/admin (GET)
 func (h *Handler) GetGroupAdmins(c echo.Context) error {
 	lang := c.Get("lang").(string)
@@ -363,6 +404,74 @@ func (h *Handler) AddGroupAdmin(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, responses.New(true, "Successfully made user an admin", lang))
+}
+
+// /v1/group/:id/admin (DELETE)
+func (h *Handler) RemoveAdminRights(c echo.Context) error {
+	lang := c.Get("lang").(string)
+	userId := c.Get("userId").(uuid.UUID)
+	user, err := h.userStore.GetById(userId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
+	}
+
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	}
+
+	group, err := h.groupStore.GetById(id)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if group == nil {
+		return c.JSON(http.StatusNotFound, responses.NewNotFound(lang))
+	}
+
+	isAdmin, err := h.groupStore.IsAdmin(group, user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if !isAdmin {
+		return c.JSON(http.StatusForbidden, responses.New(false, "Not an admin of the group", lang))
+	}
+
+	userCount, err := h.groupStore.GetUserCount(group)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	isMember, err := h.groupStore.IsMember(group, user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	admins, err := h.groupStore.GetAdmins(group, 0, 2, false)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	if (userCount > 1 && len(admins) == 1) || (userCount == 1 && isMember) {
+		return c.JSON(http.StatusOK, responses.New(false, "Cannot remove admin rights of sole admin of group", lang))
+	}
+
+	if userCount == 1 {
+		err = h.groupStore.Delete(group)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+		return c.JSON(http.StatusOK, responses.New(true, "Successfully deleted group", lang))
+	}
+
+	err = h.groupStore.RemoveAdmin(group, user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	return c.JSON(http.StatusOK, responses.New(true, "Successfully removed admin rights", lang))
 }
 
 // /v1/group/:id/picture?id=uuid (GET)

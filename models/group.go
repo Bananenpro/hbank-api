@@ -25,6 +25,7 @@ type GroupStore interface {
 	RemoveAdmin(group *Group, user *User) error
 
 	IsInGroup(group *Group, user *User) (bool, error)
+	GetUserCount(group *Group) (int64, error)
 
 	GetTransactionLog(group *Group, user *User, page, pageSize int, oldestFirst bool) ([]TransactionLogEntry, error)
 	GetTransactionLogEntryById(group *Group, id uuid.UUID) (*TransactionLogEntry, error)

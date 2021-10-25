@@ -92,3 +92,7 @@
 "The user is not a member of the group"="Der Nutzer ist kein Mitglied der Gruppe"
 "The user already is an admin of the group"="Der Nutzer ist bereits ein Admin der Gruppe"
 "Successfully made user an admin"="Der Nutzer wurde erfolgreich zum Admin gemacht"
+"Successfully deleted group"="Gruppe erfolgreich gelöscht"
+"Successfully left group"="Successfully left group"
+"Cannot remove admin rights of sole admin of group"="Administratorrechte können dem alleinigen Administrator nicht entfernt werden "
+"Successfully removed admin rights"="Erfolgreich Administratorrechte entfernt"

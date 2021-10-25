@@ -91,6 +91,8 @@ func (us *UserStore) Delete(user *models.User) error {
 	us.db.Delete(&models.TwoFAToken{}, "user_id = ?", user.Id)
 	us.db.Delete(&models.RecoveryCode{}, "user_id = ?", user.Id)
 	us.db.Delete(&models.CashLogEntry{}, "user_id = ?", user.Id)
+	us.db.Delete(&models.GroupInvitation{}, "user_id = ?", user.Id)
+	us.db.Delete(&models.GroupMembership{}, "user_id = ?", user.Id)
 	return us.db.Delete(user).Error
 }
 
