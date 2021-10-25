@@ -33,3 +33,7 @@ type AddCashLogEntry struct {
 	Eur200 uint `json:"eur200"`
 	Eur500 uint `json:"eur500"`
 }
+
+type Id struct {
+	Id string `json:"id"`
+}

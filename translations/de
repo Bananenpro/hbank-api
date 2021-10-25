@@ -89,3 +89,6 @@
 "User is not the receiver of the invitation"="Nutzer ist nicht der Empfänger der Einladung"
 "Successfully accepted invitation"="Einladung erfolgreich angenommen"
 "Successfully denied invitation"="Einladung erfolgreich abgelehnt"
+"The user is not a member of the group"="Der Nutzer ist kein Mitglied der Gruppe"
+"The user already is an admin of the group"="Der Nutzer ist bereits ein Admin der Gruppe"
+"Successfully made user an admin"="Der Nutzer wurde erfolgreich zum Admin gemacht"
