@@ -11,9 +11,10 @@ type CreateTransaction struct {
 	Description string `json:"description" form:"description"`
 	Amount      uint   `json:"amount" form:"amount"`
 	ReceiverId  string `json:"receiver_id" form:"receiver_id"`
+	FromBank    bool   `json:"from_bank" form:"from_bank"`
 }
 
 type CreateInvitation struct {
-	Message string
+	Message string `json:"message" form:"message"`
 	UserId  string `json:"user_id" form:"user_id"`
 }

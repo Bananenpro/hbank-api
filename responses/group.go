@@ -177,9 +177,17 @@ func NewTransaction(transactionModel *models.TransactionLogEntry, user *models.U
 	}
 
 	if isSender {
-		transactionDTO.ReceiverId = transactionModel.ReceiverId.String()
+		if transactionModel.ReceiverIsBank {
+			transactionDTO.ReceiverId = "bank"
+		} else {
+			transactionDTO.ReceiverId = transactionModel.ReceiverId.String()
+		}
 	} else {
-		transactionDTO.SenderId = transactionModel.SenderId.String()
+		if transactionModel.SenderIsBank {
+			transactionDTO.SenderId = "bank"
+		} else {
+			transactionDTO.SenderId = transactionModel.SenderId.String()
+		}
 	}
 
 	return transactionResp{
@@ -222,9 +230,17 @@ func NewTransactionLog(log []models.TransactionLogEntry, user *models.User) inte
 		}
 
 		if isSender {
-			transactionDTO.ReceiverId = entry.ReceiverId.String()
+			if entry.ReceiverIsBank {
+				transactionDTO.ReceiverId = "bank"
+			} else {
+				transactionDTO.ReceiverId = entry.ReceiverId.String()
+			}
 		} else {
-			transactionDTO.SenderId = entry.SenderId.String()
+			if entry.SenderIsBank {
+				transactionDTO.SenderId = "bank"
+			} else {
+				transactionDTO.SenderId = entry.SenderId.String()
+			}
 		}
 
 		transactionDTOs[i] = transactionDTO

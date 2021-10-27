@@ -845,42 +845,61 @@ func (h *Handler) CreateTransaction(c echo.Context) error {
 		return c.JSON(http.StatusOK, responses.New(false, "Description too short", lang))
 	}
 
-	receiverId, err := uuid.Parse(body.ReceiverId)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid receiver id", lang))
+	if !body.FromBank {
+		balanceSender, err := h.groupStore.GetUserBalance(group, user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+
+		if balanceSender-int(body.Amount) < 0 {
+			return c.JSON(http.StatusOK, responses.New(false, "Not enough money", lang))
+		}
 	}
 
-	if bytes.Equal(user.Id[:], receiverId[:]) {
-		return c.JSON(http.StatusOK, responses.New(false, "Sender is the receiver", lang))
-	}
+	if strings.EqualFold(body.ReceiverId, "bank") {
+		if body.FromBank {
+			return c.JSON(http.StatusOK, responses.New(false, "Cannot send money from bank to bank", lang))
+		}
+		err = h.groupStore.CreateTransaction(group, false, true, user, nil, body.Title, body.Description, int(body.Amount))
+	} else {
+		receiverId, err := uuid.Parse(body.ReceiverId)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid receiver id", lang))
+		}
 
-	receiver, err := h.userStore.GetById(receiverId)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-	if receiver == nil {
-		return c.JSON(http.StatusNotFound, responses.New(false, "Couldn't find receiver", lang))
-	}
-	isReceiverMember, err := h.groupStore.IsMember(group, receiver)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-	if !isReceiverMember {
-		return c.JSON(http.StatusForbidden, responses.New(false, "Receiver not a member of the group", lang))
-	}
+		receiver, err := h.userStore.GetById(receiverId)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+		if receiver == nil {
+			return c.JSON(http.StatusNotFound, responses.New(false, "Couldn't find receiver", lang))
+		}
+		isReceiverMember, err := h.groupStore.IsMember(group, receiver)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+		if !isReceiverMember {
+			return c.JSON(http.StatusForbidden, responses.New(false, "Receiver not a member of the group", lang))
+		}
 
-	balanceSender, err := h.groupStore.GetUserBalance(group, user)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-
-	if balanceSender-int(body.Amount) < 0 {
-		return c.JSON(http.StatusOK, responses.New(false, "Not enough money", lang))
-	}
-
-	err = h.groupStore.CreateTransaction(group, user, receiver, body.Title, body.Description, int(body.Amount))
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		if body.FromBank {
+			isAdmin, err := h.groupStore.IsAdmin(group, user)
+			if err != nil {
+				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+			}
+			if !isAdmin {
+				return c.JSON(http.StatusForbidden, responses.New(false, "Not an admin of the group", lang))
+			}
+			err = h.groupStore.CreateTransaction(group, true, false, nil, receiver, body.Title, body.Description, int(body.Amount))
+		} else {
+			if bytes.Equal(user.Id[:], receiverId[:]) {
+				return c.JSON(http.StatusOK, responses.New(false, "Sender is the receiver", lang))
+			}
+			err = h.groupStore.CreateTransaction(group, false, false, user, receiver, body.Title, body.Description, int(body.Amount))
+			if err != nil {
+				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+			}
+		}
 	}
 
 	return c.JSON(http.StatusOK, responses.New(true, "Successfully completed transaction", lang))

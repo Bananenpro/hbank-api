@@ -31,7 +31,7 @@ type GroupStore interface {
 	GetTransactionLogEntryById(group *Group, id uuid.UUID) (*TransactionLogEntry, error)
 	GetLastTransactionLogEntry(group *Group, user *User) (*TransactionLogEntry, error)
 	GetUserBalance(group *Group, user *User) (int, error)
-	CreateTransaction(group *Group, sender *User, receiver *User, title, description string, amount int) error
+	CreateTransaction(group *Group, senderIsBank, receiverIsBank bool, sender *User, receiver *User, title, description string, amount int) error
 
 	CreateInvitation(group *Group, user *User, message string) error
 	GetInvitationById(id uuid.UUID) (*GroupInvitation, error)
@@ -77,10 +77,12 @@ type TransactionLogEntry struct {
 
 	GroupId uuid.UUID `gorm:"type:uuid"`
 
+	SenderIsBank            bool
 	SenderId                uuid.UUID `gorm:"type:uuid"`
 	NewBalanceSender        int
 	BalanceDifferenceSender int
 
+	ReceiverIsBank            bool
 	ReceiverId                uuid.UUID `gorm:"type:uuid"`
 	NewBalanceReceiver        int
 	BalanceDifferenceReceiver int

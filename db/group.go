@@ -334,15 +334,37 @@ func (gs *GroupStore) GetUserBalance(group *models.Group, user *models.User) (in
 	}
 }
 
-func (gs *GroupStore) CreateTransaction(group *models.Group, sender *models.User, receiver *models.User, title, description string, amount int) error {
-	oldBalanceSender, err := gs.GetUserBalance(group, sender)
-	if err != nil {
-		return err
+func (gs *GroupStore) CreateTransaction(group *models.Group, senderIsBank, receiverIsBank bool, sender *models.User, receiver *models.User, title, description string, amount int) error {
+	var err error
+
+	oldBalanceSender := 0
+	newBalanceSender := 0
+	if !senderIsBank {
+		oldBalanceSender, err = gs.GetUserBalance(group, sender)
+		if err != nil {
+			return err
+		}
+		newBalanceSender = oldBalanceSender - amount
 	}
 
-	oldBalanceReceiver, err := gs.GetUserBalance(group, receiver)
-	if err != nil {
-		return err
+	oldBalanceReceiver := 0
+	newBalanceReceiver := 0
+	if !receiverIsBank {
+		oldBalanceReceiver, err = gs.GetUserBalance(group, receiver)
+		if err != nil {
+			return err
+		}
+		newBalanceReceiver = oldBalanceReceiver + amount
+	}
+
+	senderId := uuid.UUID{}
+	if !senderIsBank {
+		senderId = sender.Id
+	}
+
+	receiverId := uuid.UUID{}
+	if !receiverIsBank {
+		receiverId = receiver.Id
 	}
 
 	transaction := models.TransactionLogEntry{
@@ -351,13 +373,15 @@ func (gs *GroupStore) CreateTransaction(group *models.Group, sender *models.User
 		Amount:      int(amount),
 		GroupId:     group.Id,
 
-		SenderId:                sender.Id,
+		SenderIsBank:            senderIsBank,
+		SenderId:                senderId,
 		BalanceDifferenceSender: -amount,
-		NewBalanceSender:        oldBalanceSender - amount,
+		NewBalanceSender:        newBalanceSender,
 
-		ReceiverId:                receiver.Id,
+		ReceiverIsBank:            receiverIsBank,
+		ReceiverId:                receiverId,
 		BalanceDifferenceReceiver: amount,
-		NewBalanceReceiver:        oldBalanceReceiver + amount,
+		NewBalanceReceiver:        newBalanceReceiver,
 	}
 
 	return gs.db.Create(&transaction).Error
