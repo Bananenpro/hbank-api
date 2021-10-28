@@ -14,12 +14,12 @@ type GroupStore interface {
 
 	GetGroupPicture(group *Group) ([]byte, error)
 
-	GetMembers(group *Group, page, pageSize int, descending bool) ([]User, error)
+	GetMembers(except *User, group *Group, page, pageSize int, descending bool) ([]User, error)
 	IsMember(group *Group, user *User) (bool, error)
 	AddMember(group *Group, user *User) error
 	RemoveMember(group *Group, user *User) error
 
-	GetAdmins(group *Group, page, pageSize int, descending bool) ([]User, error)
+	GetAdmins(except *User, group *Group, page, pageSize int, descending bool) ([]User, error)
 	IsAdmin(group *Group, user *User) (bool, error)
 	AddAdmin(group *Group, user *User) error
 	RemoveAdmin(group *Group, user *User) error

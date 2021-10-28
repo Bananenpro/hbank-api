@@ -102,7 +102,7 @@ func (gs *GroupStore) GetGroupPicture(group *models.Group) ([]byte, error) {
 	return g.GroupPicture, nil
 }
 
-func (gs *GroupStore) GetMembers(group *models.Group, page int, pageSize int, descending bool) ([]models.User, error) {
+func (gs *GroupStore) GetMembers(except *models.User, group *models.Group, page int, pageSize int, descending bool) ([]models.User, error) {
 	var memberships []models.GroupMembership
 	var err error
 
@@ -111,10 +111,14 @@ func (gs *GroupStore) GetMembers(group *models.Group, page int, pageSize int, de
 		order = "DESC"
 	}
 
+	if except == nil {
+		except = &models.User{}
+	}
+
 	if page < 0 || pageSize < 0 {
-		err = gs.db.Model(group).Order("user_name "+order).Association("Memberships").Find(&memberships, "is_member = ?", true)
+		err = gs.db.Model(group).Order("user_name "+order).Not("user_id = ?", except.Id).Association("Memberships").Find(&memberships, "is_member = ?", true)
 	} else {
-		err = gs.db.Model(group).Order("user_name "+order).Offset(page*pageSize).Limit(pageSize).Association("Memberships").Find(&memberships, "is_member = ?", true)
+		err = gs.db.Model(group).Order("user_name "+order).Not("user_id = ?", except.Id).Offset(page*pageSize).Limit(pageSize).Association("Memberships").Find(&memberships, "is_member = ?", true)
 	}
 
 	userIds := make([]uuid.UUID, len(memberships))
@@ -177,7 +181,7 @@ func (gs *GroupStore) RemoveMember(group *models.Group, user *models.User) error
 	return err
 }
 
-func (gs *GroupStore) GetAdmins(group *models.Group, page int, pageSize int, descending bool) ([]models.User, error) {
+func (gs *GroupStore) GetAdmins(except *models.User, group *models.Group, page int, pageSize int, descending bool) ([]models.User, error) {
 	var memberships []models.GroupMembership
 	var err error
 
@@ -186,10 +190,14 @@ func (gs *GroupStore) GetAdmins(group *models.Group, page int, pageSize int, des
 		order = "DESC"
 	}
 
+	if except == nil {
+		except = &models.User{}
+	}
+
 	if page < 0 || pageSize < 0 {
-		err = gs.db.Model(group).Order("user_name "+order).Association("Memberships").Find(&memberships, "is_admin = ?", true)
+		err = gs.db.Model(group).Order("user_name "+order).Not("user_id = ?", except.Id).Association("Memberships").Find(&memberships, "is_admin = ?", true)
 	} else {
-		err = gs.db.Model(group).Order("user_name "+order).Offset(page*pageSize).Limit(pageSize).Association("Memberships").Find(&memberships, "is_admin = ?", true)
+		err = gs.db.Model(group).Order("user_name "+order).Not("user_id = ?", except.Id).Offset(page*pageSize).Limit(pageSize).Association("Memberships").Find(&memberships, "is_admin = ?", true)
 	}
 
 	userIds := make([]uuid.UUID, len(memberships))

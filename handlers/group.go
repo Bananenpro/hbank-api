@@ -204,6 +204,7 @@ func (h *Handler) GetGroupMembers(c echo.Context) error {
 	}
 
 	descending := services.StrToBool(c.QueryParam("descending"))
+	includeSelf := services.StrToBool(c.QueryParam("includeSelf"))
 
 	group, err := h.groupStore.GetById(id)
 	if err != nil {
@@ -221,7 +222,12 @@ func (h *Handler) GetGroupMembers(c echo.Context) error {
 		return c.JSON(http.StatusForbidden, responses.New(false, "Not a member/admin of the group", lang))
 	}
 
-	members, err := h.groupStore.GetMembers(group, page, pageSize, descending)
+	var members []models.User
+	if includeSelf {
+		members, err = h.groupStore.GetMembers(nil, group, page, pageSize, descending)
+	} else {
+		members, err = h.groupStore.GetMembers(user, group, page, pageSize, descending)
+	}
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
@@ -322,7 +328,13 @@ func (h *Handler) GetGroupAdmins(c echo.Context) error {
 		return c.JSON(http.StatusForbidden, responses.New(false, "Not a member/admin of the group", lang))
 	}
 
-	members, err := h.groupStore.GetAdmins(group, page, pageSize, descending)
+	includeSelf := services.StrToBool(c.QueryParam("includeSelf"))
+	var members []models.User
+	if includeSelf {
+		members, err = h.groupStore.GetAdmins(nil, group, page, pageSize, descending)
+	} else {
+		members, err = h.groupStore.GetAdmins(user, group, page, pageSize, descending)
+	}
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
@@ -449,7 +461,7 @@ func (h *Handler) RemoveAdminRights(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	admins, err := h.groupStore.GetAdmins(group, 0, 2, false)
+	admins, err := h.groupStore.GetAdmins(nil, group, 0, 2, false)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
