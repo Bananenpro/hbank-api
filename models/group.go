@@ -28,6 +28,7 @@ type GroupStore interface {
 	GetUserCount(group *Group) (int64, error)
 
 	GetTransactionLog(group *Group, user *User, page, pageSize int, oldestFirst bool) ([]TransactionLogEntry, error)
+	GetBankTransactionLog(group *Group, page, pageSize int, oldestFirst bool) ([]TransactionLogEntry, error)
 	GetTransactionLogEntryById(group *Group, id uuid.UUID) (*TransactionLogEntry, error)
 	GetLastTransactionLogEntry(group *Group, user *User) (*TransactionLogEntry, error)
 	GetUserBalance(group *Group, user *User) (int, error)

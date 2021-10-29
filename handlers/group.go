@@ -702,15 +702,6 @@ func (h *Handler) GetTransactionById(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, responses.New(false, "Group not found", lang))
 	}
 
-	isMember, err := h.groupStore.IsMember(group, user)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-
-	if !isMember {
-		return c.JSON(http.StatusForbidden, responses.New(false, "Not a member of the group", lang))
-	}
-
 	transactionId, err := uuid.Parse(c.Param("transactionId"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing transactionId parameter", lang))
@@ -727,14 +718,33 @@ func (h *Handler) GetTransactionById(c echo.Context) error {
 	isSender := bytes.Equal(user.Id[:], transaction.SenderId[:])
 	isReceiver := bytes.Equal(user.Id[:], transaction.ReceiverId[:])
 
-	if !isSender && !isReceiver {
-		return c.JSON(http.StatusForbidden, responses.New(false, "User not allowed to view transaction", lang))
+	if isSender || isReceiver {
+		isMember, err := h.groupStore.IsMember(group, user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+		if !isMember {
+			return c.JSON(http.StatusForbidden, responses.New(false, "Not a member of the group", lang))
+		}
+
+		return c.JSON(http.StatusOK, responses.NewTransaction(transaction, user))
+	} else if transaction.SenderIsBank || transaction.ReceiverIsBank {
+		isAdmin, err := h.groupStore.IsAdmin(group, user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+		if !isAdmin {
+			return c.JSON(http.StatusForbidden, responses.New(false, "Not an admin of the group", lang))
+		}
+
+		return c.JSON(http.StatusOK, responses.NewBankTransaction(transaction))
 	}
 
-	return c.JSON(http.StatusOK, responses.NewTransaction(transaction, user))
+	return c.JSON(http.StatusForbidden, responses.New(false, "User not allowed to view transaction", lang))
+
 }
 
-// /v1/group/:id/transaction?page=int&pageSize=int&oldestFirst=bool (GET)
+// /v1/group/:id/transaction?bank=bool&page=int&pageSize=int&oldestFirst=bool (GET)
 func (h *Handler) GetTransactionLog(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -778,21 +788,41 @@ func (h *Handler) GetTransactionLog(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, responses.New(false, "Group not found", lang))
 	}
 
-	isMember, err := h.groupStore.IsMember(group, user)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
+	bank := services.StrToBool(c.QueryParam("bank"))
 
-	if !isMember {
-		return c.JSON(http.StatusForbidden, responses.New(false, "Not a member of the group", lang))
-	}
+	if !bank {
+		isMember, err := h.groupStore.IsMember(group, user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
 
-	log, err := h.groupStore.GetTransactionLog(group, user, page, pageSize, oldestFirst)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
+		if !isMember {
+			return c.JSON(http.StatusForbidden, responses.New(false, "Not a member of the group", lang))
+		}
 
-	return c.JSON(http.StatusOK, responses.NewTransactionLog(log, user))
+		log, err := h.groupStore.GetTransactionLog(group, user, page, pageSize, oldestFirst)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+
+		return c.JSON(http.StatusOK, responses.NewTransactionLog(log, user))
+	} else {
+		isAdmin, err := h.groupStore.IsAdmin(group, user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+
+		if !isAdmin {
+			return c.JSON(http.StatusForbidden, responses.New(false, "Not an admin of the group", lang))
+		}
+
+		log, err := h.groupStore.GetBankTransactionLog(group, page, pageSize, oldestFirst)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+
+		return c.JSON(http.StatusOK, responses.NewBankTransactionLog(log))
+	}
 }
 
 // /v1/group/:id/transaction (POST)

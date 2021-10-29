@@ -54,6 +54,19 @@ type transaction struct {
 	ReceiverId string `json:"receiver_id,omitempty"`
 }
 
+type bankTransaction struct {
+	Id          string `json:"id"`
+	Time        int64  `json:"time"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Amount      int    `json:"amount"`
+
+	GroupId string `json:"group_id"`
+
+	SenderId   string `json:"sender_id,omitempty"`
+	ReceiverId string `json:"receiver_id,omitempty"`
+}
+
 type invitation struct {
 	Id                string `json:"id"`
 	Created           int64  `json:"created"`
@@ -198,6 +211,41 @@ func NewTransaction(transactionModel *models.TransactionLogEntry, user *models.U
 	}
 }
 
+func NewBankTransaction(transactionModel *models.TransactionLogEntry) interface{} {
+	type transactionResp struct {
+		Base
+		bankTransaction
+	}
+
+	transactionDTO := bankTransaction{
+		Id:          transactionModel.Id.String(),
+		Time:        transactionModel.Created,
+		Title:       transactionModel.Title,
+		Description: transactionModel.Description,
+		Amount:      transactionModel.Amount,
+		GroupId:     transactionModel.GroupId.String(),
+	}
+
+	if transactionModel.ReceiverIsBank {
+		transactionDTO.ReceiverId = "bank"
+	} else {
+		transactionDTO.ReceiverId = transactionModel.ReceiverId.String()
+	}
+
+	if transactionModel.SenderIsBank {
+		transactionDTO.SenderId = "bank"
+	} else {
+		transactionDTO.SenderId = transactionModel.SenderId.String()
+	}
+
+	return transactionResp{
+		Base: Base{
+			Success: true,
+		},
+		bankTransaction: transactionDTO,
+	}
+}
+
 func NewTransactionLog(log []models.TransactionLogEntry, user *models.User) interface{} {
 	type transactionsResp struct {
 		Base
@@ -241,6 +289,47 @@ func NewTransactionLog(log []models.TransactionLogEntry, user *models.User) inte
 			} else {
 				transactionDTO.SenderId = entry.SenderId.String()
 			}
+		}
+
+		transactionDTOs[i] = transactionDTO
+	}
+
+	return transactionsResp{
+		Base: Base{
+			Success: true,
+		},
+		Transactions: transactionDTOs,
+	}
+}
+
+func NewBankTransactionLog(log []models.TransactionLogEntry) interface{} {
+	type transactionsResp struct {
+		Base
+		Transactions []bankTransaction `json:"transactions"`
+	}
+
+	transactionDTOs := make([]bankTransaction, len(log))
+
+	for i, entry := range log {
+		transactionDTO := bankTransaction{
+			Id:          entry.Id.String(),
+			Time:        entry.Created,
+			Title:       entry.Title,
+			Description: entry.Description,
+			Amount:      entry.Amount,
+			GroupId:     entry.GroupId.String(),
+		}
+
+		if entry.ReceiverIsBank {
+			transactionDTO.ReceiverId = "bank"
+		} else {
+			transactionDTO.ReceiverId = entry.ReceiverId.String()
+		}
+
+		if entry.SenderIsBank {
+			transactionDTO.SenderId = "bank"
+		} else {
+			transactionDTO.SenderId = entry.SenderId.String()
 		}
 
 		transactionDTOs[i] = transactionDTO
