@@ -120,6 +120,7 @@ func TestHandler_DeleteUser(t *testing.T) {
 	}
 
 	us := db.NewUserStore(database)
+	gs := db.NewGroupStore(database)
 
 	password := "123456"
 	hash, _ := bcrypt.GenerateFromPassword([]byte(password), config.Data.BcryptCost)
@@ -171,7 +172,7 @@ func TestHandler_DeleteUser(t *testing.T) {
 	}
 	us.Create(user3)
 
-	handler := New(us, nil)
+	handler := New(us, gs)
 
 	tests := []struct {
 		tName       string
