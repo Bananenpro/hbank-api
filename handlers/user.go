@@ -359,10 +359,10 @@ func (h *Handler) UpdateUser(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
 	}
 
+	user.DontSendInvitationEmail = body.DontSendInvitationEmail
+
 	body.ProfilePicturePrivacy = strings.ToLower(body.ProfilePicturePrivacy)
 	switch body.ProfilePicturePrivacy {
-	case "":
-		break
 	case models.ProfilePictureEverybody, models.ProfilePictureNobody:
 		user.ProfilePicturePrivacy = body.ProfilePicturePrivacy
 	default:

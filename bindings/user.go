@@ -1,16 +1,17 @@
 package bindings
 
 type DeleteUser struct {
-	Password   string `json:"password"`
-	TwoFAToken string `json:"two_fa_token"`
+	Password   string `json:"password" form:"password"`
+	TwoFAToken string `json:"two_fa_token" form:"two_fa_token"`
 }
 
 type DeleteUserByConfirmEmailCode struct {
-	ConfirmEmailCode string `json:"code"`
+	ConfirmEmailCode string `json:"code" form:"code"`
 }
 
 type UpdateUser struct {
-	ProfilePicturePrivacy string `json:"profile_picture_privacy"`
+	ProfilePicturePrivacy   string `json:"profile_picture_privacy" form:"profile_picture_privacy"`
+	DontSendInvitationEmail bool   `json:"dont_send_invitation_email" form:"dont_send_invitation_email"`
 }
 
 type AddCashLogEntry struct {

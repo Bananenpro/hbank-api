@@ -63,26 +63,27 @@ const (
 
 type User struct {
 	Base
-	Name                  string
-	Email                 string `gorm:"unique"`
-	PasswordHash          []byte
-	ProfilePicture        []byte
-	ProfilePictureId      uuid.UUID `gorm:"type:uuid"`
-	ProfilePicturePrivacy string    `gorm:"default:everybody"`
-	CashLog               []CashLogEntry
-	EmailConfirmed        bool
-	TwoFaOTPEnabled       bool
-	OtpSecret             string
-	OtpQrCode             []byte
-	ConfirmEmailCode      ConfirmEmailCode  `gorm:"constraint:OnDelete:CASCADE"`
-	ResetPasswordCode     ResetPasswordCode `gorm:"constraint:OnDelete:CASCADE"`
-	ChangeEmailCode       ChangeEmailCode   `gorm:"constraint:OnDelete:CASCADE"`
-	RefreshTokens         []RefreshToken
-	PasswordTokens        []PasswordToken
-	TwoFATokens           []TwoFAToken
-	RecoveryCodes         []RecoveryCode
-	GroupMemberships      []GroupMembership
-	GroupInvitations      []GroupInvitation
+	Name                    string
+	Email                   string `gorm:"unique"`
+	PasswordHash            []byte
+	ProfilePicture          []byte
+	ProfilePictureId        uuid.UUID `gorm:"type:uuid"`
+	ProfilePicturePrivacy   string    `gorm:"default:everybody"`
+	DontSendInvitationEmail bool
+	CashLog                 []CashLogEntry
+	EmailConfirmed          bool
+	TwoFaOTPEnabled         bool
+	OtpSecret               string
+	OtpQrCode               []byte
+	ConfirmEmailCode        ConfirmEmailCode  `gorm:"constraint:OnDelete:CASCADE"`
+	ResetPasswordCode       ResetPasswordCode `gorm:"constraint:OnDelete:CASCADE"`
+	ChangeEmailCode         ChangeEmailCode   `gorm:"constraint:OnDelete:CASCADE"`
+	RefreshTokens           []RefreshToken
+	PasswordTokens          []PasswordToken
+	TwoFATokens             []TwoFAToken
+	RecoveryCodes           []RecoveryCode
+	GroupMemberships        []GroupMembership
+	GroupInvitations        []GroupInvitation
 }
 
 type CashLogEntry struct {

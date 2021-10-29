@@ -80,7 +80,7 @@ func (us *UserStore) Create(user *models.User) error {
 }
 
 func (us *UserStore) Update(user *models.User) error {
-	return us.db.Updates(user).Error
+	return us.db.Select("*").Updates(user).Error
 }
 
 func (us *UserStore) Delete(user *models.User) error {

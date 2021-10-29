@@ -1177,6 +1177,23 @@ func (h *Handler) CreateInvitation(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
+	if !user.DontSendInvitationEmail && config.Data.EmailEnabled {
+		type templateData struct {
+			Name           string
+			GroupName      string
+			InvitationsUrl string
+		}
+		body, err := services.ParseEmailTemplate("invitation", c.Get("lang").(string), templateData{
+			Name:           user.Name,
+			GroupName:      group.Name,
+			InvitationsUrl: fmt.Sprintf("https://%s/invitations", config.Data.DomainName),
+		})
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+		go services.SendEmail([]string{user.Email}, services.Tr("H-Bank Invitation", lang), body)
+	}
+
 	return c.JSON(http.StatusCreated, responses.New(true, "Successfully invited user", lang))
 }
 

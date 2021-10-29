@@ -98,3 +98,4 @@
 "Successfully removed admin rights"="Erfolgreich Administratorrechte entfernt"
 "Failed to delete user because he is the only admin of one or more groups"="Konnte den Nutzer nicht löschen, weil er der einzige Admin einer oder mehrerer Gruppen ist"
 "Cannot send money from bank to bank"="Kann Geld nicht von Bank an Bank schicken"
+"H-Bank Invitation"="H-Bank Einladung"

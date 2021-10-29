@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"log"
 	"net/smtp"
 
 	"github.com/Bananenpro/hbank-api/config"
@@ -42,5 +43,9 @@ func SendEmail(address []string, subject string, body string) error {
 	msg := []byte(subject + mime + "\n" + body)
 	addr := fmt.Sprintf("%s:%d", config.Data.EmailHost, config.Data.EmailPort)
 
-	return smtp.SendMail(addr, emailAuth, config.Data.EmailUsername, address, msg)
+	err := smtp.SendMail(addr, emailAuth, config.Data.EmailUsername, address, msg)
+	if err != nil {
+		log.Println("Error while sending email:", err)
+	}
+	return err
 }
