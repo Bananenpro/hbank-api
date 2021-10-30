@@ -1296,3 +1296,420 @@ func (h *Handler) DenyInvitation(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, responses.New(true, "Successfully denied invitation", lang))
 }
+
+// /v1/group/:id/paymentPlan/:paymentPlanId (GET)
+func (h *Handler) GetPaymentPlanById(c echo.Context) error {
+	lang := c.Get("lang").(string)
+
+	userId := c.Get("userId").(uuid.UUID)
+	user, err := h.userStore.GetById(userId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
+	}
+
+	groupId, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	}
+	group, err := h.groupStore.GetById(groupId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if group == nil {
+		return c.JSON(http.StatusNotFound, responses.New(false, "Group not found", lang))
+	}
+
+	paymentPlanId, err := uuid.Parse(c.Param("paymentPlanId"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing paymentPlanId parameter", lang))
+	}
+
+	paymentPlan, err := h.groupStore.GetPaymentPlanById(group, paymentPlanId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if paymentPlan == nil {
+		return c.JSON(http.StatusNotFound, responses.NewNotFound(lang))
+	}
+
+	isSender := bytes.Equal(user.Id[:], paymentPlan.SenderId[:])
+	isReceiver := bytes.Equal(user.Id[:], paymentPlan.ReceiverId[:])
+
+	if isSender || isReceiver {
+		isMember, err := h.groupStore.IsMember(group, user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+		if !isMember {
+			return c.JSON(http.StatusForbidden, responses.New(false, "Not a member of the group", lang))
+		}
+
+		return c.JSON(http.StatusOK, responses.NewPaymentPlan(paymentPlan))
+	} else if paymentPlan.SenderIsBank || paymentPlan.ReceiverIsBank {
+		isAdmin, err := h.groupStore.IsAdmin(group, user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+		if !isAdmin {
+			return c.JSON(http.StatusForbidden, responses.New(false, "Not an admin of the group", lang))
+		}
+
+		return c.JSON(http.StatusOK, responses.NewPaymentPlan(paymentPlan))
+	}
+
+	return c.JSON(http.StatusForbidden, responses.New(false, "User not allowed to view payment plan", lang))
+
+}
+
+// /v1/group/:id/paymentPlan?bank=bool&page=int&pageSize=int&oldestFirst=bool (GET)
+func (h *Handler) GetPaymentPlans(c echo.Context) error {
+	lang := c.Get("lang").(string)
+
+	userId := c.Get("userId").(uuid.UUID)
+	user, err := h.userStore.GetById(userId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
+	}
+
+	page := 0
+	pageSize := 20
+
+	if c.QueryParam("page") != "" {
+		page, err = strconv.Atoi(c.QueryParam("page"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "'page' query parameter not a number", lang))
+		}
+	}
+
+	if c.QueryParam("pageSize") != "" {
+		pageSize, err = strconv.Atoi(c.QueryParam("pageSize"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "'pageSize' query parameter not a number", lang))
+		}
+	}
+
+	oldestFirst := services.StrToBool(c.QueryParam("oldestFirst"))
+
+	groupId, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	}
+	group, err := h.groupStore.GetById(groupId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if group == nil {
+		return c.JSON(http.StatusNotFound, responses.New(false, "Group not found", lang))
+	}
+
+	bank := services.StrToBool(c.QueryParam("bank"))
+
+	if !bank {
+		isMember, err := h.groupStore.IsMember(group, user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+
+		if !isMember {
+			return c.JSON(http.StatusForbidden, responses.New(false, "Not a member of the group", lang))
+		}
+
+		paymentPlans, err := h.groupStore.GetPaymentPlans(group, user, page, pageSize, oldestFirst)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+
+		return c.JSON(http.StatusOK, responses.NewPaymentPlans(paymentPlans))
+	} else {
+		isAdmin, err := h.groupStore.IsAdmin(group, user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+
+		if !isAdmin {
+			return c.JSON(http.StatusForbidden, responses.New(false, "Not an admin of the group", lang))
+		}
+
+		paymentPlans, err := h.groupStore.GetBankPaymentPlans(group, page, pageSize, oldestFirst)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+
+		return c.JSON(http.StatusOK, responses.NewPaymentPlans(paymentPlans))
+	}
+}
+
+// /v1/group/:id/paymentPlan (POST)
+func (h *Handler) CreatePaymentPlan(c echo.Context) error {
+	lang := c.Get("lang").(string)
+
+	userId := c.Get("userId").(uuid.UUID)
+	user, err := h.userStore.GetById(userId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
+	}
+
+	groupId, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	}
+	group, err := h.groupStore.GetById(groupId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if group == nil {
+		return c.JSON(http.StatusNotFound, responses.New(false, "Group not found", lang))
+	}
+
+	isMember, err := h.groupStore.IsMember(group, user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	if !isMember {
+		return c.JSON(http.StatusForbidden, responses.New(false, "Not a member of the group", lang))
+	}
+
+	var body bindings.CreatePaymentPlan
+	err = c.Bind(&body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
+	}
+
+	if body.Amount <= 0 {
+		return c.JSON(http.StatusOK, responses.New(false, "Amount must be >0", lang))
+	}
+
+	if body.Schedule <= 0 {
+		return c.JSON(http.StatusOK, responses.New(false, "Schedule must be >0", lang))
+	}
+
+	body.Name = strings.TrimSpace(body.Name)
+	body.Description = strings.TrimSpace(body.Description)
+
+	if len(body.Name) > config.Data.MaxNameLength {
+		return c.JSON(http.StatusOK, responses.New(false, "Name too long", lang))
+	}
+
+	if utf8.RuneCountInString(body.Name) < config.Data.MinNameLength {
+		return c.JSON(http.StatusOK, responses.New(false, "Name too short", lang))
+	}
+
+	if len(body.Description) > config.Data.MaxDescriptionLength {
+		return c.JSON(http.StatusOK, responses.New(false, "Description too long", lang))
+	}
+
+	if utf8.RuneCountInString(body.Description) < config.Data.MinDescriptionLength {
+		return c.JSON(http.StatusOK, responses.New(false, "Description too short", lang))
+	}
+
+	body.ScheduleUnit = strings.ToLower(body.ScheduleUnit)
+
+	if body.ScheduleUnit != models.ScheduleUnitDay && body.ScheduleUnit != models.ScheduleUnitWeek && body.ScheduleUnit != models.ScheduleUnitMonth && body.ScheduleUnit != models.ScheduleUnitYear {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid schedule unit", lang))
+	}
+
+	if strings.EqualFold(body.ReceiverId, "bank") {
+		if body.FromBank {
+			return c.JSON(http.StatusOK, responses.New(false, "Cannot send money from bank to bank", lang))
+		}
+		err = h.groupStore.CreatePaymentPlan(group, false, true, user, nil, body.Name, body.Description, int(body.Amount), int(body.Schedule), body.ScheduleUnit)
+	} else {
+		receiverId, err := uuid.Parse(body.ReceiverId)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid receiver id", lang))
+		}
+
+		receiver, err := h.userStore.GetById(receiverId)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+		if receiver == nil {
+			return c.JSON(http.StatusNotFound, responses.New(false, "Couldn't find receiver", lang))
+		}
+		isReceiverMember, err := h.groupStore.IsMember(group, receiver)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+		if !isReceiverMember {
+			return c.JSON(http.StatusForbidden, responses.New(false, "Receiver not a member of the group", lang))
+		}
+
+		if body.FromBank {
+			isAdmin, err := h.groupStore.IsAdmin(group, user)
+			if err != nil {
+				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+			}
+			if !isAdmin {
+				return c.JSON(http.StatusForbidden, responses.New(false, "Not an admin of the group", lang))
+			}
+			err = h.groupStore.CreatePaymentPlan(group, true, false, nil, receiver, body.Name, body.Description, int(body.Amount), int(body.Schedule), body.ScheduleUnit)
+		} else {
+			if bytes.Equal(user.Id[:], receiverId[:]) {
+				return c.JSON(http.StatusOK, responses.New(false, "Sender is the receiver", lang))
+			}
+			err = h.groupStore.CreatePaymentPlan(group, false, false, user, receiver, body.Name, body.Description, int(body.Amount), int(body.Schedule), body.ScheduleUnit)
+			if err != nil {
+				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+			}
+		}
+	}
+
+	return c.JSON(http.StatusOK, responses.New(true, "Successfully created payment plan", lang))
+}
+
+// /v1/group/:id/paymentPlan/:paymentPlanId (DELETE)
+func (h *Handler) DeletePaymentPlan(c echo.Context) error {
+	lang := c.Get("lang").(string)
+
+	userId := c.Get("userId").(uuid.UUID)
+	user, err := h.userStore.GetById(userId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
+	}
+
+	groupId, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	}
+	group, err := h.groupStore.GetById(groupId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if group == nil {
+		return c.JSON(http.StatusNotFound, responses.New(false, "Group not found", lang))
+	}
+
+	paymentPlanId, err := uuid.Parse(c.Param("paymentPlanId"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing paymentPlanId parameter", lang))
+	}
+
+	paymentPlan, err := h.groupStore.GetPaymentPlanById(group, paymentPlanId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if paymentPlan == nil {
+		return c.JSON(http.StatusNotFound, responses.NewNotFound(lang))
+	}
+
+	isSender := bytes.Equal(user.Id[:], paymentPlan.SenderId[:])
+	if !isSender {
+		return c.JSON(http.StatusForbidden, responses.New(false, "User not the sender of the payment plan", lang))
+	}
+
+	err = h.groupStore.DeletePaymentPlan(paymentPlan)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	return c.JSON(http.StatusOK, responses.New(true, "Successfully deleted payment plan", lang))
+}
+
+// /v1/group/:id/paymentPlan/:paymentPlanId (PUT)
+func (h *Handler) UpdatePaymentPlan(c echo.Context) error {
+	lang := c.Get("lang").(string)
+
+	userId := c.Get("userId").(uuid.UUID)
+	user, err := h.userStore.GetById(userId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
+	}
+
+	groupId, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	}
+	group, err := h.groupStore.GetById(groupId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if group == nil {
+		return c.JSON(http.StatusNotFound, responses.New(false, "Group not found", lang))
+	}
+
+	paymentPlanId, err := uuid.Parse(c.Param("paymentPlanId"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing paymentPlanId parameter", lang))
+	}
+
+	paymentPlan, err := h.groupStore.GetPaymentPlanById(group, paymentPlanId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if paymentPlan == nil {
+		return c.JSON(http.StatusNotFound, responses.NewNotFound(lang))
+	}
+
+	isSender := bytes.Equal(user.Id[:], paymentPlan.SenderId[:])
+	if !isSender {
+		return c.JSON(http.StatusForbidden, responses.New(false, "User not the sender of the payment plan", lang))
+	}
+
+	var body bindings.UpdatePaymentPlan
+	err = c.Bind(&body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
+	}
+
+	if body.Amount <= 0 {
+		return c.JSON(http.StatusOK, responses.New(false, "Amount must be >0", lang))
+	}
+
+	if body.Schedule <= 0 {
+		return c.JSON(http.StatusOK, responses.New(false, "Schedule must be >0", lang))
+	}
+
+	body.Name = strings.TrimSpace(body.Name)
+	body.Description = strings.TrimSpace(body.Description)
+
+	if len(body.Name) > config.Data.MaxNameLength {
+		return c.JSON(http.StatusOK, responses.New(false, "Name too long", lang))
+	}
+
+	if utf8.RuneCountInString(body.Name) < config.Data.MinNameLength {
+		return c.JSON(http.StatusOK, responses.New(false, "Name too short", lang))
+	}
+
+	if len(body.Description) > config.Data.MaxDescriptionLength {
+		return c.JSON(http.StatusOK, responses.New(false, "Description too long", lang))
+	}
+
+	if utf8.RuneCountInString(body.Description) < config.Data.MinDescriptionLength {
+		return c.JSON(http.StatusOK, responses.New(false, "Description too short", lang))
+	}
+
+	body.ScheduleUnit = strings.ToLower(body.ScheduleUnit)
+
+	if body.ScheduleUnit != models.ScheduleUnitDay && body.ScheduleUnit != models.ScheduleUnitWeek && body.ScheduleUnit != models.ScheduleUnitMonth && body.ScheduleUnit != models.ScheduleUnitYear {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid schedule unit", lang))
+	}
+
+	paymentPlan.Amount = int(body.Amount)
+	paymentPlan.Name = body.Name
+	paymentPlan.Description = body.Description
+	paymentPlan.Schedule = int(body.Schedule)
+	paymentPlan.ScheduleUnit = body.ScheduleUnit
+
+	err = h.groupStore.UpdatePaymentPlan(paymentPlan)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	return c.JSON(http.StatusOK, responses.New(true, "Successfully updated payment plan", lang))
+}

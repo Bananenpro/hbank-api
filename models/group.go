@@ -40,6 +40,13 @@ type GroupStore interface {
 	GetInvitationsByUser(user *User, page, pageSize int, oldestFirst bool) ([]GroupInvitation, error)
 	GetInvitationByGroupAndUser(group *Group, user *User) (*GroupInvitation, error)
 	DeleteInvitation(invitation *GroupInvitation) error
+
+	GetPaymentPlans(group *Group, user *User, page, pageSize int, descending bool) ([]PaymentPlan, error)
+	GetBankPaymentPlans(group *Group, page, pageSize int, descending bool) ([]PaymentPlan, error)
+	GetPaymentPlanById(group *Group, id uuid.UUID) (*PaymentPlan, error)
+	CreatePaymentPlan(group *Group, senderIsBank, receiverIsBank bool, sender *User, receiver *User, name, description string, amount, schedule int, scheduleUnit string) error
+	UpdatePaymentPlan(paymentPlan *PaymentPlan) error
+	DeletePaymentPlan(paymentPlan *PaymentPlan) error
 }
 
 type Group struct {
@@ -87,4 +94,33 @@ type TransactionLogEntry struct {
 	ReceiverId                uuid.UUID `gorm:"type:uuid"`
 	NewBalanceReceiver        int
 	BalanceDifferenceReceiver int
+
+	PaymentPlanId uuid.UUID `gorm:"type:uuid"`
+}
+
+const (
+	ScheduleUnitDay   = "day"
+	ScheduleUnitWeek  = "week"
+	ScheduleUnitMonth = "month"
+	ScheduleUnitYear  = "year"
+)
+
+type PaymentPlan struct {
+	Base
+	Name        string
+	Description string
+
+	Amount int
+
+	LastExecute  int64
+	Schedule     int
+	ScheduleUnit string
+
+	SenderIsBank bool
+	SenderId     uuid.UUID `gorm:"type:uuid"`
+
+	ReceiverIsBank bool
+	ReceiverId     uuid.UUID `gorm:"type:uuid"`
+
+	GroupId uuid.UUID `gorm:"type:uuid"`
 }

@@ -70,4 +70,10 @@ func (h *Handler) RegisterV1(v1 *echo.Group) {
 	group.POST("/:id/invitation", h.CreateInvitation, middlewares.JWT)
 	group.POST("/invitation/:id", h.AcceptInvitation, middlewares.JWT)
 	group.DELETE("/invitation/:id", h.DenyInvitation, middlewares.JWT)
+
+	group.GET("/:id/paymentPlan/:paymentPlanId", h.GetPaymentPlanById, middlewares.JWT)
+	group.GET("/:id/paymentPlan", h.GetPaymentPlans, middlewares.JWT)
+	group.POST("/:id/paymentPlan", h.CreatePaymentPlan, middlewares.JWT)
+	group.PUT("/:id/paymentPlan/:paymentPlanId", h.UpdatePaymentPlan, middlewares.JWT)
+	group.DELETE("/:id/paymentPlan/:paymentPlanId", h.DeletePaymentPlan, middlewares.JWT)
 }

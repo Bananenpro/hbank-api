@@ -52,6 +52,8 @@ type transaction struct {
 
 	SenderId   string `json:"sender_id,omitempty"`
 	ReceiverId string `json:"receiver_id,omitempty"`
+
+	PaymentPlanId string `json:"payment_plan_id,omitempty"`
 }
 
 type bankTransaction struct {
@@ -62,6 +64,28 @@ type bankTransaction struct {
 	Amount      int    `json:"amount"`
 
 	GroupId string `json:"group_id"`
+
+	SenderId   string `json:"sender_id,omitempty"`
+	ReceiverId string `json:"receiver_id,omitempty"`
+
+	PaymentPlanId string `json:"payment_plan_id,omitempty"`
+}
+
+type paymentPlan struct {
+	Id string `json:"id"`
+
+	LastExecute int64 `json:"last_execute"`
+	NextExecute int64 `json:"next_execute"`
+
+	Name        string `json:"name"`
+	Description string `json:"description"`
+
+	Schedule     int    `json:"schedule"`
+	ScheduleUnit string `json:"schedule_unit"`
+
+	GroupId string `json:"group_id"`
+
+	Amount int `json:"amount"`
 
 	SenderId   string `json:"sender_id,omitempty"`
 	ReceiverId string `json:"receiver_id,omitempty"`
@@ -203,6 +227,11 @@ func NewTransaction(transactionModel *models.TransactionLogEntry, user *models.U
 		}
 	}
 
+	emptyId := uuid.UUID{}
+	if !bytes.Equal(transactionModel.PaymentPlanId[:], emptyId[:]) {
+		transactionDTO.PaymentPlanId = transactionModel.PaymentPlanId.String()
+	}
+
 	return transactionResp{
 		Base: Base{
 			Success: true,
@@ -236,6 +265,11 @@ func NewBankTransaction(transactionModel *models.TransactionLogEntry) interface{
 		transactionDTO.SenderId = "bank"
 	} else {
 		transactionDTO.SenderId = transactionModel.SenderId.String()
+	}
+
+	emptyId := uuid.UUID{}
+	if !bytes.Equal(transactionModel.PaymentPlanId[:], emptyId[:]) {
+		transactionDTO.PaymentPlanId = transactionModel.PaymentPlanId.String()
 	}
 
 	return transactionResp{
@@ -291,6 +325,11 @@ func NewTransactionLog(log []models.TransactionLogEntry, user *models.User) inte
 			}
 		}
 
+		emptyId := uuid.UUID{}
+		if !bytes.Equal(entry.PaymentPlanId[:], emptyId[:]) {
+			transactionDTO.PaymentPlanId = entry.PaymentPlanId.String()
+		}
+
 		transactionDTOs[i] = transactionDTO
 	}
 
@@ -332,6 +371,11 @@ func NewBankTransactionLog(log []models.TransactionLogEntry) interface{} {
 			transactionDTO.SenderId = entry.SenderId.String()
 		}
 
+		emptyId := uuid.UUID{}
+		if !bytes.Equal(entry.PaymentPlanId[:], emptyId[:]) {
+			transactionDTO.PaymentPlanId = entry.PaymentPlanId.String()
+		}
+
 		transactionDTOs[i] = transactionDTO
 	}
 
@@ -355,5 +399,88 @@ func NewDeleteFailedBecauseOfSoleGroupAdmin(groupIds []uuid.UUID, lang string) i
 			Message: services.Tr("Failed to delete user because he is the only admin of one or more groups", lang),
 		},
 		GroupIds: ids,
+	}
+}
+
+func NewPaymentPlan(paymentPlanModel *models.PaymentPlan) interface{} {
+	type paymentPlanResp struct {
+		Base
+		paymentPlan
+	}
+
+	paymentPlanDTO := paymentPlan{
+		Id:           paymentPlanModel.Id.String(),
+		LastExecute:  paymentPlanModel.LastExecute,
+		NextExecute:  services.NextPaymentPlanExecute(paymentPlanModel),
+		Name:         paymentPlanModel.Name,
+		Description:  paymentPlanModel.Description,
+		Schedule:     paymentPlanModel.Schedule,
+		ScheduleUnit: paymentPlanModel.ScheduleUnit,
+		Amount:       paymentPlanModel.Amount,
+		GroupId:      paymentPlanModel.GroupId.String(),
+	}
+
+	if paymentPlanModel.ReceiverIsBank {
+		paymentPlanDTO.ReceiverId = "bank"
+	} else {
+		paymentPlanDTO.ReceiverId = paymentPlanModel.ReceiverId.String()
+	}
+
+	if paymentPlanModel.SenderIsBank {
+		paymentPlanDTO.SenderId = "bank"
+	} else {
+		paymentPlanDTO.SenderId = paymentPlanModel.SenderId.String()
+	}
+
+	return paymentPlanResp{
+		Base: Base{
+			Success: true,
+		},
+		paymentPlan: paymentPlanDTO,
+	}
+}
+
+func NewPaymentPlans(paymentPlans []models.PaymentPlan) interface{} {
+	type paymentPlansResp struct {
+		Base
+		PaymentPlans []paymentPlan `json:"payment_plans"`
+	}
+
+	paymentPlanDTOs := make([]paymentPlan, len(paymentPlans))
+
+	for i, plan := range paymentPlans {
+
+		paymentPlanDTO := paymentPlan{
+			Id:           plan.Id.String(),
+			LastExecute:  plan.LastExecute,
+			NextExecute:  services.NextPaymentPlanExecute(&plan),
+			Name:         plan.Name,
+			Description:  plan.Description,
+			Schedule:     plan.Schedule,
+			ScheduleUnit: plan.ScheduleUnit,
+			Amount:       plan.Amount,
+			GroupId:      plan.GroupId.String(),
+		}
+
+		if plan.ReceiverIsBank {
+			paymentPlanDTO.ReceiverId = "bank"
+		} else {
+			paymentPlanDTO.ReceiverId = plan.ReceiverId.String()
+		}
+
+		if plan.SenderIsBank {
+			paymentPlanDTO.SenderId = "bank"
+		} else {
+			paymentPlanDTO.SenderId = plan.SenderId.String()
+		}
+
+		paymentPlanDTOs[i] = paymentPlanDTO
+	}
+
+	return paymentPlansResp{
+		Base: Base{
+			Success: true,
+		},
+		PaymentPlans: paymentPlanDTOs,
 	}
 }

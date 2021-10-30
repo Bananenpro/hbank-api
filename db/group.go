@@ -1,6 +1,8 @@
 package db
 
 import (
+	"time"
+
 	"github.com/Bananenpro/hbank-api/models"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -72,6 +74,7 @@ func (gs *GroupStore) Delete(group *models.Group) error {
 	gs.db.Delete(&models.GroupInvitation{}, "group_id = ?", group.Id)
 	gs.db.Delete(&models.GroupMembership{}, "group_id = ?", group.Id)
 	gs.db.Delete(&models.TransactionLogEntry{}, "group_id = ?", group.Id)
+	gs.db.Delete(&models.PaymentPlan{}, "group_id = ?", group.Id)
 	return gs.db.Delete(group).Error
 }
 
@@ -170,6 +173,8 @@ func (gs *GroupStore) RemoveMember(group *models.Group, user *models.User) error
 	if err != nil {
 		return err
 	}
+
+	gs.db.Where("group_id = ? AND sender_id = ?", group.Id, user.Id).Or("group_id = ? AND receiver_id = ?", group.Id, user.Id).Delete(&models.PaymentPlan{})
 
 	if membership.IsAdmin {
 		membership.IsMember = false
@@ -487,4 +492,89 @@ func (gs *GroupStore) GetInvitationByGroupAndUser(group *models.Group, user *mod
 
 func (gs *GroupStore) DeleteInvitation(invitation *models.GroupInvitation) error {
 	return gs.db.Delete(invitation).Error
+}
+
+func (gs *GroupStore) GetPaymentPlans(group *models.Group, user *models.User, page, pageSize int, descending bool) ([]models.PaymentPlan, error) {
+	var paymentPlans []models.PaymentPlan
+	var err error
+
+	order := "ASC"
+	if descending {
+		order = "DESC"
+	}
+
+	if page < 0 || pageSize < 0 {
+		err = gs.db.Order("name "+order).Where("group_id = ? AND sender_id = ?", group.Id, user.Id).Or("group_id = ? AND receiver_id = ?", group.Id, user.Id).Find(&paymentPlans).Error
+	} else {
+		err = gs.db.Order("name "+order).Offset(page*pageSize).Limit(pageSize).Where("group_id = ? AND sender_id = ?", group.Id, user.Id).Or("group_id = ? AND receiver_id = ?", group.Id, user.Id).Find(&paymentPlans).Error
+	}
+
+	return paymentPlans, err
+}
+
+func (gs *GroupStore) GetBankPaymentPlans(group *models.Group, page, pageSize int, descending bool) ([]models.PaymentPlan, error) {
+	var paymentPlans []models.PaymentPlan
+	var err error
+
+	order := "ASC"
+	if descending {
+		order = "DESC"
+	}
+
+	if page < 0 || pageSize < 0 {
+		err = gs.db.Order("name "+order).Where("group_id = ? AND sender_is_bank = ?", group.Id, true).Or("group_id = ? AND receiver_is_bank = ?", group.Id, true).Find(&paymentPlans).Error
+	} else {
+		err = gs.db.Order("name "+order).Where("group_id = ? AND sender_is_bank = ?", group.Id, true).Or("group_id = ? AND receiver_is_bank = ?", group.Id, true).Offset(page * pageSize).Limit(pageSize).Find(&paymentPlans).Error
+	}
+
+	return paymentPlans, err
+}
+
+func (gs *GroupStore) GetPaymentPlanById(group *models.Group, id uuid.UUID) (*models.PaymentPlan, error) {
+	var paymentPlan models.PaymentPlan
+	err := gs.db.First(&paymentPlan, "group_id = ? AND id = ?", group.Id, id).Error
+
+	if err != nil {
+		switch err {
+		case gorm.ErrRecordNotFound:
+			return nil, nil
+		default:
+			return nil, err
+		}
+	}
+
+	return &paymentPlan, nil
+}
+
+func (gs *GroupStore) CreatePaymentPlan(group *models.Group, senderIsBank, receiverIsBank bool, sender *models.User, receiver *models.User, name, description string, amount, schedule int, scheduleUnit string) error {
+	paymentPlan := models.PaymentPlan{
+		Name:           name,
+		Description:    description,
+		Amount:         amount,
+		LastExecute:    time.Now().Unix(),
+		Schedule:       schedule,
+		ScheduleUnit:   scheduleUnit,
+		SenderIsBank:   senderIsBank,
+		ReceiverIsBank: receiverIsBank,
+		GroupId:        group.Id,
+	}
+
+	if !senderIsBank {
+		paymentPlan.SenderId = sender.Id
+	}
+
+	if !receiverIsBank {
+		paymentPlan.ReceiverId = receiver.Id
+	}
+
+	return gs.db.Create(&paymentPlan).Error
+}
+
+func (gs *GroupStore) UpdatePaymentPlan(paymentPlan *models.PaymentPlan) error {
+	return gs.db.Updates(paymentPlan).Error
+}
+
+func (gs *GroupStore) DeletePaymentPlan(paymentPlan *models.PaymentPlan) error {
+	gs.db.Model(&models.TransactionLogEntry{}).Where("payment_plan_id = ?", paymentPlan.Id).Update("payment_plan_id", uuid.UUID{})
+	return gs.db.Delete(paymentPlan).Error
 }

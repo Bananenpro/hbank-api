@@ -93,6 +93,7 @@ func (us *UserStore) Delete(user *models.User) error {
 	us.db.Delete(&models.CashLogEntry{}, "user_id = ?", user.Id)
 	us.db.Delete(&models.GroupInvitation{}, "user_id = ?", user.Id)
 	us.db.Delete(&models.GroupMembership{}, "user_id = ?", user.Id)
+	us.db.Where("sender_id = ?", user.Id).Or("receiver_id = ?", user.Id).Delete(&models.PaymentPlan{})
 	return us.db.Delete(user).Error
 }
 
