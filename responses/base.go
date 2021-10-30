@@ -35,7 +35,7 @@ func HandleHTTPError(err error, c echo.Context) {
 
 	c.JSON(code, New(false, message, lang))
 
-	if code != http.StatusNotFound {
+	if code != http.StatusNotFound && code != http.StatusMethodNotAllowed {
 		c.Logger().Error(err)
 	}
 }

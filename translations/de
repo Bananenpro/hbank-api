@@ -61,6 +61,7 @@
 "Wrong group picture id"="Falsche Gruppenbild-ID"
 "No group picture set"="Kein Gruppenbild"
 "Not Found"="Nicht gefunden"
+"Method Not Allowed"="Methode nicht erlaubt"
 "Missing Auth-Token Cookie"="Auth-Token Cookie fehlt"
 "Missing Auth-Token-Signature Cookie"="Auth-Token-Signature Cookie fehlt"
 "Invalid JWT"="Ungültiges JWT"
