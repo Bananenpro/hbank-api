@@ -47,11 +47,11 @@ type transaction struct {
 
 	GroupId string `json:"group_id"`
 
-	BalanceDifference int `json:"balance_difference"`
-	NewBalance        int `json:"new_balance"`
+	Amount     int `json:"amount"`
+	NewBalance int `json:"new_balance"`
 
-	SenderId   string `json:"sender_id,omitempty"`
-	ReceiverId string `json:"receiver_id,omitempty"`
+	SenderId   string `json:"sender_id"`
+	ReceiverId string `json:"receiver_id"`
 
 	PaymentPlanId string `json:"payment_plan_id,omitempty"`
 }
@@ -65,8 +65,8 @@ type bankTransaction struct {
 
 	GroupId string `json:"group_id"`
 
-	SenderId   string `json:"sender_id,omitempty"`
-	ReceiverId string `json:"receiver_id,omitempty"`
+	SenderId   string `json:"sender_id"`
+	ReceiverId string `json:"receiver_id"`
 
 	PaymentPlanId string `json:"payment_plan_id,omitempty"`
 }
@@ -193,38 +193,31 @@ func NewTransaction(transactionModel *models.TransactionLogEntry, user *models.U
 
 	isSender := bytes.Equal(user.Id[:], transactionModel.SenderId[:])
 
-	balanceDifference := transactionModel.Amount
-	if isSender {
-		balanceDifference = -transactionModel.Amount
-	}
-
 	newBalance := transactionModel.NewBalanceReceiver
 	if isSender {
 		newBalance = transactionModel.NewBalanceSender
 	}
 
 	transactionDTO := transaction{
-		Id:                transactionModel.Id.String(),
-		Time:              transactionModel.Created,
-		Title:             transactionModel.Title,
-		Description:       transactionModel.Description,
-		BalanceDifference: balanceDifference,
-		NewBalance:        newBalance,
-		GroupId:           transactionModel.GroupId.String(),
+		Id:          transactionModel.Id.String(),
+		Time:        transactionModel.Created,
+		Title:       transactionModel.Title,
+		Description: transactionModel.Description,
+		Amount:      transactionModel.Amount,
+		NewBalance:  newBalance,
+		GroupId:     transactionModel.GroupId.String(),
 	}
 
-	if isSender {
-		if transactionModel.ReceiverIsBank {
-			transactionDTO.ReceiverId = "bank"
-		} else {
-			transactionDTO.ReceiverId = transactionModel.ReceiverId.String()
-		}
+	if transactionModel.ReceiverIsBank {
+		transactionDTO.ReceiverId = "bank"
 	} else {
-		if transactionModel.SenderIsBank {
-			transactionDTO.SenderId = "bank"
-		} else {
-			transactionDTO.SenderId = transactionModel.SenderId.String()
-		}
+		transactionDTO.ReceiverId = transactionModel.ReceiverId.String()
+	}
+
+	if transactionModel.SenderIsBank {
+		transactionDTO.SenderId = "bank"
+	} else {
+		transactionDTO.SenderId = transactionModel.SenderId.String()
 	}
 
 	emptyId := uuid.UUID{}
@@ -291,37 +284,30 @@ func NewTransactionLog(log []models.TransactionLogEntry, user *models.User) inte
 	for i, entry := range log {
 		isSender := bytes.Equal(user.Id[:], entry.SenderId[:])
 
-		balanceDifference := entry.Amount
-		if isSender {
-			balanceDifference = -entry.Amount
-		}
-
 		newBalance := entry.NewBalanceReceiver
 		if isSender {
 			newBalance = entry.NewBalanceSender
 		}
 
 		transactionDTO := transaction{
-			Id:                entry.Id.String(),
-			Time:              entry.Created,
-			Title:             entry.Title,
-			BalanceDifference: balanceDifference,
-			NewBalance:        newBalance,
-			GroupId:           entry.GroupId.String(),
+			Id:         entry.Id.String(),
+			Time:       entry.Created,
+			Title:      entry.Title,
+			Amount:     entry.Amount,
+			NewBalance: newBalance,
+			GroupId:    entry.GroupId.String(),
 		}
 
-		if isSender {
-			if entry.ReceiverIsBank {
-				transactionDTO.ReceiverId = "bank"
-			} else {
-				transactionDTO.ReceiverId = entry.ReceiverId.String()
-			}
+		if entry.ReceiverIsBank {
+			transactionDTO.ReceiverId = "bank"
 		} else {
-			if entry.SenderIsBank {
-				transactionDTO.SenderId = "bank"
-			} else {
-				transactionDTO.SenderId = entry.SenderId.String()
-			}
+			transactionDTO.ReceiverId = entry.ReceiverId.String()
+		}
+
+		if entry.SenderIsBank {
+			transactionDTO.SenderId = "bank"
+		} else {
+			transactionDTO.SenderId = entry.SenderId.String()
 		}
 
 		emptyId := uuid.UUID{}
