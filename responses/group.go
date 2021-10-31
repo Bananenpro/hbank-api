@@ -43,7 +43,7 @@ type transaction struct {
 	Id          string `json:"id"`
 	Time        int64  `json:"time"`
 	Title       string `json:"title"`
-	Description string `json:"description"`
+	Description string `json:"description,omitempty"`
 
 	GroupId string `json:"group_id"`
 
@@ -60,7 +60,7 @@ type bankTransaction struct {
 	Id          string `json:"id"`
 	Time        int64  `json:"time"`
 	Title       string `json:"title"`
-	Description string `json:"description"`
+	Description string `json:"description,omitempty"`
 	Amount      int    `json:"amount"`
 
 	GroupId string `json:"group_id"`
@@ -78,7 +78,7 @@ type paymentPlan struct {
 	NextExecute int64 `json:"next_execute"`
 
 	Name        string `json:"name"`
-	Description string `json:"description"`
+	Description string `json:"description,omitempty"`
 
 	Schedule     int    `json:"schedule"`
 	ScheduleUnit string `json:"schedule_unit"`
@@ -305,7 +305,6 @@ func NewTransactionLog(log []models.TransactionLogEntry, user *models.User) inte
 			Id:                entry.Id.String(),
 			Time:              entry.Created,
 			Title:             entry.Title,
-			Description:       entry.Description,
 			BalanceDifference: balanceDifference,
 			NewBalance:        newBalance,
 			GroupId:           entry.GroupId.String(),
@@ -351,12 +350,11 @@ func NewBankTransactionLog(log []models.TransactionLogEntry) interface{} {
 
 	for i, entry := range log {
 		transactionDTO := bankTransaction{
-			Id:          entry.Id.String(),
-			Time:        entry.Created,
-			Title:       entry.Title,
-			Description: entry.Description,
-			Amount:      entry.Amount,
-			GroupId:     entry.GroupId.String(),
+			Id:      entry.Id.String(),
+			Time:    entry.Created,
+			Title:   entry.Title,
+			Amount:  entry.Amount,
+			GroupId: entry.GroupId.String(),
 		}
 
 		if entry.ReceiverIsBank {
@@ -455,7 +453,6 @@ func NewPaymentPlans(paymentPlans []models.PaymentPlan) interface{} {
 			LastExecute:  plan.LastExecute,
 			NextExecute:  services.NextPaymentPlanExecute(&plan),
 			Name:         plan.Name,
-			Description:  plan.Description,
 			Schedule:     plan.Schedule,
 			ScheduleUnit: plan.ScheduleUnit,
 			Amount:       plan.Amount,
