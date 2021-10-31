@@ -33,6 +33,7 @@ type GroupStore interface {
 	GetLastTransactionLogEntry(group *Group, user *User) (*TransactionLogEntry, error)
 	GetUserBalance(group *Group, user *User) (int, error)
 	CreateTransaction(group *Group, senderIsBank, receiverIsBank bool, sender *User, receiver *User, title, description string, amount int) error
+	CreateTransactionFromPaymentPlan(group *Group, senderIsBank, receiverIsBank bool, sender *User, receiver *User, title, description string, amount int, paymentPlanId uuid.UUID) error
 
 	CreateInvitation(group *Group, user *User, message string) error
 	GetInvitationById(id uuid.UUID) (*GroupInvitation, error)
@@ -43,8 +44,9 @@ type GroupStore interface {
 
 	GetPaymentPlans(group *Group, user *User, page, pageSize int, descending bool) ([]PaymentPlan, error)
 	GetBankPaymentPlans(group *Group, page, pageSize int, descending bool) ([]PaymentPlan, error)
+	GetPaymentPlansThatNeedToBeExecuted() ([]PaymentPlan, error)
 	GetPaymentPlanById(group *Group, id uuid.UUID) (*PaymentPlan, error)
-	CreatePaymentPlan(group *Group, senderIsBank, receiverIsBank bool, sender *User, receiver *User, name, description string, amount, schedule int, scheduleUnit string) error
+	CreatePaymentPlan(group *Group, senderIsBank, receiverIsBank bool, sender *User, receiver *User, name, description string, amount, repeats, schedule int, scheduleUnit string, firstPayment int64) error
 	UpdatePaymentPlan(paymentPlan *PaymentPlan) error
 	DeletePaymentPlan(paymentPlan *PaymentPlan) error
 }
@@ -112,7 +114,10 @@ type PaymentPlan struct {
 
 	Amount int
 
-	LastExecute  int64
+	// negative payment count for unlimited payments
+	PaymentCount int
+
+	NextExecute  int64
 	Schedule     int
 	ScheduleUnit string
 

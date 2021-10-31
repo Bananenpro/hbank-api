@@ -366,6 +366,10 @@ func (gs *GroupStore) GetUserBalance(group *models.Group, user *models.User) (in
 }
 
 func (gs *GroupStore) CreateTransaction(group *models.Group, senderIsBank, receiverIsBank bool, sender *models.User, receiver *models.User, title, description string, amount int) error {
+	return gs.CreateTransactionFromPaymentPlan(group, senderIsBank, receiverIsBank, sender, receiver, title, description, amount, uuid.UUID{})
+}
+
+func (gs *GroupStore) CreateTransactionFromPaymentPlan(group *models.Group, senderIsBank, receiverIsBank bool, sender *models.User, receiver *models.User, title, description string, amount int, paymentPlanId uuid.UUID) error {
 	var err error
 
 	oldBalanceSender := 0
@@ -413,6 +417,8 @@ func (gs *GroupStore) CreateTransaction(group *models.Group, senderIsBank, recei
 		ReceiverId:                receiverId,
 		BalanceDifferenceReceiver: amount,
 		NewBalanceReceiver:        newBalanceReceiver,
+
+		PaymentPlanId: paymentPlanId,
 	}
 
 	return gs.db.Create(&transaction).Error
@@ -530,6 +536,12 @@ func (gs *GroupStore) GetBankPaymentPlans(group *models.Group, page, pageSize in
 	return paymentPlans, err
 }
 
+func (gs *GroupStore) GetPaymentPlansThatNeedToBeExecuted() ([]models.PaymentPlan, error) {
+	var paymentPlans []models.PaymentPlan
+	err := gs.db.Find(&paymentPlans, "next_execute <= ?", time.Now().Unix()).Error
+	return paymentPlans, err
+}
+
 func (gs *GroupStore) GetPaymentPlanById(group *models.Group, id uuid.UUID) (*models.PaymentPlan, error) {
 	var paymentPlan models.PaymentPlan
 	err := gs.db.First(&paymentPlan, "group_id = ? AND id = ?", group.Id, id).Error
@@ -546,12 +558,13 @@ func (gs *GroupStore) GetPaymentPlanById(group *models.Group, id uuid.UUID) (*mo
 	return &paymentPlan, nil
 }
 
-func (gs *GroupStore) CreatePaymentPlan(group *models.Group, senderIsBank, receiverIsBank bool, sender *models.User, receiver *models.User, name, description string, amount, schedule int, scheduleUnit string) error {
+func (gs *GroupStore) CreatePaymentPlan(group *models.Group, senderIsBank, receiverIsBank bool, sender *models.User, receiver *models.User, name, description string, amount, paymentCount, schedule int, scheduleUnit string, firstPayment int64) error {
 	paymentPlan := models.PaymentPlan{
 		Name:           name,
 		Description:    description,
 		Amount:         amount,
-		LastExecute:    time.Now().Unix(),
+		PaymentCount:   paymentCount,
+		NextExecute:    firstPayment,
 		Schedule:       schedule,
 		ScheduleUnit:   scheduleUnit,
 		SenderIsBank:   senderIsBank,

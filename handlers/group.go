@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/Bananenpro/hbank-api/bindings"
@@ -1529,6 +1530,18 @@ func (h *Handler) CreatePaymentPlan(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid schedule unit", lang))
 	}
 
+	firstPayment, err := time.Parse("2006-01-02", body.FirstPayment)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid date string", lang))
+	}
+	if firstPayment.Before(time.Now()) {
+		return c.JSON(http.StatusOK, responses.New(false, "First payment can't be in the past", lang))
+	}
+
+	if body.PaymentCount == 0 {
+		body.PaymentCount = -1
+	}
+
 	if !body.FromBank {
 		isMember, err := h.groupStore.IsMember(group, user)
 		if err != nil {
@@ -1543,7 +1556,7 @@ func (h *Handler) CreatePaymentPlan(c echo.Context) error {
 		if body.FromBank {
 			return c.JSON(http.StatusOK, responses.New(false, "Cannot send money from bank to bank", lang))
 		}
-		err = h.groupStore.CreatePaymentPlan(group, false, true, user, nil, body.Name, body.Description, int(body.Amount), int(body.Schedule), body.ScheduleUnit)
+		err = h.groupStore.CreatePaymentPlan(group, false, true, user, nil, body.Name, body.Description, int(body.Amount), body.PaymentCount, int(body.Schedule), body.ScheduleUnit, firstPayment.Unix())
 	} else {
 		receiverId, err := uuid.Parse(body.ReceiverId)
 		if err != nil {
@@ -1573,12 +1586,12 @@ func (h *Handler) CreatePaymentPlan(c echo.Context) error {
 			if !isAdmin {
 				return c.JSON(http.StatusForbidden, responses.New(false, "Not an admin of the group", lang))
 			}
-			err = h.groupStore.CreatePaymentPlan(group, true, false, nil, receiver, body.Name, body.Description, int(body.Amount), int(body.Schedule), body.ScheduleUnit)
+			err = h.groupStore.CreatePaymentPlan(group, true, false, nil, receiver, body.Name, body.Description, int(body.Amount), body.PaymentCount, int(body.Schedule), body.ScheduleUnit, firstPayment.Unix())
 		} else {
 			if bytes.Equal(user.Id[:], receiverId[:]) {
 				return c.JSON(http.StatusOK, responses.New(false, "Sender is the receiver", lang))
 			}
-			err = h.groupStore.CreatePaymentPlan(group, false, false, user, receiver, body.Name, body.Description, int(body.Amount), int(body.Schedule), body.ScheduleUnit)
+			err = h.groupStore.CreatePaymentPlan(group, false, false, user, receiver, body.Name, body.Description, int(body.Amount), body.PaymentCount, int(body.Schedule), body.ScheduleUnit, firstPayment.Unix())
 			if err != nil {
 				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 			}

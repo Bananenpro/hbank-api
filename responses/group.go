@@ -394,8 +394,7 @@ func NewPaymentPlan(paymentPlanModel *models.PaymentPlan) interface{} {
 
 	paymentPlanDTO := paymentPlan{
 		Id:           paymentPlanModel.Id.String(),
-		LastExecute:  paymentPlanModel.LastExecute,
-		NextExecute:  services.NextPaymentPlanExecute(paymentPlanModel),
+		NextExecute:  paymentPlanModel.NextExecute,
 		Name:         paymentPlanModel.Name,
 		Description:  paymentPlanModel.Description,
 		Schedule:     paymentPlanModel.Schedule,
@@ -436,8 +435,7 @@ func NewPaymentPlans(paymentPlans []models.PaymentPlan) interface{} {
 
 		paymentPlanDTO := paymentPlan{
 			Id:           plan.Id.String(),
-			LastExecute:  plan.LastExecute,
-			NextExecute:  services.NextPaymentPlanExecute(&plan),
+			NextExecute:  plan.NextExecute,
 			Name:         plan.Name,
 			Schedule:     plan.Schedule,
 			ScheduleUnit: plan.ScheduleUnit,

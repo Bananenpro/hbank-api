@@ -110,3 +110,6 @@
 "Successfully deleted payment plan"="Zahlungsplan erfolgreich gelöscht"
 "Successfully updated payment plan"="Zahlungsplan erfolgreich aktualisiert"
 "Unsupported page size"="Nicht unterstützte Seitengröße"
+"Invalid date string"="Ungültige Datumszeichenfolge"
+"First payment can't be in the past"="Die erste Zahlung kann nicht in der Vergangenheit liegen"
+"Payment count cannot be 0"="Anzahl an Zahlungen kann nicht 0 sein"
