@@ -49,6 +49,9 @@ func (h *Handler) GetUsers(c echo.Context) error {
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, responses.New(false, "'pageSize' query parameter not a number", lang))
 		}
+		if pageSize > config.Data.MaxPageSize || pageSize < 1 {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "Unsupported page size", lang))
+		}
 	}
 
 	descending := services.StrToBool(c.QueryParam("descending"))
@@ -454,6 +457,9 @@ func (h *Handler) GetCashLog(c echo.Context) error {
 		pageSize, err = strconv.Atoi(c.QueryParam("pageSize"))
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, responses.New(false, "'pageSize' query parameter not a number", lang))
+		}
+		if pageSize > config.Data.MaxPageSize || pageSize < 1 {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "Unsupported page size", lang))
 		}
 	}
 

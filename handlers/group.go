@@ -46,6 +46,9 @@ func (h *Handler) GetGroups(c echo.Context) error {
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, responses.New(false, "'pageSize' query parameter not a number", lang))
 		}
+		if pageSize > config.Data.MaxPageSize || pageSize < 1 {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "Unsupported page size", lang))
+		}
 	}
 
 	descending := services.StrToBool(c.QueryParam("descending"))
@@ -201,6 +204,9 @@ func (h *Handler) GetGroupMembers(c echo.Context) error {
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, responses.New(false, "'pageSize' query parameter not a number", lang))
 		}
+		if pageSize > config.Data.MaxPageSize || pageSize < 1 {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "Unsupported page size", lang))
+		}
 	}
 
 	descending := services.StrToBool(c.QueryParam("descending"))
@@ -307,6 +313,9 @@ func (h *Handler) GetGroupAdmins(c echo.Context) error {
 		pageSize, err = strconv.Atoi(c.QueryParam("pageSize"))
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, responses.New(false, "'pageSize' query parameter not a number", lang))
+		}
+		if pageSize > config.Data.MaxPageSize || pageSize < 1 {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "Unsupported page size", lang))
 		}
 	}
 
@@ -772,6 +781,9 @@ func (h *Handler) GetTransactionLog(c echo.Context) error {
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, responses.New(false, "'pageSize' query parameter not a number", lang))
 		}
+		if pageSize > config.Data.MaxPageSize || pageSize < 1 {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "Unsupported page size", lang))
+		}
 	}
 
 	oldestFirst := services.StrToBool(c.QueryParam("oldestFirst"))
@@ -974,6 +986,9 @@ func (h *Handler) GetInvitationsByUser(c echo.Context) error {
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, responses.New(false, "'pageSize' query parameter not a number", lang))
 		}
+		if pageSize > config.Data.MaxPageSize || pageSize < 1 {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "Unsupported page size", lang))
+		}
 	}
 
 	oldestFirst := services.StrToBool(c.QueryParam("oldestFirst"))
@@ -1013,6 +1028,9 @@ func (h *Handler) GetInvitationsByGroup(c echo.Context) error {
 		pageSize, err = strconv.Atoi(c.QueryParam("pageSize"))
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, responses.New(false, "'pageSize' query parameter not a number", lang))
+		}
+		if pageSize > config.Data.MaxPageSize || pageSize < 1 {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "Unsupported page size", lang))
 		}
 	}
 
@@ -1390,6 +1408,9 @@ func (h *Handler) GetPaymentPlans(c echo.Context) error {
 		pageSize, err = strconv.Atoi(c.QueryParam("pageSize"))
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, responses.New(false, "'pageSize' query parameter not a number", lang))
+		}
+		if pageSize > config.Data.MaxPageSize || pageSize < 1 {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "Unsupported page size", lang))
 		}
 	}
 

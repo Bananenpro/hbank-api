@@ -41,6 +41,7 @@ type ConfigData struct {
 	AuthTokenLifetime         int64  `json:"auth_token_lifetime"`
 	RefreshTokenLifetime      int64  `json:"refresh_token_lifetime"`
 	SendEmailTimeout          int64  `json:"send_email_timeout"`
+	MaxPageSize               int    `json:"max_page_size"`
 }
 
 var defaultData = ConfigData{
@@ -63,6 +64,7 @@ var defaultData = ConfigData{
 	AuthTokenLifetime:         10 * 60,
 	RefreshTokenLifetime:      1 * 365 * 24 * 60 * 60,
 	SendEmailTimeout:          2 * 60,
+	MaxPageSize:               100,
 }
 
 var Data = defaultData
