@@ -850,15 +850,6 @@ func (h *Handler) CreateTransaction(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, responses.New(false, "Group not found", lang))
 	}
 
-	isMember, err := h.groupStore.IsMember(group, user)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-
-	if !isMember {
-		return c.JSON(http.StatusForbidden, responses.New(false, "Not a member of the group", lang))
-	}
-
 	var body bindings.CreateTransaction
 	err = c.Bind(&body)
 	if err != nil {
@@ -888,6 +879,14 @@ func (h *Handler) CreateTransaction(c echo.Context) error {
 	}
 
 	if !body.FromBank {
+		isMember, err := h.groupStore.IsMember(group, user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+		if !isMember {
+			return c.JSON(http.StatusForbidden, responses.New(false, "Not a member of the group", lang))
+		}
+
 		balanceSender, err := h.groupStore.GetUserBalance(group, user)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -1470,15 +1469,6 @@ func (h *Handler) CreatePaymentPlan(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, responses.New(false, "Group not found", lang))
 	}
 
-	isMember, err := h.groupStore.IsMember(group, user)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-
-	if !isMember {
-		return c.JSON(http.StatusForbidden, responses.New(false, "Not a member of the group", lang))
-	}
-
 	var body bindings.CreatePaymentPlan
 	err = c.Bind(&body)
 	if err != nil {
@@ -1516,6 +1506,16 @@ func (h *Handler) CreatePaymentPlan(c echo.Context) error {
 
 	if body.ScheduleUnit != models.ScheduleUnitDay && body.ScheduleUnit != models.ScheduleUnitWeek && body.ScheduleUnit != models.ScheduleUnitMonth && body.ScheduleUnit != models.ScheduleUnitYear {
 		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid schedule unit", lang))
+	}
+
+	if !body.FromBank {
+		isMember, err := h.groupStore.IsMember(group, user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+		if !isMember {
+			return c.JSON(http.StatusForbidden, responses.New(false, "Not a member of the group", lang))
+		}
 	}
 
 	if strings.EqualFold(body.ReceiverId, "bank") {
