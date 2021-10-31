@@ -79,7 +79,6 @@ type bankTransaction struct {
 type paymentPlan struct {
 	Id string `json:"id"`
 
-	LastExecute int64 `json:"last_execute"`
 	NextExecute int64 `json:"next_execute"`
 
 	Name        string `json:"name"`
