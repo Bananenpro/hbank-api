@@ -73,6 +73,7 @@ func (h *Handler) RegisterV1(v1 *echo.Group) {
 
 	group.GET("/:id/paymentPlan/:paymentPlanId", h.GetPaymentPlanById, middlewares.JWT)
 	group.GET("/:id/paymentPlan", h.GetPaymentPlans, middlewares.JWT)
+	group.GET("/:id/paymentPlan/nextPayment", h.GetPaymentPlanNextPayments, middlewares.JWT)
 	group.POST("/:id/paymentPlan", h.CreatePaymentPlan, middlewares.JWT)
 	group.PUT("/:id/paymentPlan/:paymentPlanId", h.UpdatePaymentPlan, middlewares.JWT)
 	group.DELETE("/:id/paymentPlan/:paymentPlanId", h.DeletePaymentPlan, middlewares.JWT)

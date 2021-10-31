@@ -23,6 +23,11 @@ type DeleteFailedBecauseOfSoleGroupAdmin struct {
 	GroupIds []string `json:"group_ids"`
 }
 
+type PaymentPlanExecutionTimes struct {
+	Base
+	ExecutionTimes []int64 `json:"execution_times"`
+}
+
 type group struct {
 	Id             string `json:"id"`
 	Name           string `json:"name"`

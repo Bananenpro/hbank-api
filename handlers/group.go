@@ -1466,6 +1466,125 @@ func (h *Handler) GetPaymentPlans(c echo.Context) error {
 	}
 }
 
+// /v1/group/:id/paymentPlan/nextPayment?id=uuid&firstPayment=int&schedule=int&scheduleUnit=string&count=int
+func (h *Handler) GetPaymentPlanNextPayments(c echo.Context) error {
+	lang := c.Get("lang").(string)
+
+	userId := c.Get("userId").(uuid.UUID)
+	user, err := h.userStore.GetById(userId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
+	}
+
+	groupId, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	}
+	group, err := h.groupStore.GetById(groupId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if group == nil {
+		return c.JSON(http.StatusNotFound, responses.New(false, "Group not found", lang))
+	}
+
+	count := 1
+	if c.QueryParam("count") != "" {
+		count, err = strconv.Atoi(c.QueryParam("count"))
+		if err != nil || count < 1 {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "'count' query parameter not a number or <1", lang))
+		}
+		if count > config.Data.MaxPageSize {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "'count' query parameter too big", lang))
+		}
+	}
+
+	schedule := -1
+	scheduleUnit := ""
+	firstPayment := int64(-1)
+
+	if c.QueryParam("id") != "" {
+		id, err := uuid.Parse(c.QueryParam("id"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid 'id' query parameter", lang))
+		}
+
+		paymentPlan, err := h.groupStore.GetPaymentPlanById(group, id)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+		if paymentPlan == nil {
+			return c.JSON(http.StatusNotFound, responses.NewNotFound(lang))
+		}
+
+		isSender := bytes.Equal(user.Id[:], paymentPlan.SenderId[:])
+		isReceiver := bytes.Equal(user.Id[:], paymentPlan.ReceiverId[:])
+
+		if isSender || isReceiver {
+			isMember, err := h.groupStore.IsMember(group, user)
+			if err != nil {
+				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+			}
+			if !isMember {
+				return c.JSON(http.StatusForbidden, responses.New(false, "Not a member of the group", lang))
+			}
+		} else if paymentPlan.SenderIsBank || paymentPlan.ReceiverIsBank {
+			isAdmin, err := h.groupStore.IsAdmin(group, user)
+			if err != nil {
+				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+			}
+			if !isAdmin {
+				return c.JSON(http.StatusForbidden, responses.New(false, "Not an admin of the group", lang))
+			}
+		} else {
+			return c.JSON(http.StatusForbidden, responses.New(false, "User not allowed to view payment plan", lang))
+		}
+
+		schedule = paymentPlan.Schedule
+		scheduleUnit = paymentPlan.ScheduleUnit
+		firstPayment = paymentPlan.NextExecute
+	} else {
+		if c.QueryParam("schedule") != "" {
+			schedule, err = strconv.Atoi(c.QueryParam("schedule"))
+			if err != nil || schedule < 1 {
+				return c.JSON(http.StatusBadRequest, responses.New(false, "'schedule' query parameter not a number or <1", lang))
+			}
+		} else {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "Missing 'schedule' or 'id' query parameter", lang))
+		}
+
+		scheduleUnit = strings.ToLower(c.QueryParam("scheduleUnit"))
+		if scheduleUnit != models.ScheduleUnitDay && scheduleUnit != models.ScheduleUnitWeek && scheduleUnit != models.ScheduleUnitMonth && scheduleUnit != models.ScheduleUnitYear {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid schedule unit", lang))
+		}
+
+		if c.QueryParam("firstPayment") != "" {
+			firstPayment, err = strconv.ParseInt(c.QueryParam("firstPayment"), 10, 64)
+			if err != nil {
+				return c.JSON(http.StatusBadRequest, responses.New(false, "'firstPayment' query parameter not a number", lang))
+			}
+		} else {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "Missing 'firstPayment' or 'id' query parameter", lang))
+		}
+	}
+
+	executionTimes := make([]int64, count)
+	for i := 0; i < count; i++ {
+		executionTimes[i] = firstPayment
+		firstPayment = services.AddTime(firstPayment, schedule, scheduleUnit)
+	}
+
+	return c.JSON(http.StatusOK, responses.PaymentPlanExecutionTimes{
+		Base: responses.Base{
+			Success: true,
+		},
+		ExecutionTimes: executionTimes,
+	})
+}
+
 // /v1/group/:id/paymentPlan (POST)
 func (h *Handler) CreatePaymentPlan(c echo.Context) error {
 	lang := c.Get("lang").(string)
