@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"time"
 
 	"github.com/Bananenpro/hbank-api/config"
 	"github.com/Bananenpro/hbank-api/db"
@@ -36,5 +41,19 @@ func main() {
 	v1 := r.Group("/v1")
 	handler.RegisterV1(v1)
 
-	r.Logger.Fatal(r.StartTLS(fmt.Sprintf(":%d", config.Data.ServerPort), config.Data.SSLCertPath, config.Data.SSLKeyPath))
+	go func() {
+		err = r.StartTLS(fmt.Sprintf(":%d", config.Data.ServerPort), config.Data.SSLCertPath, config.Data.SSLKeyPath)
+		if err != nil && err != http.ErrServerClosed {
+			r.Logger.Fatal(err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := r.Shutdown(ctx); err != nil {
+		r.Logger.Fatal(err)
+	}
 }
