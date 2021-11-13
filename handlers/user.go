@@ -272,12 +272,12 @@ func (h *Handler) SetProfilePicture(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	return c.JSON(http.StatusOK, responses.ProfilePictureId{
+	return c.JSON(http.StatusOK, responses.Id{
 		Base: responses.Base{
 			Success: true,
 			Message: services.Tr("Successfully updated profile picture", lang),
 		},
-		ProfilePictureId: user.ProfilePictureId.String(),
+		Id: user.ProfilePictureId.String(),
 	})
 }
 
@@ -374,7 +374,7 @@ func (h *Handler) UpdateUser(c echo.Context) error {
 
 	h.userStore.Update(user)
 
-	return c.JSON(http.StatusOK, responses.New(true, "Successfully updated user", lang))
+	return c.JSON(http.StatusOK, responses.NewAuthUser(user))
 }
 
 // /v1/user/cash/current (GET)

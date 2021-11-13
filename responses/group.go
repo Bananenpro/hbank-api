@@ -8,11 +8,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type CreateGroupSuccess struct {
-	Base
-	Id string `json:"id"`
-}
-
 type Balance struct {
 	Base
 	Balance int `json:"balance"`

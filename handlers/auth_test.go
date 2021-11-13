@@ -53,7 +53,7 @@ func TestRegister(t *testing.T) {
 		wantSuccess bool
 		wantMessage string
 	}{
-		{tName: "Successful register", name: "bob", email: "bob@gmail.com", password: "123456", wantCode: http.StatusCreated, wantSuccess: true, wantMessage: "Successfully registered new user"},
+		{tName: "Successful register", name: "bob", email: "bob@gmail.com", password: "123456", wantCode: http.StatusCreated, wantSuccess: true},
 		{tName: "User does already exist", name: "bob", email: "exists@gmail.com", password: "123456", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "The user with this email does already exist"},
 		{tName: "Name too short", name: strings.Repeat("a", config.Data.MinNameLength-1), email: "bob@gmail.com", password: "123456", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Name too short"},
 		{tName: "Name too long", name: strings.Repeat("a", config.Data.MaxNameLength+1), email: "bob@gmail.com", password: "123456", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Name too long"},
@@ -604,7 +604,7 @@ func TestHandler_Login(t *testing.T) {
 		wantSuccess    bool
 		wantMessage    string
 	}{
-		{tName: "Success", email: "bob@gmail.com", passwordToken: "1234567890", twoFactorToken: "1234567890", wantCode: http.StatusOK, wantSuccess: true, wantMessage: "Successfully signed in"},
+		{tName: "Success", email: "bob@gmail.com", passwordToken: "1234567890", twoFactorToken: "1234567890", wantCode: http.StatusOK, wantSuccess: true},
 		{tName: "Wrong email", email: "tom@gmail.com", passwordToken: "1234567890", twoFactorToken: "1234567890", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
 		{tName: "Wrong password token", email: "tim@gmail.com", passwordToken: "0987654321", twoFactorToken: "1234567890", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
 		{tName: "Wrong two factor token", email: "tim@gmail.com", passwordToken: "1234567890", twoFactorToken: "0987654321", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
@@ -1477,7 +1477,7 @@ func TestHandler_ChangeEmail(t *testing.T) {
 		wantSuccess bool
 		wantMessage string
 	}{
-		{tName: "Success", user: user1, token: "abcdefg", wantCode: http.StatusOK, wantSuccess: true, wantMessage: "Successfully changed email address"},
+		{tName: "Success", user: user1, token: "abcdefg", wantCode: http.StatusOK, wantSuccess: true},
 		{tName: "Wrong token", user: user2, token: "abcdefgh", wantCode: http.StatusForbidden, wantSuccess: false, wantMessage: "Invalid credentials"},
 		{tName: "Email does already exist", user: user2, token: "abcdefg", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "The user with this email does already exist"},
 		{tName: "Expired token", user: user3, token: "abcdefg", wantCode: http.StatusForbidden, wantSuccess: false, wantMessage: "Invalid credentials"},

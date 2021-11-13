@@ -32,10 +32,10 @@ type GroupStore interface {
 	GetTransactionLogEntryById(group *Group, id uuid.UUID) (*TransactionLogEntry, error)
 	GetLastTransactionLogEntry(group *Group, user *User) (*TransactionLogEntry, error)
 	GetUserBalance(group *Group, user *User) (int, error)
-	CreateTransaction(group *Group, senderIsBank, receiverIsBank bool, sender *User, receiver *User, title, description string, amount int) error
-	CreateTransactionFromPaymentPlan(group *Group, senderIsBank, receiverIsBank bool, sender *User, receiver *User, title, description string, amount int, paymentPlanId uuid.UUID) error
+	CreateTransaction(group *Group, senderIsBank, receiverIsBank bool, sender *User, receiver *User, title, description string, amount int) (*TransactionLogEntry, error)
+	CreateTransactionFromPaymentPlan(group *Group, senderIsBank, receiverIsBank bool, sender *User, receiver *User, title, description string, amount int, paymentPlanId uuid.UUID) (*TransactionLogEntry, error)
 
-	CreateInvitation(group *Group, user *User, message string) error
+	CreateInvitation(group *Group, user *User, message string) (*GroupInvitation, error)
 	GetInvitationById(id uuid.UUID) (*GroupInvitation, error)
 	GetInvitationsByGroup(group *Group, page, pageSize int, oldestFirst bool) ([]GroupInvitation, error)
 	GetInvitationsByUser(user *User, page, pageSize int, oldestFirst bool) ([]GroupInvitation, error)
@@ -46,7 +46,7 @@ type GroupStore interface {
 	GetBankPaymentPlans(group *Group, page, pageSize int, descending bool) ([]PaymentPlan, error)
 	GetPaymentPlansThatNeedToBeExecuted() ([]PaymentPlan, error)
 	GetPaymentPlanById(group *Group, id uuid.UUID) (*PaymentPlan, error)
-	CreatePaymentPlan(group *Group, senderIsBank, receiverIsBank bool, sender *User, receiver *User, name, description string, amount, repeats, schedule int, scheduleUnit string, firstPayment int64) error
+	CreatePaymentPlan(group *Group, senderIsBank, receiverIsBank bool, sender *User, receiver *User, name, description string, amount, repeats, schedule int, scheduleUnit string, firstPayment int64) (*PaymentPlan, error)
 	UpdatePaymentPlan(paymentPlan *PaymentPlan) error
 	DeletePaymentPlan(paymentPlan *PaymentPlan) error
 }

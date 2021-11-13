@@ -164,13 +164,7 @@ func (h *Handler) CreateGroup(c echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusCreated, responses.CreateGroupSuccess{
-		Base: responses.Base{
-			Success: true,
-			Message: services.Tr("Successfully created new group", lang),
-		},
-		Id: group.Id.String(),
-	})
+	return c.JSON(http.StatusCreated, responses.NewGroup(group, !body.OnlyAdmin, true))
 }
 
 // /v1/group/:id/member (GET)
@@ -637,7 +631,13 @@ func (h *Handler) SetGroupPicture(c echo.Context) error {
 	group.GroupPictureId = uuid.New()
 	h.groupStore.Update(group)
 
-	return c.JSON(http.StatusOK, responses.New(true, "Successfully updated group picture", lang))
+	return c.JSON(http.StatusOK, responses.Id{
+		Base: responses.Base{
+			Success: true,
+			Message: services.Tr("Successfully updated group picture", lang),
+		},
+		Id: group.GroupPictureId.String(),
+	})
 }
 
 // /v1/group/:id/transaction/balance (GET)
@@ -910,11 +910,13 @@ func (h *Handler) CreateTransaction(c echo.Context) error {
 		}
 	}
 
+	var transaction *models.TransactionLogEntry
+
 	if strings.EqualFold(body.ReceiverId, "bank") {
 		if body.FromBank {
 			return c.JSON(http.StatusOK, responses.New(false, "Cannot send money from bank to bank", lang))
 		}
-		err = h.groupStore.CreateTransaction(group, false, true, user, nil, body.Title, body.Description, int(body.Amount))
+		transaction, err = h.groupStore.CreateTransaction(group, false, true, user, nil, body.Title, body.Description, int(body.Amount))
 	} else {
 		receiverId, err := uuid.Parse(body.ReceiverId)
 		if err != nil {
@@ -944,19 +946,19 @@ func (h *Handler) CreateTransaction(c echo.Context) error {
 			if !isAdmin {
 				return c.JSON(http.StatusForbidden, responses.New(false, "Not an admin of the group", lang))
 			}
-			err = h.groupStore.CreateTransaction(group, true, false, nil, receiver, body.Title, body.Description, int(body.Amount))
+			transaction, err = h.groupStore.CreateTransaction(group, true, false, nil, receiver, body.Title, body.Description, int(body.Amount))
 		} else {
 			if bytes.Equal(user.Id[:], receiverId[:]) {
 				return c.JSON(http.StatusOK, responses.New(false, "Sender is the receiver", lang))
 			}
-			err = h.groupStore.CreateTransaction(group, false, false, user, receiver, body.Title, body.Description, int(body.Amount))
+			transaction, err = h.groupStore.CreateTransaction(group, false, false, user, receiver, body.Title, body.Description, int(body.Amount))
 			if err != nil {
 				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 			}
 		}
 	}
 
-	return c.JSON(http.StatusOK, responses.New(true, "Successfully completed transaction", lang))
+	return c.JSON(http.StatusOK, responses.NewTransaction(transaction, user))
 }
 
 // /v1/group/invitation?page=int&pageSize=int&oldestFirst=bool (GET)
@@ -1190,7 +1192,7 @@ func (h *Handler) CreateInvitation(c echo.Context) error {
 		return c.JSON(http.StatusOK, responses.New(false, "The user was already invited", lang))
 	}
 
-	err = h.groupStore.CreateInvitation(group, user, body.Message)
+	invitation, err = h.groupStore.CreateInvitation(group, user, body.Message)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
@@ -1212,7 +1214,7 @@ func (h *Handler) CreateInvitation(c echo.Context) error {
 		go services.SendEmail([]string{user.Email}, services.Tr("H-Bank Invitation", lang), body)
 	}
 
-	return c.JSON(http.StatusCreated, responses.New(true, "Successfully invited user", lang))
+	return c.JSON(http.StatusCreated, responses.NewInvitation(invitation))
 }
 
 // /v1/group/invitation/:id (POST)
@@ -1269,7 +1271,7 @@ func (h *Handler) AcceptInvitation(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	return c.JSON(http.StatusOK, responses.New(true, "Successfully accepted invitation", lang))
+	return c.JSON(http.StatusOK, responses.NewGroup(group, true, false))
 }
 
 // /v1/group/invitation/:id (DELETE)
@@ -1671,11 +1673,13 @@ func (h *Handler) CreatePaymentPlan(c echo.Context) error {
 		}
 	}
 
+	var paymentPlan *models.PaymentPlan
+
 	if strings.EqualFold(body.ReceiverId, "bank") {
 		if body.FromBank {
 			return c.JSON(http.StatusOK, responses.New(false, "Cannot send money from bank to bank", lang))
 		}
-		err = h.groupStore.CreatePaymentPlan(group, false, true, user, nil, body.Name, body.Description, int(body.Amount), body.PaymentCount, int(body.Schedule), body.ScheduleUnit, firstPayment.Unix())
+		paymentPlan, err = h.groupStore.CreatePaymentPlan(group, false, true, user, nil, body.Name, body.Description, int(body.Amount), body.PaymentCount, int(body.Schedule), body.ScheduleUnit, firstPayment.Unix())
 	} else {
 		receiverId, err := uuid.Parse(body.ReceiverId)
 		if err != nil {
@@ -1705,19 +1709,19 @@ func (h *Handler) CreatePaymentPlan(c echo.Context) error {
 			if !isAdmin {
 				return c.JSON(http.StatusForbidden, responses.New(false, "Not an admin of the group", lang))
 			}
-			err = h.groupStore.CreatePaymentPlan(group, true, false, nil, receiver, body.Name, body.Description, int(body.Amount), body.PaymentCount, int(body.Schedule), body.ScheduleUnit, firstPayment.Unix())
+			paymentPlan, err = h.groupStore.CreatePaymentPlan(group, true, false, nil, receiver, body.Name, body.Description, int(body.Amount), body.PaymentCount, int(body.Schedule), body.ScheduleUnit, firstPayment.Unix())
 		} else {
 			if bytes.Equal(user.Id[:], receiverId[:]) {
 				return c.JSON(http.StatusOK, responses.New(false, "Sender is the receiver", lang))
 			}
-			err = h.groupStore.CreatePaymentPlan(group, false, false, user, receiver, body.Name, body.Description, int(body.Amount), body.PaymentCount, int(body.Schedule), body.ScheduleUnit, firstPayment.Unix())
+			paymentPlan, err = h.groupStore.CreatePaymentPlan(group, false, false, user, receiver, body.Name, body.Description, int(body.Amount), body.PaymentCount, int(body.Schedule), body.ScheduleUnit, firstPayment.Unix())
 			if err != nil {
 				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 			}
 		}
 	}
 
-	return c.JSON(http.StatusOK, responses.New(true, "Successfully created payment plan", lang))
+	return c.JSON(http.StatusOK, responses.NewPaymentPlan(paymentPlan))
 }
 
 // /v1/group/:id/paymentPlan/:paymentPlanId (DELETE)
@@ -1864,5 +1868,5 @@ func (h *Handler) UpdatePaymentPlan(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	return c.JSON(http.StatusOK, responses.New(true, "Successfully updated payment plan", lang))
+	return c.JSON(http.StatusOK, responses.NewPaymentPlan(paymentPlan))
 }

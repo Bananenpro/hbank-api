@@ -77,20 +77,7 @@ func (h *Handler) Register(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	codes, err := h.userStore.NewRecoveryCodes(user)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-
-	return c.JSON(http.StatusCreated, responses.RegisterSuccess{
-		Base: responses.Base{
-			Success: true,
-			Message: services.Tr("Successfully registered new user", lang),
-		},
-		UserId:    user.Id.String(),
-		UserEmail: body.Email,
-		Codes:     codes,
-	})
+	return c.JSON(http.StatusCreated, responses.NewAuthUser(user))
 }
 
 // /v1/auth/confirmEmail/:email (GET)
@@ -536,7 +523,7 @@ func (h *Handler) Login(c echo.Context) error {
 		Path:     "/v1",
 	})
 
-	return c.JSON(http.StatusOK, responses.New(true, "Successfully signed in", lang))
+	return c.JSON(http.StatusOK, responses.NewAuthUser(user))
 }
 
 // /v1/auth/refresh (POST)
@@ -1064,5 +1051,5 @@ func (h *Handler) ChangeEmail(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	return c.JSON(http.StatusOK, responses.New(true, "Successfully changed email address", lang))
+	return c.JSON(http.StatusOK, responses.NewAuthUser(user))
 }

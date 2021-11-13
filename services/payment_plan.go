@@ -35,7 +35,7 @@ func ExecutePaymentPlan(userStore models.UserStore, groupStore models.GroupStore
 			break
 		}
 
-		err = groupStore.CreateTransactionFromPaymentPlan(group, paymentPlan.SenderIsBank, paymentPlan.ReceiverIsBank, sender, receiver, paymentPlan.Name, paymentPlan.Description, paymentPlan.Amount, paymentPlan.Id)
+		_, err = groupStore.CreateTransactionFromPaymentPlan(group, paymentPlan.SenderIsBank, paymentPlan.ReceiverIsBank, sender, receiver, paymentPlan.Name, paymentPlan.Description, paymentPlan.Amount, paymentPlan.Id)
 		if err != nil {
 			return err
 		}

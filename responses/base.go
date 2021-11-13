@@ -14,6 +14,11 @@ type Base struct {
 	Message string `json:"message"`
 }
 
+type Id struct {
+	Base
+	Id string `json:"id"`
+}
+
 func New(success bool, message string, lang string) Base {
 	return Base{
 		Success: success,

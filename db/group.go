@@ -365,11 +365,11 @@ func (gs *GroupStore) GetUserBalance(group *models.Group, user *models.User) (in
 	}
 }
 
-func (gs *GroupStore) CreateTransaction(group *models.Group, senderIsBank, receiverIsBank bool, sender *models.User, receiver *models.User, title, description string, amount int) error {
+func (gs *GroupStore) CreateTransaction(group *models.Group, senderIsBank, receiverIsBank bool, sender *models.User, receiver *models.User, title, description string, amount int) (*models.TransactionLogEntry, error) {
 	return gs.CreateTransactionFromPaymentPlan(group, senderIsBank, receiverIsBank, sender, receiver, title, description, amount, uuid.UUID{})
 }
 
-func (gs *GroupStore) CreateTransactionFromPaymentPlan(group *models.Group, senderIsBank, receiverIsBank bool, sender *models.User, receiver *models.User, title, description string, amount int, paymentPlanId uuid.UUID) error {
+func (gs *GroupStore) CreateTransactionFromPaymentPlan(group *models.Group, senderIsBank, receiverIsBank bool, sender *models.User, receiver *models.User, title, description string, amount int, paymentPlanId uuid.UUID) (*models.TransactionLogEntry, error) {
 	var err error
 
 	oldBalanceSender := 0
@@ -377,7 +377,7 @@ func (gs *GroupStore) CreateTransactionFromPaymentPlan(group *models.Group, send
 	if !senderIsBank {
 		oldBalanceSender, err = gs.GetUserBalance(group, sender)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		newBalanceSender = oldBalanceSender - amount
 	}
@@ -387,7 +387,7 @@ func (gs *GroupStore) CreateTransactionFromPaymentPlan(group *models.Group, send
 	if !receiverIsBank {
 		oldBalanceReceiver, err = gs.GetUserBalance(group, receiver)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		newBalanceReceiver = oldBalanceReceiver + amount
 	}
@@ -421,15 +421,21 @@ func (gs *GroupStore) CreateTransactionFromPaymentPlan(group *models.Group, send
 		PaymentPlanId: paymentPlanId,
 	}
 
-	return gs.db.Create(&transaction).Error
+	err = gs.db.Create(&transaction).Error
+
+	return &transaction, err
 }
 
-func (gs *GroupStore) CreateInvitation(group *models.Group, user *models.User, message string) error {
-	return gs.db.Create(&models.GroupInvitation{
+func (gs *GroupStore) CreateInvitation(group *models.Group, user *models.User, message string) (*models.GroupInvitation, error) {
+	invitation := &models.GroupInvitation{
 		Message: message,
 		GroupId: group.Id,
 		UserId:  user.Id,
-	}).Error
+	}
+
+	err := gs.db.Create(invitation).Error
+
+	return invitation, err
 }
 
 func (gs *GroupStore) GetInvitationById(id uuid.UUID) (*models.GroupInvitation, error) {
@@ -558,7 +564,7 @@ func (gs *GroupStore) GetPaymentPlanById(group *models.Group, id uuid.UUID) (*mo
 	return &paymentPlan, nil
 }
 
-func (gs *GroupStore) CreatePaymentPlan(group *models.Group, senderIsBank, receiverIsBank bool, sender *models.User, receiver *models.User, name, description string, amount, paymentCount, schedule int, scheduleUnit string, firstPayment int64) error {
+func (gs *GroupStore) CreatePaymentPlan(group *models.Group, senderIsBank, receiverIsBank bool, sender *models.User, receiver *models.User, name, description string, amount, paymentCount, schedule int, scheduleUnit string, firstPayment int64) (*models.PaymentPlan, error) {
 	paymentPlan := models.PaymentPlan{
 		Name:           name,
 		Description:    description,
@@ -580,7 +586,9 @@ func (gs *GroupStore) CreatePaymentPlan(group *models.Group, senderIsBank, recei
 		paymentPlan.ReceiverId = receiver.Id
 	}
 
-	return gs.db.Create(&paymentPlan).Error
+	err := gs.db.Create(&paymentPlan).Error
+
+	return &paymentPlan, err
 }
 
 func (gs *GroupStore) UpdatePaymentPlan(paymentPlan *models.PaymentPlan) error {
