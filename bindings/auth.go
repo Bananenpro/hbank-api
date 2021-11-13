@@ -29,8 +29,8 @@ type PasswordAuth struct {
 
 type Login struct {
 	Email         string `json:"email" form:"email"`
-	PasswordToken string `json:"password_token" form:"password_token"`
-	TwoFAToken    string `json:"two_fa_token" form:"two_fa_token"`
+	PasswordToken string `json:"passwordToken" form:"passwordToken"`
+	TwoFAToken    string `json:"twoFAToken" form:"twoFAToken"`
 }
 
 type Password struct {
@@ -38,26 +38,26 @@ type Password struct {
 }
 
 type ChangePassword struct {
-	OldPassword string `json:"old_password" form:"old_password"`
-	NewPassword string `json:"new_password" form:"new_password"`
+	OldPassword string `json:"oldPassword" form:"oldPassword"`
+	NewPassword string `json:"newPassword" form:"newPassword"`
 }
 
 type ForgotPassword struct {
 	Email        string `json:"email" form:"email"`
 	CaptchaToken string `json:"h-captcha-response" form:"h-captcha-response"`
-	TwoFAToken   string `json:"two_fa_token" form:"two_fa_token"`
+	TwoFAToken   string `json:"twoFAToken" form:"twoFAToken"`
 }
 
 type ResetPassword struct {
 	Email       string `json:"email" form:"email"`
 	Token       string `json:"token" form:"token"`
-	NewPassword string `json:"new_password" form:"new_password"`
+	NewPassword string `json:"newPassword" form:"newPassword"`
 }
 
 type ChangeEmailRequest struct {
 	Password     string `json:"password" form:"password"`
 	CaptchaToken string `json:"h-captcha-response" form:"h-captcha-response"`
-	NewEmail     string `json:"new_email" form:"new_email"`
+	NewEmail     string `json:"newEmail" form:"newEmail"`
 }
 
 type ChangeEmail struct {
@@ -65,5 +65,5 @@ type ChangeEmail struct {
 }
 
 type Refresh struct {
-	UserId string `json:"user_id" form:"user_id"`
+	UserId string `json:"userId" form:"userId"`
 }

@@ -7,7 +7,7 @@ type Token struct {
 
 type RecoveryCodes struct {
 	Base
-	Codes []string `json:"recovery_codes"`
+	Codes []string `json:"recoveryCodes"`
 }
 
 func NewInvalidCredentials(lang string) Base {

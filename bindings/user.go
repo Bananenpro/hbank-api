@@ -2,7 +2,7 @@ package bindings
 
 type DeleteUser struct {
 	Password   string `json:"password" form:"password"`
-	TwoFAToken string `json:"two_fa_token" form:"two_fa_token"`
+	TwoFAToken string `json:"twoFAToken" form:"twoFAToken"`
 }
 
 type DeleteUserByConfirmEmailCode struct {
@@ -10,8 +10,8 @@ type DeleteUserByConfirmEmailCode struct {
 }
 
 type UpdateUser struct {
-	ProfilePicturePrivacy   string `json:"profile_picture_privacy" form:"profile_picture_privacy"`
-	DontSendInvitationEmail bool   `json:"dont_send_invitation_email" form:"dont_send_invitation_email"`
+	ProfilePicturePrivacy   string `json:"profilePicturePrivacy" form:"profilePicturePrivacy"`
+	DontSendInvitationEmail bool   `json:"dontSendInvitationEmail" form:"dontSendInvitationEmail"`
 }
 
 type AddCashLogEntry struct {

@@ -614,7 +614,7 @@ func TestHandler_Login(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.tName, func(t *testing.T) {
-			jsonBody := fmt.Sprintf(`{"email": "%s", "password_token": "%s", "two_fa_token": "%s"}`, tt.email, tt.passwordToken, tt.twoFactorToken)
+			jsonBody := fmt.Sprintf(`{"email": "%s", "passwordToken": "%s", "twoFAToken": "%s"}`, tt.email, tt.passwordToken, tt.twoFactorToken)
 
 			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -1009,7 +1009,7 @@ func TestHandler_ChangePassword(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.tName, func(t *testing.T) {
-			jsonBody := fmt.Sprintf(`{"old_password": "%s", "new_password": "%s"}`, tt.oldPassword, tt.newPassword)
+			jsonBody := fmt.Sprintf(`{"oldPassword": "%s", "newPassword": "%s"}`, tt.oldPassword, tt.newPassword)
 			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
@@ -1092,7 +1092,7 @@ func TestHandler_ForgotPassword(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.tName, func(t *testing.T) {
-			jsonBody := fmt.Sprintf(`{"email": "%s", "two_fa_token": "%s"})`, tt.email, tt.twoFAToken)
+			jsonBody := fmt.Sprintf(`{"email": "%s", "twoFAToken": "%s"})`, tt.email, tt.twoFAToken)
 			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
@@ -1116,7 +1116,7 @@ func TestHandler_ForgotPassword(t *testing.T) {
 					assert.NoError(t, err)
 					assert.NotNil(t, emailCode)
 
-					jsonBody := fmt.Sprintf(`{"email": "%s", "two_fa_token": "%s"})`, tt.email, "12345678901")
+					jsonBody := fmt.Sprintf(`{"email": "%s", "twoFAToken": "%s"})`, tt.email, "12345678901")
 					req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
 					req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 					rec := httptest.NewRecorder()
@@ -1192,7 +1192,7 @@ func TestHandler_ResetPassword(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.tName, func(t *testing.T) {
-			jsonBody := fmt.Sprintf(`{"email": "%s", "new_password": "%s", "token": "%s"}`, tt.email, tt.newPassword, tt.token)
+			jsonBody := fmt.Sprintf(`{"email": "%s", "newPassword": "%s", "token": "%s"}`, tt.email, tt.newPassword, tt.token)
 			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
@@ -1301,7 +1301,7 @@ func TestHandler_Refresh(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.tName, func(t *testing.T) {
-			jsonBody := fmt.Sprintf(`{"user_id": "%s"}`, tt.userId.String())
+			jsonBody := fmt.Sprintf(`{"userId": "%s"}`, tt.userId.String())
 			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
@@ -1404,7 +1404,7 @@ func TestHandler_RequestChangeEmail(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.tName, func(t *testing.T) {
-			jsonBody := fmt.Sprintf(`{"new_email": "%s", "password": "%s"})`, tt.newEmail, tt.password)
+			jsonBody := fmt.Sprintf(`{"newEmail": "%s", "password": "%s"})`, tt.newEmail, tt.password)
 			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()

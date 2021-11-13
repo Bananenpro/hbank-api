@@ -6,17 +6,17 @@ type AuthUser struct {
 	Id                      string `json:"id"`
 	Name                    string `json:"name"`
 	Email                   string `json:"email"`
-	EmailConfirmed          bool   `json:"email_confirmed"`
-	TwoFAOTPEnabled         bool   `json:"two_fa_otp_enabled"`
-	ProfilePictureId        string `json:"profile_picture_id"`
-	ProfilePicturePrivacy   string `json:"profile_picture_privacy"`
-	DontSendInvitationEmail bool   `json:"dont_send_invitation_email"`
+	EmailConfirmed          bool   `json:"emailConfirmed"`
+	TwoFAOTPEnabled         bool   `json:"twoFAOTPEnabled"`
+	ProfilePictureId        string `json:"profilePictureId"`
+	ProfilePicturePrivacy   string `json:"profilePicturePrivacy"`
+	DontSendInvitationEmail bool   `json:"dontSendInvitationEmail"`
 }
 
 type User struct {
 	Id               string `json:"id"`
 	Name             string `json:"name"`
-	ProfilePictureId string `json:"profile_picture_id"`
+	ProfilePictureId string `json:"profilePictureId"`
 }
 
 type CashLogEntryDetailed struct {

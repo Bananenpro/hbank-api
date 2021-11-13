@@ -92,12 +92,12 @@ func TestHandler_GetUser(t *testing.T) {
 
 				if tt.wantAllInfo {
 					assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"email":"%s"`, tt.user.Email))
-					assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"email_confirmed":%t`, tt.user.EmailConfirmed))
-					assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"two_fa_otp_enabled":%t`, tt.user.TwoFaOTPEnabled))
+					assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"emailConfirmed":%t`, tt.user.EmailConfirmed))
+					assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"twoFAOTPEnabled":%t`, tt.user.TwoFaOTPEnabled))
 				} else {
 					assert.NotContains(t, rec.Body.String(), fmt.Sprintf(`"email"`))
-					assert.NotContains(t, rec.Body.String(), fmt.Sprintf(`"email_confirmed"`))
-					assert.NotContains(t, rec.Body.String(), fmt.Sprintf(`"two_fa_otp_enabled"`))
+					assert.NotContains(t, rec.Body.String(), fmt.Sprintf(`"emailConfirmed"`))
+					assert.NotContains(t, rec.Body.String(), fmt.Sprintf(`"twoFAOTPEnabled"`))
 				}
 			}
 		})
@@ -190,7 +190,7 @@ func TestHandler_DeleteUser(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.tName, func(t *testing.T) {
-			jsonBody := fmt.Sprintf(`{"password": "%s", "two_fa_token": "%s"}`, tt.password, tt.twoFAToken)
+			jsonBody := fmt.Sprintf(`{"password": "%s", "twoFAToken": "%s"}`, tt.password, tt.twoFAToken)
 			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()

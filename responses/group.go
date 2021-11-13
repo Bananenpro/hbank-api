@@ -15,26 +15,26 @@ type Balance struct {
 
 type DeleteFailedBecauseOfSoleGroupAdmin struct {
 	Base
-	GroupIds []string `json:"group_ids"`
+	GroupIds []string `json:"groupIds"`
 }
 
 type PaymentPlanExecutionTimes struct {
 	Base
-	ExecutionTimes []int64 `json:"execution_times"`
+	ExecutionTimes []int64 `json:"executionTimes"`
 }
 
 type group struct {
 	Id             string `json:"id"`
 	Name           string `json:"name"`
 	Description    string `json:"description"`
-	GroupPictureId string `json:"group_picture_id"`
+	GroupPictureId string `json:"groupPictureId"`
 }
 
 type groupDetailed struct {
 	Id             string `json:"id"`
 	Name           string `json:"name"`
 	Description    string `json:"description"`
-	GroupPictureId string `json:"group_picture_id"`
+	GroupPictureId string `json:"groupPictureId"`
 	Member         bool   `json:"member"`
 	Admin          bool   `json:"admin"`
 }
@@ -45,15 +45,15 @@ type transaction struct {
 	Title       string `json:"title"`
 	Description string `json:"description,omitempty"`
 
-	GroupId string `json:"group_id"`
+	GroupId string `json:"groupId"`
 
 	Amount     int `json:"amount"`
-	NewBalance int `json:"new_balance"`
+	NewBalance int `json:"newBalance"`
 
-	SenderId   string `json:"sender_id"`
-	ReceiverId string `json:"receiver_id"`
+	SenderId   string `json:"senderId"`
+	ReceiverId string `json:"receiverId"`
 
-	PaymentPlanId string `json:"payment_plan_id,omitempty"`
+	PaymentPlanId string `json:"paymentPlanId,omitempty"`
 }
 
 type bankTransaction struct {
@@ -63,39 +63,39 @@ type bankTransaction struct {
 	Description string `json:"description,omitempty"`
 	Amount      int    `json:"amount"`
 
-	GroupId string `json:"group_id"`
+	GroupId string `json:"groupId"`
 
-	SenderId   string `json:"sender_id"`
-	ReceiverId string `json:"receiver_id"`
+	SenderId   string `json:"senderId"`
+	ReceiverId string `json:"receiverId"`
 
-	PaymentPlanId string `json:"payment_plan_id,omitempty"`
+	PaymentPlanId string `json:"paymentPlanId,omitempty"`
 }
 
 type paymentPlan struct {
 	Id string `json:"id"`
 
-	NextExecute int64 `json:"next_execute"`
+	NextExecute int64 `json:"nextExecute"`
 
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 
 	Schedule     int    `json:"schedule"`
-	ScheduleUnit string `json:"schedule_unit"`
+	ScheduleUnit string `json:"scheduleUnit"`
 
-	GroupId string `json:"group_id"`
+	GroupId string `json:"groupId"`
 
 	Amount int `json:"amount"`
 
-	SenderId   string `json:"sender_id,omitempty"`
-	ReceiverId string `json:"receiver_id,omitempty"`
+	SenderId   string `json:"senderId,omitempty"`
+	ReceiverId string `json:"receiverId,omitempty"`
 }
 
 type invitation struct {
 	Id                string `json:"id"`
 	Created           int64  `json:"created"`
-	InvitationMessage string `json:"invitation_message"`
-	GroupId           string `json:"group_id,omitempty"`
-	UserId            string `json:"user_id,omitempty"`
+	InvitationMessage string `json:"invitationMessage"`
+	GroupId           string `json:"groupId,omitempty"`
+	UserId            string `json:"userId,omitempty"`
 }
 
 func NewInvitations(invitations []models.GroupInvitation) interface{} {
@@ -425,7 +425,7 @@ func NewPaymentPlan(paymentPlanModel *models.PaymentPlan) interface{} {
 func NewPaymentPlans(paymentPlans []models.PaymentPlan) interface{} {
 	type paymentPlansResp struct {
 		Base
-		PaymentPlans []paymentPlan `json:"payment_plans"`
+		PaymentPlans []paymentPlan `json:"paymentPlans"`
 	}
 
 	paymentPlanDTOs := make([]paymentPlan, len(paymentPlans))
