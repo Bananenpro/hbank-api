@@ -1,4 +1,4 @@
-![H-Bank](images/logo.png)
+![H-Bank](images/banner.png)
 <h1 align="center">H-Bank REST API</h1>
 
 ![License](https://img.shields.io/github/license/Bananenpro/hbank-api)
