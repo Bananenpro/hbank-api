@@ -223,7 +223,7 @@ func (h *Handler) SetProfilePicture(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	file, err := c.FormFile("profile_picture")
+	file, err := c.FormFile("profilePicture")
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing profile picture file", lang))
 	}

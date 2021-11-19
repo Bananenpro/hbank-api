@@ -577,7 +577,7 @@ func (h *Handler) SetGroupPicture(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, responses.New(false, "Group not found", lang))
 	}
 
-	file, err := c.FormFile("group_picture")
+	file, err := c.FormFile("groupPicture")
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing group picture file", lang))
 	}
