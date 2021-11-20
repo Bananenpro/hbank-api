@@ -8,8 +8,5 @@ import (
 )
 
 func (h *Handler) Status(c echo.Context) error {
-	return c.JSON(http.StatusOK, responses.Base{
-		Success: true,
-		Message: "active",
-	})
+	return c.JSON(http.StatusOK, responses.NewStatus())
 }
