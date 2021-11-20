@@ -4,7 +4,7 @@ type Register struct {
 	Name         string `json:"name" form:"name"`
 	Email        string `json:"email" form:"email"`
 	Password     string `json:"password" form:"password"`
-	CaptchaToken string `json:"h-captcha-response" form:"h-captcha-response"`
+	CaptchaToken string `json:"hCaptchaResponse" form:"h-captcha-response"`
 }
 
 type ConfirmEmail struct {
@@ -44,7 +44,7 @@ type ChangePassword struct {
 
 type ForgotPassword struct {
 	Email        string `json:"email" form:"email"`
-	CaptchaToken string `json:"h-captcha-response" form:"h-captcha-response"`
+	CaptchaToken string `json:"hCaptchaResponse" form:"h-captcha-response"`
 	TwoFAToken   string `json:"twoFAToken" form:"twoFAToken"`
 }
 
@@ -56,7 +56,7 @@ type ResetPassword struct {
 
 type ChangeEmailRequest struct {
 	Password     string `json:"password" form:"password"`
-	CaptchaToken string `json:"h-captcha-response" form:"h-captcha-response"`
+	CaptchaToken string `json:"hCaptchaResponse" form:"hCaptchaResponse"`
 	NewEmail     string `json:"newEmail" form:"newEmail"`
 }
 
