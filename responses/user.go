@@ -93,7 +93,7 @@ func NewCashLogEntry(entry *models.CashLogEntry) interface{} {
 func NewCashLog(log []models.CashLogEntry) interface{} {
 	type cashLogResp struct {
 		Base
-		CashLog []CashLogEntry
+		CashLog []CashLogEntry `json:"log"`
 	}
 
 	entries := make([]CashLogEntry, len(log))
