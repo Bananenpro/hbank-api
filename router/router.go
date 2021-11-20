@@ -17,6 +17,7 @@ func New() *echo.Echo {
 
 	e.Use(middleware.Recover())
 	e.Use(middleware.Secure())
+	e.Use(middleware.CORS())
 
 	e.Use(middlewares.Lang)
 
