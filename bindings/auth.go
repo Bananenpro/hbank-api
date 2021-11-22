@@ -12,7 +12,7 @@ type ConfirmEmail struct {
 	Code  string `json:"code" form:"code"`
 }
 
-type Activate2FAOTP struct {
+type EmailPassword struct {
 	Email    string `json:"email" form:"email"`
 	Password string `json:"password" form:"password"`
 }
