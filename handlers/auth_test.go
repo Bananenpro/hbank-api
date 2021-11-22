@@ -287,7 +287,7 @@ func TestHandler_Activate2FAOTP(t *testing.T) {
 		wantSuccess bool
 		wantMessage string
 	}{
-		{tName: "Success", email: "bob@gmail.com", password: "password", wantCode: http.StatusOK, wantSuccess: true},
+		{tName: "Success", email: "bob@gmail.com", password: "password", wantCode: http.StatusOK, wantSuccess: true, wantMessage: "Successfully activated TwoFaOTP"},
 		{tName: "Already activated", email: "paul@gmail.com", password: "password", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "TwoFaOTP is already activated"},
 		{tName: "Wrong email", email: "retep@gmail.com", password: "password", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
 		{tName: "Wrong password", email: "peter@gmail.com", password: "drowssap", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
@@ -306,18 +306,14 @@ func TestHandler_Activate2FAOTP(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, tt.wantCode, rec.Code)
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"success":%t`, tt.wantSuccess))
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
 
 			if tt.wantSuccess {
-				_, err := png.Decode(bytes.NewReader(rec.Body.Bytes()))
-				assert.NoError(t, err, "Valid png qr code")
-
-				user, err := us.GetByEmail(tt.email)
+				user, _ := us.GetByEmail(tt.email)
 				assert.NotEmpty(t, user.OtpQrCode)
 				assert.NotEmpty(t, user.OtpSecret)
 				assert.False(t, user.TwoFaOTPEnabled)
-			} else {
-				assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"success":%t`, tt.wantSuccess))
-				assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
 			}
 		})
 	}
@@ -831,7 +827,7 @@ func TestHandler_NewOTP(t *testing.T) {
 		wantSuccess bool
 		wantMessage string
 	}{
-		{tName: "Success", user: user1, password: "123456", wantCode: http.StatusOK, wantSuccess: true},
+		{tName: "Success", user: user1, password: "123456", wantCode: http.StatusOK, wantSuccess: true, wantMessage: "Successfully created new otp"},
 		{tName: "Wrong password", user: user1, password: "654321", wantCode: http.StatusForbidden, wantSuccess: false, wantMessage: "Invalid credentials"},
 		{tName: "OTP not enabled", user: user2, password: "123456", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Please enable otp first"},
 	}
@@ -850,14 +846,8 @@ func TestHandler_NewOTP(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, tt.wantCode, rec.Code)
-			if !tt.wantSuccess {
-				assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"success":%t`, tt.wantSuccess))
-				assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
-			} else {
-				assert.Equal(t, "image/png", rec.HeaderMap.Get("Content-Type"))
-				assert.NotEmpty(t, rec.Body)
-				assert.NotEqual(t, "png_qr_code", rec.Body.String())
-			}
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"success":%t`, tt.wantSuccess))
+			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
 		})
 	}
 }

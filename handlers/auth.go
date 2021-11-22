@@ -225,13 +225,13 @@ func (h *Handler) Activate2FAOTP(c echo.Context) error {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 
-		return c.Blob(http.StatusOK, "image/png", user.OtpQrCode)
+		return c.JSON(http.StatusOK, responses.New(true, "Successfully activated TwoFaOTP", lang))
 	}
 
 	return c.JSON(http.StatusOK, responses.New(false, "TwoFaOTP is already activated", lang))
 }
 
-// /v1/auth/twoFactor/otp/get (POST)
+// /v1/auth/twoFactor/otp/qr (POST)
 func (h *Handler) GetOTPQRCode(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
@@ -253,6 +253,35 @@ func (h *Handler) GetOTPQRCode(c echo.Context) error {
 	}
 
 	return c.Blob(http.StatusOK, "image/png", user.OtpQrCode)
+}
+
+// /v1/auth/twoFactor/otp/key (POST)
+func (h *Handler) GetOTPKey(c echo.Context) error {
+	lang := c.Get("lang").(string)
+	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
+	}
+
+	var body bindings.Password
+	err = c.Bind(&body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
+	}
+
+	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.Password)) != nil {
+		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials(lang))
+	}
+
+	return c.JSON(http.StatusOK, responses.Token{
+		Base: responses.Base{
+			Success: true,
+		},
+		Token: user.OtpSecret,
+	})
 }
 
 // /v1/auth/twoFactor/otp/verify (POST)
@@ -361,7 +390,7 @@ func (h *Handler) NewOTP(c echo.Context) error {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 
-		return c.Blob(http.StatusOK, "image/png", user.OtpQrCode)
+		return c.JSON(http.StatusOK, responses.New(true, "Successfully created new otp", lang))
 	}
 
 	return c.JSON(http.StatusOK, responses.New(false, "Please enable otp first", lang))
