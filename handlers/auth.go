@@ -348,7 +348,7 @@ func (h *Handler) VerifyOTPCode(c echo.Context) error {
 		})
 	}
 
-	return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
+	return c.JSON(http.StatusOK, responses.NewInvalidCredentials(lang))
 }
 
 // /v1/auth/twoFactor/otp/new
@@ -532,13 +532,19 @@ func (h *Handler) Login(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
+	sameSite := http.SameSiteStrictMode
+
+	if config.Data.Debug {
+		sameSite = http.SameSiteNoneMode
+	}
+
 	c.SetCookie(&http.Cookie{
 		Name:     "Refresh-Token",
 		Value:    refreshToken.Id.String() + code,
 		MaxAge:   int(config.Data.RefreshTokenLifetime),
 		Secure:   true,
 		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: sameSite,
 		Path:     "/v1/auth",
 	})
 
@@ -548,7 +554,7 @@ func (h *Handler) Login(c echo.Context) error {
 		MaxAge:   int(config.Data.AuthTokenLifetime),
 		Secure:   true,
 		HttpOnly: false,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: sameSite,
 		Path:     "/v1",
 	})
 
@@ -558,7 +564,7 @@ func (h *Handler) Login(c echo.Context) error {
 		MaxAge:   int(config.Data.AuthTokenLifetime),
 		Secure:   true,
 		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: sameSite,
 		Path:     "/v1",
 	})
 
@@ -632,13 +638,19 @@ func (h *Handler) Refresh(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
+	sameSite := http.SameSiteStrictMode
+
+	if config.Data.Debug {
+		sameSite = http.SameSiteNoneMode
+	}
+
 	c.SetCookie(&http.Cookie{
 		Name:     "Refresh-Token",
 		Value:    newRefreshToken.Id.String() + code,
 		MaxAge:   int(config.Data.RefreshTokenLifetime),
 		Secure:   true,
 		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: sameSite,
 		Path:     "/v1/auth",
 	})
 
@@ -648,7 +660,7 @@ func (h *Handler) Refresh(c echo.Context) error {
 		MaxAge:   int(config.Data.AuthTokenLifetime),
 		Secure:   true,
 		HttpOnly: false,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: sameSite,
 		Path:     "/v1",
 	})
 
@@ -658,7 +670,7 @@ func (h *Handler) Refresh(c echo.Context) error {
 		MaxAge:   int(config.Data.AuthTokenLifetime),
 		Secure:   true,
 		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: sameSite,
 		Path:     "/v1",
 	})
 
