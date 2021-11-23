@@ -545,6 +545,7 @@ func (h *Handler) Login(c echo.Context) error {
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: sameSite,
+		Domain:   config.Data.DomainName,
 		Path:     "/v1/auth",
 	})
 
@@ -555,6 +556,7 @@ func (h *Handler) Login(c echo.Context) error {
 		Secure:   true,
 		HttpOnly: false,
 		SameSite: sameSite,
+		Domain:   config.Data.DomainName,
 		Path:     "/v1",
 	})
 
@@ -565,6 +567,7 @@ func (h *Handler) Login(c echo.Context) error {
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: sameSite,
+		Domain:   config.Data.DomainName,
 		Path:     "/v1",
 	})
 
@@ -651,6 +654,7 @@ func (h *Handler) Refresh(c echo.Context) error {
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: sameSite,
+		Domain:   config.Data.DomainName,
 		Path:     "/v1/auth",
 	})
 
@@ -661,6 +665,7 @@ func (h *Handler) Refresh(c echo.Context) error {
 		Secure:   true,
 		HttpOnly: false,
 		SameSite: sameSite,
+		Domain:   config.Data.DomainName,
 		Path:     "/v1",
 	})
 
@@ -671,6 +676,7 @@ func (h *Handler) Refresh(c echo.Context) error {
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: sameSite,
+		Domain:   config.Data.DomainName,
 		Path:     "/v1",
 	})
 
