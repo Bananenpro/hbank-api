@@ -42,7 +42,11 @@ func main() {
 	handler.RegisterV1(v1)
 
 	go func() {
-		err = r.StartTLS(fmt.Sprintf(":%d", config.Data.ServerPort), config.Data.SSLCertPath, config.Data.SSLKeyPath)
+		if config.Data.SSL {
+			err = r.StartTLS(fmt.Sprintf(":%d", config.Data.ServerPort), config.Data.SSLCertPath, config.Data.SSLKeyPath)
+		} else {
+			err = r.Start(fmt.Sprintf(":%d", config.Data.ServerPort))
+		}
 		if err != nil && err != http.ErrServerClosed {
 			r.Logger.Fatal(err)
 		}

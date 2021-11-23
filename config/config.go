@@ -11,6 +11,7 @@ type ConfigData struct {
 	Debug                     bool   `json:"debug"`
 	DBVerbose                 bool   `json:"dbVerbose"`
 	ServerPort                int    `json:"serverPort"`
+	SSL                       bool   `json:"ssl"`
 	SSLCertPath               string `json:"sslCertPath"`
 	SSLKeyPath                string `json:"sslKeyPath"`
 	DomainName                string `json:"domainName"`
@@ -98,16 +99,18 @@ func verifyData() {
 		Data.ServerPort = defaultData.ServerPort
 	}
 
-	if f, err := os.Open(Data.SSLCertPath); os.IsNotExist(err) {
-		log.Fatalf("ERROR: Cannot find ssl cert file `%s`\n", Data.SSLCertPath)
-	} else {
-		f.Close()
-	}
+	if Data.SSL {
+		if f, err := os.Open(Data.SSLCertPath); os.IsNotExist(err) {
+			log.Fatalf("ERROR: Cannot find ssl cert file `%s`\n", Data.SSLCertPath)
+		} else {
+			f.Close()
+		}
 
-	if f, err := os.Open(Data.SSLKeyPath); os.IsNotExist(err) {
-		log.Fatalf("ERROR: Cannot find ssl key file `%s`\n", Data.SSLCertPath)
-	} else {
-		f.Close()
+		if f, err := os.Open(Data.SSLKeyPath); os.IsNotExist(err) {
+			log.Fatalf("ERROR: Cannot find ssl key file `%s`\n", Data.SSLCertPath)
+		} else {
+			f.Close()
+		}
 	}
 
 	if Data.CaptchaEnabled {
