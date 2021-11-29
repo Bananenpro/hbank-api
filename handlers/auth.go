@@ -64,6 +64,7 @@ func (h *Handler) Register(c echo.Context) error {
 		Name:             body.Name,
 		Email:            body.Email,
 		ProfilePictureId: uuid.New(),
+		DeleteToken:      services.GenerateRandomString(64),
 	}
 
 	var err error
@@ -127,7 +128,7 @@ func (h *Handler) SendConfirmEmail(c echo.Context) error {
 				body, err := services.ParseEmailTemplate("confirmEmail", c.Get("lang").(string), templateData{
 					Name:      user.Name,
 					Code:      code,
-					DeleteUrl: fmt.Sprintf("https://%s/account/delete?code=%s", config.Data.DomainName, code),
+					DeleteUrl: fmt.Sprintf("https://%s/account/delete?token=%s", config.Data.DomainName, user.DeleteToken),
 				})
 				if err != nil {
 					return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -510,6 +511,8 @@ func (h *Handler) Login(c echo.Context) error {
 	if !user.TwoFaOTPEnabled {
 		return c.JSON(http.StatusOK, responses.New(false, "Two factor authentication is not enabled", lang))
 	}
+
+	h.userStore.RemoveDeleteToken(user)
 
 	code := services.GenerateRandomString(64)
 	hash, err := bcrypt.GenerateFromPassword([]byte(code), config.Data.BcryptCost)

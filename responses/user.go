@@ -11,6 +11,7 @@ type AuthUser struct {
 	ProfilePictureId        string `json:"profilePictureId"`
 	ProfilePicturePrivacy   string `json:"profilePicturePrivacy"`
 	DontSendInvitationEmail bool   `json:"dontSendInvitationEmail"`
+	DeleteToken             string `json:"deleteToken,omitempty"`
 }
 
 type User struct {
@@ -135,6 +136,7 @@ func NewAuthUser(user *models.User) interface{} {
 			ProfilePictureId:        user.ProfilePictureId.String(),
 			ProfilePicturePrivacy:   user.ProfilePicturePrivacy,
 			DontSendInvitationEmail: user.DontSendInvitationEmail,
+			DeleteToken:             user.DeleteToken,
 		},
 	}
 }

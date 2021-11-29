@@ -79,6 +79,9 @@ func TestRegister(t *testing.T) {
 			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
 
 			if rec.Code == http.StatusCreated {
+				user, _ := us.GetByEmail(tt.email)
+				assert.Equal(t, 64, len(user.DeleteToken))
+
 				us.DeleteByEmail(tt.email)
 			}
 		})
@@ -545,6 +548,7 @@ func TestHandler_Login(t *testing.T) {
 		TwoFaOTPEnabled: true,
 		PasswordTokens:  []models.PasswordToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
 		TwoFATokens:     []models.TwoFAToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
+		DeleteToken:     "123456",
 	})
 
 	us.Create(&models.User{
@@ -554,6 +558,7 @@ func TestHandler_Login(t *testing.T) {
 		TwoFaOTPEnabled: true,
 		PasswordTokens:  []models.PasswordToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
 		TwoFATokens:     []models.TwoFAToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
+		DeleteToken:     "123456",
 	})
 
 	us.Create(&models.User{
@@ -563,6 +568,7 @@ func TestHandler_Login(t *testing.T) {
 		TwoFaOTPEnabled: true,
 		PasswordTokens:  []models.PasswordToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: 0}},
 		TwoFATokens:     []models.TwoFAToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
+		DeleteToken:     "123456",
 	})
 
 	us.Create(&models.User{
@@ -572,6 +578,7 @@ func TestHandler_Login(t *testing.T) {
 		TwoFaOTPEnabled: true,
 		PasswordTokens:  []models.PasswordToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: time.Now().Unix() + config.Data.LoginTokenLifetime}},
 		TwoFATokens:     []models.TwoFAToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: 0}},
+		DeleteToken:     "123456",
 	})
 
 	us.Create(&models.User{
@@ -581,6 +588,7 @@ func TestHandler_Login(t *testing.T) {
 		TwoFaOTPEnabled: true,
 		PasswordTokens:  []models.PasswordToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: 0}},
 		TwoFATokens:     []models.TwoFAToken{{CodeHash: services.HashToken("1234567890"), ExpirationTime: 0}},
+		DeleteToken:     "123456",
 	})
 
 	handler := New(us, nil)
@@ -631,6 +639,10 @@ func TestHandler_Login(t *testing.T) {
 
 					refreshTokens, _ := us.GetRefreshTokens(user)
 					assert.Equal(t, 1, len(refreshTokens), "A refresh token was stored in the database")
+					assert.Equal(t, "", user.DeleteToken)
+
+					user2, _ := us.GetByEmail("hans@gmail.com")
+					assert.Equal(t, "123456", user2.DeleteToken)
 				}
 
 				if tt.passwordToken == "1234567890" && tt.twoFactorToken == "1234567890" {

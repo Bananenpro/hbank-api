@@ -5,10 +5,6 @@ type DeleteUser struct {
 	TwoFAToken string `json:"twoFAToken" form:"twoFAToken"`
 }
 
-type DeleteUserByConfirmEmailCode struct {
-	ConfirmEmailCode string `json:"code" form:"code"`
-}
-
 type UpdateUser struct {
 	ProfilePicturePrivacy   string `json:"profilePicturePrivacy" form:"profilePicturePrivacy"`
 	DontSendInvitationEmail bool   `json:"dontSendInvitationEmail" form:"dontSendInvitationEmail"`

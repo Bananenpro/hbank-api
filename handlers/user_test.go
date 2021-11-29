@@ -339,7 +339,7 @@ func TestHandler_DeleteUser(t *testing.T) {
 	}
 }
 
-func TestHandler_DeleteUserByConfirmEmailCode(t *testing.T) {
+func TestHandler_DeleteUserByDeleteToken(t *testing.T) {
 	config.Data.Debug = true
 	r := router.New()
 
@@ -355,21 +355,16 @@ func TestHandler_DeleteUserByConfirmEmailCode(t *testing.T) {
 
 	us := db.NewUserStore(database)
 	user1 := &models.User{
-		Name:  "bob",
-		Email: "bob@gmail.com",
-		ConfirmEmailCode: models.ConfirmEmailCode{
-			CodeHash: services.HashToken("123456"),
-		},
+		Name:        "bob",
+		Email:       "bob@gmail.com",
+		DeleteToken: "123456",
 	}
 	us.Create(user1)
 
 	user2 := &models.User{
-		Name:  "paul",
-		Email: "paul@gmail.com",
-		ConfirmEmailCode: models.ConfirmEmailCode{
-			CodeHash: services.HashToken("123456"),
-		},
-		EmailConfirmed: true,
+		Name:        "paul",
+		Email:       "paul@gmail.com",
+		DeleteToken: "123456",
 	}
 	us.Create(user2)
 
@@ -378,19 +373,18 @@ func TestHandler_DeleteUserByConfirmEmailCode(t *testing.T) {
 	tests := []struct {
 		tName       string
 		userId      string
-		code        string
+		token       string
 		wantCode    int
 		wantSuccess bool
 		wantMessage string
 	}{
-		{tName: "Success", userId: user1.Id.String(), code: "123456", wantCode: http.StatusOK, wantSuccess: true, wantMessage: "Successfully deleted account"},
-		{tName: "Wrong id", userId: uuid.NewString(), code: "123456", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
-		{tName: "Wrong code", userId: user2.Id.String(), code: "654321", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
-		{tName: "Already confirmed", userId: user2.Id.String(), code: "123456", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
+		{tName: "Success", userId: user1.Id.String(), token: "123456", wantCode: http.StatusOK, wantSuccess: true, wantMessage: "Successfully deleted account"},
+		{tName: "Wrong id", userId: uuid.NewString(), token: "123456", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
+		{tName: "Wrong token", userId: user2.Id.String(), token: "654321", wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.tName, func(t *testing.T) {
-			jsonBody := fmt.Sprintf(`{"code": "%s"}`, tt.code)
+			jsonBody := fmt.Sprintf(`{"token": "%s"}`, tt.token)
 
 			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -400,7 +394,7 @@ func TestHandler_DeleteUserByConfirmEmailCode(t *testing.T) {
 			c.SetParamNames("id")
 			c.SetParamValues(tt.userId)
 
-			err := handler.DeleteUserByConfirmEmailCode(c)
+			err := handler.DeleteUserByDeleteToken(c)
 
 			assert.NoError(t, err)
 			assert.Equal(t, tt.wantCode, rec.Code)

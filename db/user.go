@@ -123,6 +123,10 @@ func (us *UserStore) DeleteByEmail(email string) error {
 	return nil
 }
 
+func (us *UserStore) RemoveDeleteToken(user *models.User) error {
+	return us.db.Model(user).Update("delete_token", "").Error
+}
+
 func (us *UserStore) GetProfilePicture(user *models.User) ([]byte, error) {
 	var u models.User
 	err := us.db.Select("profile_picture").First(&u, user.Id).Error

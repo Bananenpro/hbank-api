@@ -174,9 +174,9 @@ func (h *Handler) DeleteUser(c echo.Context) error {
 }
 
 // /v1/user/:id (DELETE)
-func (h *Handler) DeleteUserByConfirmEmailCode(c echo.Context) error {
+func (h *Handler) DeleteUserByDeleteToken(c echo.Context) error {
 	lang := c.Get("lang").(string)
-	var body bindings.DeleteUserByConfirmEmailCode
+	var body bindings.Token
 	err := c.Bind(&body)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
@@ -195,18 +195,11 @@ func (h *Handler) DeleteUserByConfirmEmailCode(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 	}
 
-	code, err := h.userStore.GetConfirmEmailCode(user)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	if subtle.ConstantTimeCompare([]byte(body.Token), []byte(user.DeleteToken)) == 1 {
+		h.userStore.Delete(user)
+		return c.JSON(http.StatusOK, responses.New(true, "Successfully deleted account", lang))
 	}
 
-	if subtle.ConstantTimeCompare(code.CodeHash, services.HashToken(body.ConfirmEmailCode)) == 1 {
-		if !user.EmailConfirmed {
-			h.userStore.Delete(user)
-			return c.JSON(http.StatusOK, responses.New(true, "Successfully deleted account", lang))
-		}
-		h.userStore.DeleteConfirmEmailCode(code)
-	}
 	return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 }
 

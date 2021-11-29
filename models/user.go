@@ -14,6 +14,8 @@ type UserStore interface {
 	DeleteById(id uuid.UUID) error
 	DeleteByEmail(email string) error
 
+	RemoveDeleteToken(user *User) error
+
 	GetProfilePicture(user *User) ([]byte, error)
 
 	GetCashLog(user *User, page, pageSize int, oldestFirst bool) ([]CashLogEntry, error)
@@ -75,6 +77,7 @@ type User struct {
 	TwoFaOTPEnabled         bool
 	OtpSecret               string
 	OtpQrCode               []byte
+	DeleteToken             string
 	ConfirmEmailCode        ConfirmEmailCode  `gorm:"constraint:OnDelete:CASCADE"`
 	ResetPasswordCode       ResetPasswordCode `gorm:"constraint:OnDelete:CASCADE"`
 	ChangeEmailCode         ChangeEmailCode   `gorm:"constraint:OnDelete:CASCADE"`
