@@ -384,10 +384,7 @@ func TestHandler_DeleteUserByDeleteToken(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.tName, func(t *testing.T) {
-			jsonBody := fmt.Sprintf(`{"token": "%s"}`, tt.token)
-
-			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonBody))
-			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			req := httptest.NewRequest(http.MethodDelete, "/?token="+tt.token, nil)
 			rec := httptest.NewRecorder()
 			c := r.NewContext(req, rec)
 			c.Set("lang", "en")

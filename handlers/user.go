@@ -173,14 +173,9 @@ func (h *Handler) DeleteUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.New(true, "Successfully deleted account", lang))
 }
 
-// /v1/user/:id (DELETE)
+// /v1/user/:id?token=string (DELETE)
 func (h *Handler) DeleteUserByDeleteToken(c echo.Context) error {
 	lang := c.Get("lang").(string)
-	var body bindings.Token
-	err := c.Bind(&body)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
-	}
 
 	userId, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -195,7 +190,9 @@ func (h *Handler) DeleteUserByDeleteToken(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 	}
 
-	if subtle.ConstantTimeCompare([]byte(body.Token), []byte(user.DeleteToken)) == 1 {
+	token := c.QueryParam("token")
+
+	if subtle.ConstantTimeCompare([]byte(token), []byte(user.DeleteToken)) == 1 {
 		h.userStore.Delete(user)
 		return c.JSON(http.StatusOK, responses.New(true, "Successfully deleted account", lang))
 	}
