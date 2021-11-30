@@ -427,8 +427,8 @@ func TestHandler_VerifyOTPCode(t *testing.T) {
 		wantMessage string
 	}{
 		{tName: "Success", email: "bob@gmail.com", otp: currentCode, wantCode: http.StatusOK, wantSuccess: true, wantMessage: "Successfully aquired two factor token"},
-		{tName: "Wrong email", email: "bobo@gmail.com", otp: currentCode, wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
-		{tName: "Wrong otp code", email: "bob@gmail.com", otp: pastCode, wantCode: http.StatusUnauthorized, wantSuccess: false, wantMessage: "Invalid credentials"},
+		{tName: "Wrong email", email: "bobo@gmail.com", otp: currentCode, wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Invalid credentials"},
+		{tName: "Wrong otp code", email: "bob@gmail.com", otp: pastCode, wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Invalid credentials"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.tName, func(t *testing.T) {
@@ -526,7 +526,7 @@ func TestHandler_PasswordAuth(t *testing.T) {
 }
 
 func TestHandler_Login(t *testing.T) {
-	config.Data.Debug = true
+	config.Data.Debug = false
 	r := router.New()
 
 	database, err := db.NewTestDB()
@@ -1210,7 +1210,7 @@ func TestHandler_ResetPassword(t *testing.T) {
 }
 
 func TestHandler_Refresh(t *testing.T) {
-	config.Data.Debug = true
+	config.Data.Debug = false
 	r := router.New()
 
 	database, err := db.NewTestDB()

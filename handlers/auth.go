@@ -309,7 +309,7 @@ func (h *Handler) VerifyOTPCode(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
+		return c.JSON(http.StatusOK, responses.NewInvalidCredentials(lang))
 	}
 
 	if totp.Validate(body.Code, user.OtpSecret) {
