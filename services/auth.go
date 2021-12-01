@@ -100,7 +100,7 @@ func IsValidEmail(email string) bool {
 
 type jwtClaims struct {
 	jwt.StandardClaims
-	UserId string `json:"user_id"`
+	UserId string `json:"userId"`
 }
 
 func NewAuthToken(user *models.User) (string, string, error) {
