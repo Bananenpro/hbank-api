@@ -1,5 +1,5 @@
 ![H-Bank](images/banner.png)
-<h1 align="center">H-Bank REST API</h1>
+<h1 align="center">H-Bank API</h1>
 
 ![License](https://img.shields.io/github/license/Bananenpro/hbank-api)
 ![Commit Activity](https://img.shields.io/github/commit-activity/m/Bananenpro/hbank-api)
@@ -11,7 +11,7 @@
 
 ## Description
 
-The REST API for the H-Bank application.
+The API for the H-Bank application.
 
 ## Setup
 
@@ -76,7 +76,7 @@ The resulting binary can be found at `bin/hbank-payment-plans`.
 
 #### Linux distribution with systemd
 
-First [install all dependencies](#installing-dependencies) and [build](#building) the 'hbank-api' and 'hbank-payment-plans' binaries.
+First [install all dependencies](#installing-dependencies) and [build](#building) the `hbank-api` and `hbank-payment-plans` binaries.
 
 Create a new `hbank` directory in the home directory of the current user:
 ```bash
@@ -99,7 +99,7 @@ cp -r <repo-dir>/translations ~/hbank
 Create a configuration file named `config.json` in the same directory.
 
 Example configuration:
-```json
+```js
 {
   "domainName": "hbank.example",
   "jwtSecret": "&#aMv5g^m5fzon29eY!QVqkRLMqugFYz",
@@ -119,7 +119,7 @@ Create a systemd service file for `hbank-api`:
 ```bash
 sudoedit /etc/systemd/system/hbank-api.service
 ```
-with the following content (make sure to replace <user> with your username):
+with the following content (make sure to replace `<user>` with your username):
 ```
 [Unit]
 Description=H-Bank API
@@ -174,7 +174,7 @@ RandomizedDelaySec=1h
 WantedBy=timers.target
 ```
 
-Enable all systemd units:
+Enable and start all systemd units:
 ```bash
 sudo systemctl enable --now hbank-api.service
 sudo systemctl enable --now hbank-payment-plans.timer
@@ -186,7 +186,7 @@ HBank-API is looking for configuration in the following locations in decreasing 
 *Note:* The first config file to be found is used and all others are discarded.
 
 ### Default configuration
-```json
+```js
 {
   "debug": false, // !!DO NOT USE IN PRODUCTION!! Disables SameSite for cookies. Returnes error messages on HTTP-500 responses.
   "dbVerbose": false, // Prints all sql queries to stdout
