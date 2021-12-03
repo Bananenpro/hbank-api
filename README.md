@@ -76,7 +76,7 @@ The resulting binary can be found at `bin/hbank-payment-plans`.
 
 #### Linux distribution with systemd
 
-First [install all dependencies](###installing-dependencies) and [build](###building) the 'hbank-api' and 'hbank-payment-plans' binaries.
+First [install all dependencies](#installing-dependencies) and [build](#building) the 'hbank-api' and 'hbank-payment-plans' binaries.
 
 Create a new `hbank` directory in the home directory of the current user:
 ```bash
