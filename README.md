@@ -182,7 +182,7 @@ sudo systemctl enable --now hbank-payment-plans.timer
 
 ## Configuration
 
-HBank-API is looking for configuration in the following locations in decreasing precedence: `<working dir>/config.json`, `XDG_CONFIG_HOME/hbank/config.json`.
+HBank-API is looking for configuration in the following locations in order of decreasing precedence: `<working dir>/config.json`, `XDG_CONFIG_HOME/hbank/config.json`.
 *Note:* The first config file to be found is used and all others are discarded.
 
 ### Default configuration
