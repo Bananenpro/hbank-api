@@ -6,6 +6,7 @@ import (
 
 type UserStore interface {
 	GetAll(except *User, page, pageSize int, descending bool) ([]User, error)
+	Count() (int64, error)
 	GetById(id uuid.UUID) (*User, error)
 	GetByEmail(email string) (*User, error)
 	Create(user *User) error
@@ -19,6 +20,7 @@ type UserStore interface {
 	GetProfilePicture(user *User) ([]byte, error)
 
 	GetCashLog(user *User, page, pageSize int, oldestFirst bool) ([]CashLogEntry, error)
+	CashLogEntryCount(user *User) (int64, error)
 	GetLastCashLogEntry(user *User) (*CashLogEntry, error)
 	GetCashLogEntryById(user *User, id uuid.UUID) (*CashLogEntry, error)
 	AddCashLogEntry(user *User, entry *CashLogEntry) error

@@ -48,6 +48,12 @@ func (gs *GroupStore) GetAllByUser(user *models.User, page int, pageSize int, de
 	return groups, err
 }
 
+func (gs *GroupStore) Count(user *models.User) (int64, error) {
+	var count int64
+	err := gs.db.Model(&models.GroupMembership{}).Where("user_id = ?", user.Id).Count(&count).Error
+	return count, err
+}
+
 func (gs *GroupStore) GetById(id uuid.UUID) (*models.Group, error) {
 	var group models.Group
 	err := gs.db.Omit("group_picture").First(&group, id).Error
@@ -135,6 +141,12 @@ func (gs *GroupStore) GetMembers(except *models.User, group *models.Group, page 
 	return members, err
 }
 
+func (gs *GroupStore) MemberCount(group *models.Group) (int64, error) {
+	var count int64
+	err := gs.db.Model(&models.GroupMembership{}).Where("group_id = ? AND is_member = ?", group.Id, true).Count(&count).Error
+	return count, err
+}
+
 func (gs *GroupStore) IsMember(group *models.Group, user *models.User) (bool, error) {
 	err := gs.db.First(&models.GroupMembership{}, "group_id = ? AND user_id = ? AND is_member = ?", group.Id, user.Id, true).Error
 	if err != nil {
@@ -214,6 +226,12 @@ func (gs *GroupStore) GetAdmins(except *models.User, group *models.Group, page i
 	err = gs.db.Omit("profile_picture").Order("name "+order).Find(&members, "id IN ?", userIds).Error
 
 	return members, err
+}
+
+func (gs *GroupStore) AdminCount(group *models.Group) (int64, error) {
+	var count int64
+	err := gs.db.Model(&models.GroupMembership{}).Where("group_id = ? AND is_admin = ?", group.Id, true).Count(&count).Error
+	return count, err
 }
 
 func (gs *GroupStore) IsAdmin(group *models.Group, user *models.User) (bool, error) {
@@ -302,6 +320,12 @@ func (gs *GroupStore) GetTransactionLog(group *models.Group, user *models.User, 
 	return log, err
 }
 
+func (gs *GroupStore) TransactionLogEntryCount(group *models.Group, user *models.User) (int64, error) {
+	var count int64
+	err := gs.db.Model(&models.TransactionLogEntry{}).Where("group_id = ? AND sender_id = ?", group.Id, user.Id).Or("group_id = ? AND receiver_id = ?", group.Id, user.Id).Count(&count).Error
+	return count, err
+}
+
 func (gs *GroupStore) GetBankTransactionLog(group *models.Group, page, pageSize int, oldestFirst bool) ([]models.TransactionLogEntry, error) {
 	var log []models.TransactionLogEntry
 	var err error
@@ -318,6 +342,12 @@ func (gs *GroupStore) GetBankTransactionLog(group *models.Group, page, pageSize 
 	}
 
 	return log, err
+}
+
+func (gs *GroupStore) BankTransactionLogEntryCount(group *models.Group) (int64, error) {
+	var count int64
+	err := gs.db.Model(&models.TransactionLogEntry{}).Where("group_id = ? AND sender_is_bank = ?", group.Id, true).Or("group_id = ? AND receiver_is_bank = ?", group.Id, true).Count(&count).Error
+	return count, err
 }
 
 func (gs *GroupStore) GetTransactionLogEntryById(group *models.Group, id uuid.UUID) (*models.TransactionLogEntry, error) {
@@ -470,6 +500,12 @@ func (gs *GroupStore) GetInvitationsByGroup(group *models.Group, page, pageSize 
 	return invitations, err
 }
 
+func (gs *GroupStore) InvitationCountByGroup(group *models.Group) (int64, error) {
+	var count int64
+	err := gs.db.Model(&models.GroupInvitation{}).Where("group_id = ?", group.Id).Count(&count).Error
+	return count, err
+}
+
 func (gs *GroupStore) GetInvitationsByUser(user *models.User, page, pageSize int, oldestFirst bool) ([]models.GroupInvitation, error) {
 	order := "DESC"
 	if oldestFirst {
@@ -485,6 +521,12 @@ func (gs *GroupStore) GetInvitationsByUser(user *models.User, page, pageSize int
 	}
 
 	return invitations, err
+}
+
+func (gs *GroupStore) InvitationCountByUser(user *models.User) (int64, error) {
+	var count int64
+	err := gs.db.Model(&models.GroupInvitation{}).Where("user_id = ?", user.Id).Count(&count).Error
+	return count, err
 }
 
 func (gs *GroupStore) GetInvitationByGroupAndUser(group *models.Group, user *models.User) (*models.GroupInvitation, error) {
@@ -524,6 +566,12 @@ func (gs *GroupStore) GetPaymentPlans(group *models.Group, user *models.User, pa
 	return paymentPlans, err
 }
 
+func (gs *GroupStore) PaymentPlanCount(group *models.Group, user *models.User) (int64, error) {
+	var count int64
+	err := gs.db.Model(&models.PaymentPlan{}).Where("group_id = ? AND sender_id = ?", group.Id, user.Id).Or("group_id = ? AND receiver_id = ?", group.Id, user.Id).Count(&count).Error
+	return count, err
+}
+
 func (gs *GroupStore) GetBankPaymentPlans(group *models.Group, page, pageSize int, descending bool) ([]models.PaymentPlan, error) {
 	var paymentPlans []models.PaymentPlan
 	var err error
@@ -540,6 +588,12 @@ func (gs *GroupStore) GetBankPaymentPlans(group *models.Group, page, pageSize in
 	}
 
 	return paymentPlans, err
+}
+
+func (gs *GroupStore) BankPaymentPlanCount(group *models.Group) (int64, error) {
+	var count int64
+	err := gs.db.Model(&models.PaymentPlan{}).Where("group_id = ? AND sender_is_bank = ?", group.Id, true).Or("group_id = ? AND receiver_is_bank = ?", group.Id, true).Count(&count).Error
+	return count, err
 }
 
 func (gs *GroupStore) GetPaymentPlansThatNeedToBeExecuted() ([]models.PaymentPlan, error) {

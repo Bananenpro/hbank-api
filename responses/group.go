@@ -98,7 +98,7 @@ type invitation struct {
 	UserId            string `json:"userId,omitempty"`
 }
 
-func NewInvitations(invitations []models.GroupInvitation) interface{} {
+func NewInvitations(invitations []models.GroupInvitation, count int64) interface{} {
 	dtos := make([]invitation, len(invitations))
 	for i, in := range invitations {
 		dtos[i].Id = in.Id.String()
@@ -110,6 +110,7 @@ func NewInvitations(invitations []models.GroupInvitation) interface{} {
 
 	type invitationsResp struct {
 		Base
+		Count       int64        `json:"count"`
 		Invitations []invitation `json:"invitations"`
 	}
 
@@ -117,6 +118,7 @@ func NewInvitations(invitations []models.GroupInvitation) interface{} {
 		Base: Base{
 			Success: true,
 		},
+		Count:       count,
 		Invitations: dtos,
 	}
 }
@@ -141,7 +143,7 @@ func NewInvitation(invitationModel *models.GroupInvitation) interface{} {
 	}
 }
 
-func NewGroups(groups []models.Group) interface{} {
+func NewGroups(groups []models.Group, count int64) interface{} {
 	groupDTOs := make([]group, len(groups))
 	for i, g := range groups {
 		groupDTOs[i].Id = g.Id.String()
@@ -152,6 +154,7 @@ func NewGroups(groups []models.Group) interface{} {
 
 	type groupsResp struct {
 		Base
+		Count  int64   `json:"count"`
 		Groups []group `json:"groups"`
 	}
 
@@ -159,6 +162,7 @@ func NewGroups(groups []models.Group) interface{} {
 		Base: Base{
 			Success: true,
 		},
+		Count:  count,
 		Groups: groupDTOs,
 	}
 }
@@ -272,9 +276,10 @@ func NewBankTransaction(transactionModel *models.TransactionLogEntry) interface{
 	}
 }
 
-func NewTransactionLog(log []models.TransactionLogEntry, user *models.User) interface{} {
+func NewTransactionLog(log []models.TransactionLogEntry, user *models.User, count int64) interface{} {
 	type transactionsResp struct {
 		Base
+		Count        int64         `json:"count"`
 		Transactions []transaction `json:"transactions"`
 	}
 
@@ -321,13 +326,15 @@ func NewTransactionLog(log []models.TransactionLogEntry, user *models.User) inte
 		Base: Base{
 			Success: true,
 		},
+		Count:        count,
 		Transactions: transactionDTOs,
 	}
 }
 
-func NewBankTransactionLog(log []models.TransactionLogEntry) interface{} {
+func NewBankTransactionLog(log []models.TransactionLogEntry, count int64) interface{} {
 	type transactionsResp struct {
 		Base
+		Count        int64             `json:"count"`
 		Transactions []bankTransaction `json:"transactions"`
 	}
 
@@ -366,6 +373,7 @@ func NewBankTransactionLog(log []models.TransactionLogEntry) interface{} {
 		Base: Base{
 			Success: true,
 		},
+		Count:        count,
 		Transactions: transactionDTOs,
 	}
 }
@@ -422,9 +430,10 @@ func NewPaymentPlan(paymentPlanModel *models.PaymentPlan) interface{} {
 	}
 }
 
-func NewPaymentPlans(paymentPlans []models.PaymentPlan) interface{} {
+func NewPaymentPlans(paymentPlans []models.PaymentPlan, count int64) interface{} {
 	type paymentPlansResp struct {
 		Base
+		Count        int64         `json:"count"`
 		PaymentPlans []paymentPlan `json:"paymentPlans"`
 	}
 
@@ -461,6 +470,7 @@ func NewPaymentPlans(paymentPlans []models.PaymentPlan) interface{} {
 		Base: Base{
 			Success: true,
 		},
+		Count:        count,
 		PaymentPlans: paymentPlanDTOs,
 	}
 }

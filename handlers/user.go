@@ -66,7 +66,12 @@ func (h *Handler) GetUsers(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	return c.JSON(http.StatusOK, responses.NewUsers(users))
+	count, err := h.userStore.Count()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	return c.JSON(http.StatusOK, responses.NewUsers(users, count))
 }
 
 // /v1/user/:id (GET)
@@ -460,7 +465,12 @@ func (h *Handler) GetCashLog(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	return c.JSON(http.StatusOK, responses.NewCashLog(entries))
+	count, err := h.userStore.CashLogEntryCount(user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	return c.JSON(http.StatusOK, responses.NewCashLog(entries, count))
 }
 
 // /v1/user/cash (POST)

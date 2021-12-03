@@ -91,9 +91,10 @@ func NewCashLogEntry(entry *models.CashLogEntry) interface{} {
 	}
 }
 
-func NewCashLog(log []models.CashLogEntry) interface{} {
+func NewCashLog(log []models.CashLogEntry, count int64) interface{} {
 	type cashLogResp struct {
 		Base
+		Count   int64          `json:"count"`
 		CashLog []CashLogEntry `json:"log"`
 	}
 
@@ -114,6 +115,7 @@ func NewCashLog(log []models.CashLogEntry) interface{} {
 		Base: Base{
 			Success: true,
 		},
+		Count:   count,
 		CashLog: entries,
 	}
 }
@@ -158,7 +160,7 @@ func NewUser(user *models.User) interface{} {
 	}
 }
 
-func NewUsers(users []models.User) interface{} {
+func NewUsers(users []models.User, count int64) interface{} {
 	userDTOs := make([]User, len(users))
 	for i, u := range users {
 		userDTOs[i].Id = u.Id.String()
@@ -168,6 +170,7 @@ func NewUsers(users []models.User) interface{} {
 
 	type usersResp struct {
 		Base
+		Count int64  `json:"count"`
 		Users []User `json:"users"`
 	}
 
@@ -175,6 +178,7 @@ func NewUsers(users []models.User) interface{} {
 		Base: Base{
 			Success: true,
 		},
+		Count: count,
 		Users: userDTOs,
 	}
 }

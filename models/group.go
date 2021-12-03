@@ -6,6 +6,7 @@ import (
 
 type GroupStore interface {
 	GetAllByUser(user *User, page, pageSize int, descending bool) ([]Group, error)
+	Count(user *User) (int64, error)
 	GetById(id uuid.UUID) (*Group, error)
 	Create(group *Group) error
 	Update(group *Group) error
@@ -15,11 +16,13 @@ type GroupStore interface {
 	GetGroupPicture(group *Group) ([]byte, error)
 
 	GetMembers(except *User, group *Group, page, pageSize int, descending bool) ([]User, error)
+	MemberCount(group *Group) (int64, error)
 	IsMember(group *Group, user *User) (bool, error)
 	AddMember(group *Group, user *User) error
 	RemoveMember(group *Group, user *User) error
 
 	GetAdmins(except *User, group *Group, page, pageSize int, descending bool) ([]User, error)
+	AdminCount(group *Group) (int64, error)
 	IsAdmin(group *Group, user *User) (bool, error)
 	AddAdmin(group *Group, user *User) error
 	RemoveAdmin(group *Group, user *User) error
@@ -28,7 +31,9 @@ type GroupStore interface {
 	GetUserCount(group *Group) (int64, error)
 
 	GetTransactionLog(group *Group, user *User, page, pageSize int, oldestFirst bool) ([]TransactionLogEntry, error)
+	TransactionLogEntryCount(group *Group, user *User) (int64, error)
 	GetBankTransactionLog(group *Group, page, pageSize int, oldestFirst bool) ([]TransactionLogEntry, error)
+	BankTransactionLogEntryCount(group *Group) (int64, error)
 	GetTransactionLogEntryById(group *Group, id uuid.UUID) (*TransactionLogEntry, error)
 	GetLastTransactionLogEntry(group *Group, user *User) (*TransactionLogEntry, error)
 	GetUserBalance(group *Group, user *User) (int, error)
@@ -38,12 +43,16 @@ type GroupStore interface {
 	CreateInvitation(group *Group, user *User, message string) (*GroupInvitation, error)
 	GetInvitationById(id uuid.UUID) (*GroupInvitation, error)
 	GetInvitationsByGroup(group *Group, page, pageSize int, oldestFirst bool) ([]GroupInvitation, error)
+	InvitationCountByGroup(group *Group) (int64, error)
 	GetInvitationsByUser(user *User, page, pageSize int, oldestFirst bool) ([]GroupInvitation, error)
+	InvitationCountByUser(user *User) (int64, error)
 	GetInvitationByGroupAndUser(group *Group, user *User) (*GroupInvitation, error)
 	DeleteInvitation(invitation *GroupInvitation) error
 
 	GetPaymentPlans(group *Group, user *User, page, pageSize int, descending bool) ([]PaymentPlan, error)
+	PaymentPlanCount(group *Group, user *User) (int64, error)
 	GetBankPaymentPlans(group *Group, page, pageSize int, descending bool) ([]PaymentPlan, error)
+	BankPaymentPlanCount(group *Group) (int64, error)
 	GetPaymentPlansThatNeedToBeExecuted() ([]PaymentPlan, error)
 	GetPaymentPlanById(group *Group, id uuid.UUID) (*PaymentPlan, error)
 	CreatePaymentPlan(group *Group, senderIsBank, receiverIsBank bool, sender *User, receiver *User, name, description string, amount, repeats, schedule int, scheduleUnit string, firstPayment int64) (*PaymentPlan, error)

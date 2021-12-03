@@ -47,6 +47,12 @@ func (us *UserStore) GetAll(except *models.User, page, pageSize int, descending 
 	return users, err
 }
 
+func (us *UserStore) Count() (int64, error) {
+	var count int64
+	err := us.db.Model(&models.User{}).Count(&count).Error
+	return count, err
+}
+
 func (us *UserStore) GetById(id uuid.UUID) (*models.User, error) {
 	var user models.User
 	err := us.db.Omit("profile_picture").First(&user, id).Error
@@ -444,6 +450,12 @@ func (us *UserStore) GetCashLog(user *models.User, page, pageSize int, oldestFir
 	}
 
 	return cashLog, err
+}
+
+func (us *UserStore) CashLogEntryCount(user *models.User) (int64, error) {
+	var count int64
+	err := us.db.Model(&models.CashLogEntry{}).Where("user_id = ?", user.Id).Count(&count).Error
+	return count, err
 }
 
 func (us *UserStore) GetLastCashLogEntry(user *models.User) (*models.CashLogEntry, error) {

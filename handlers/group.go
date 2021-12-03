@@ -59,7 +59,12 @@ func (h *Handler) GetGroups(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	return c.JSON(http.StatusOK, responses.NewGroups(groups))
+	count, err := h.groupStore.Count(user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	return c.JSON(http.StatusOK, responses.NewGroups(groups, count))
 }
 
 // /v1/group/:id (GET)
@@ -233,7 +238,12 @@ func (h *Handler) GetGroupMembers(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	return c.JSON(http.StatusOK, responses.NewUsers(members))
+	count, err := h.groupStore.MemberCount(group)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	return c.JSON(http.StatusOK, responses.NewUsers(members, count))
 }
 
 // /v1/group/:id/member (DELETE)
@@ -333,17 +343,22 @@ func (h *Handler) GetGroupAdmins(c echo.Context) error {
 	}
 
 	includeSelf := services.StrToBool(c.QueryParam("includeSelf"))
-	var members []models.User
+	var admins []models.User
 	if includeSelf {
-		members, err = h.groupStore.GetAdmins(nil, group, page, pageSize, descending)
+		admins, err = h.groupStore.GetAdmins(nil, group, page, pageSize, descending)
 	} else {
-		members, err = h.groupStore.GetAdmins(user, group, page, pageSize, descending)
+		admins, err = h.groupStore.GetAdmins(user, group, page, pageSize, descending)
 	}
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	return c.JSON(http.StatusOK, responses.NewUsers(members))
+	count, err := h.groupStore.AdminCount(group)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	return c.JSON(http.StatusOK, responses.NewUsers(admins, count))
 }
 
 // /v1/group/:id/admin (POST)
@@ -818,7 +833,12 @@ func (h *Handler) GetTransactionLog(c echo.Context) error {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 
-		return c.JSON(http.StatusOK, responses.NewTransactionLog(log, user))
+		count, err := h.groupStore.TransactionLogEntryCount(group, user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+
+		return c.JSON(http.StatusOK, responses.NewTransactionLog(log, user, count))
 	} else {
 		isAdmin, err := h.groupStore.IsAdmin(group, user)
 		if err != nil {
@@ -834,7 +854,12 @@ func (h *Handler) GetTransactionLog(c echo.Context) error {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 
-		return c.JSON(http.StatusOK, responses.NewBankTransactionLog(log))
+		count, err := h.groupStore.BankTransactionLogEntryCount(group)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+
+		return c.JSON(http.StatusOK, responses.NewBankTransactionLog(log, count))
 	}
 }
 
@@ -1001,7 +1026,12 @@ func (h *Handler) GetInvitationsByUser(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	return c.JSON(http.StatusOK, responses.NewInvitations(invitations))
+	count, err := h.groupStore.InvitationCountByUser(user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	return c.JSON(http.StatusOK, responses.NewInvitations(invitations, count))
 }
 
 // /v1/group/:id/invitation?page=int&pageSize=int&oldestFirst=bool (GET)
@@ -1064,7 +1094,12 @@ func (h *Handler) GetInvitationsByGroup(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	return c.JSON(http.StatusOK, responses.NewInvitations(invitations))
+	count, err := h.groupStore.InvitationCountByGroup(group)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	return c.JSON(http.StatusOK, responses.NewInvitations(invitations, count))
 }
 
 // /v1/group/invitation/:id (GET)
@@ -1448,7 +1483,12 @@ func (h *Handler) GetPaymentPlans(c echo.Context) error {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 
-		return c.JSON(http.StatusOK, responses.NewPaymentPlans(paymentPlans))
+		count, err := h.groupStore.PaymentPlanCount(group, user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+
+		return c.JSON(http.StatusOK, responses.NewPaymentPlans(paymentPlans, count))
 	} else {
 		isAdmin, err := h.groupStore.IsAdmin(group, user)
 		if err != nil {
@@ -1464,7 +1504,12 @@ func (h *Handler) GetPaymentPlans(c echo.Context) error {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 
-		return c.JSON(http.StatusOK, responses.NewPaymentPlans(paymentPlans))
+		count, err := h.groupStore.BankPaymentPlanCount(group)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+
+		return c.JSON(http.StatusOK, responses.NewPaymentPlans(paymentPlans, count))
 	}
 }
 
