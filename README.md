@@ -11,7 +11,7 @@
 
 ## Description
 
-The API for the H-Bank application.
+The API for the [H-Bank](https://github.com/Bananenpro/hbank) application.
 
 ## Setup
 
