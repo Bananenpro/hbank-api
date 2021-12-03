@@ -37,6 +37,7 @@ type ConfigData struct {
 	ProfilePictureSize        int    `json:"profilePictureSize"`
 	BcryptCost                int    `json:"bcryptCost"`
 	PBKDF2Iterations          int    `json:"pbkdf2Iterations"`
+	RecoveryCodeCount         uint   `json:"recoveryCodeCount"`
 	LoginTokenLifetime        int64  `json:"loginTokenLifetime"`
 	EmailCodeLifetime         int64  `json:"emailCodeLifetime"`
 	AuthTokenLifetime         int64  `json:"authTokenLifetime"`
@@ -60,6 +61,7 @@ var defaultData = ConfigData{
 	ProfilePictureSize:        500,
 	BcryptCost:                10,
 	PBKDF2Iterations:          10000,
+	RecoveryCodeCount:         5,
 	LoginTokenLifetime:        5 * 60,
 	EmailCodeLifetime:         5 * 60,
 	AuthTokenLifetime:         10 * 60,

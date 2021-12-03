@@ -343,8 +343,8 @@ func (us *UserStore) NewRecoveryCodes(user *models.User) ([]string, error) {
 		return []string{}, err
 	}
 
-	codes := make([]models.RecoveryCode, 10)
-	codesStr := make([]string, 10)
+	codes := make([]models.RecoveryCode, config.Data.RecoveryCodeCount)
+	codesStr := make([]string, config.Data.RecoveryCodeCount)
 
 	for i := range codes {
 		codesStr[i] = services.GenerateRandomString(32)
