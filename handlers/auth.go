@@ -33,8 +33,8 @@ func (h *Handler) Register(c echo.Context) error {
 		return c.JSON(http.StatusOK, responses.New(false, "Invalid captcha token", lang))
 	}
 
-	body.Name = strings.ToLower(body.Name)
-	body.Email = strings.ToLower(body.Email)
+	body.Name = strings.TrimSpace(body.Name)
+	body.Email = strings.TrimSpace(strings.ToLower(body.Email))
 
 	if !services.IsValidEmail(body.Email) {
 		return c.JSON(http.StatusOK, responses.New(false, "Invalid email", lang))
