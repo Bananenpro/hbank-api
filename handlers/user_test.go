@@ -532,7 +532,7 @@ func TestHandler_GetCurrentCash(t *testing.T) {
 		wantTitle   string
 	}{
 		{tName: "Success", user: user1, wantCode: http.StatusOK, wantSuccess: true, wantTitle: "Change2"},
-		{tName: "Empty cash log", user: user2, wantCode: http.StatusNotFound, wantSuccess: false, wantMessage: "Cash log is empty"},
+		{tName: "Empty cash log", user: user2, wantCode: http.StatusOK, wantSuccess: true, wantTitle: ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.tName, func(t *testing.T) {

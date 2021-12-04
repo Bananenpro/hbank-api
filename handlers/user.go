@@ -390,7 +390,11 @@ func (h *Handler) GetCurrentCash(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if entry == nil {
-		return c.JSON(http.StatusNotFound, responses.New(false, "Cash log is empty", lang))
+		entry = &models.CashLogEntry{
+			Base: models.Base{
+				Created: user.Created,
+			},
+		}
 	}
 
 	return c.JSON(http.StatusOK, responses.NewCashLogEntry(entry))
