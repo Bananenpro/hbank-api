@@ -31,7 +31,7 @@ cd hbank-api
 #### Arch Linux
 
 ```bash
-sudo pacman -S go libvips
+sudo pacman -S go libvips gcc
 ```
 
 ### Running
