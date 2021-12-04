@@ -188,7 +188,7 @@ HBank-API is looking for configuration in the following locations in order of de
 ### Default configuration
 ```js
 {
-  "debug": false, // !!DO NOT USE IN PRODUCTION!! Disables SameSite for cookies. Returnes error messages on HTTP-500 responses.
+  "debug": false, // !!DO NOT USE IN PRODUCTION!! Disables SameSite for cookies. Returns error messages on HTTP-500 responses.
   "dbVerbose": false, // Prints all sql queries to stdout
   "serverPort": 8080, // The port to use for the webserver
   "ssl": false, // Enable ssl
