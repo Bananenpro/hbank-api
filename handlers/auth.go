@@ -560,7 +560,7 @@ func (h *Handler) Login(c echo.Context) error {
 		HttpOnly: false,
 		SameSite: sameSite,
 		Domain:   config.Data.DomainName,
-		Path:     "/v1",
+		Path:     "/",
 	})
 
 	c.SetCookie(&http.Cookie{
@@ -571,7 +571,7 @@ func (h *Handler) Login(c echo.Context) error {
 		HttpOnly: true,
 		SameSite: sameSite,
 		Domain:   config.Data.DomainName,
-		Path:     "/v1",
+		Path:     "/",
 	})
 
 	return c.JSON(http.StatusOK, responses.NewAuthUser(user))
@@ -669,7 +669,7 @@ func (h *Handler) Refresh(c echo.Context) error {
 		HttpOnly: false,
 		SameSite: sameSite,
 		Domain:   config.Data.DomainName,
-		Path:     "/v1",
+		Path:     "/",
 	})
 
 	c.SetCookie(&http.Cookie{
@@ -680,7 +680,7 @@ func (h *Handler) Refresh(c echo.Context) error {
 		HttpOnly: true,
 		SameSite: sameSite,
 		Domain:   config.Data.DomainName,
-		Path:     "/v1",
+		Path:     "/",
 	})
 
 	return c.JSON(http.StatusOK, responses.New(true, "Successfully refreshed tokens", lang))
