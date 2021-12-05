@@ -130,7 +130,7 @@ func (h *Handler) CreateGroup(c echo.Context) error {
 	body.Name = strings.TrimSpace(body.Name)
 	body.Description = strings.TrimSpace(body.Description)
 
-	if len(body.Name) > config.Data.MaxNameLength {
+	if utf8.RuneCountInString(body.Name) > config.Data.MaxNameLength {
 		return c.JSON(http.StatusOK, responses.New(false, "Name too long", lang))
 	}
 
@@ -138,7 +138,7 @@ func (h *Handler) CreateGroup(c echo.Context) error {
 		return c.JSON(http.StatusOK, responses.New(false, "Name too short", lang))
 	}
 
-	if len(body.Description) > config.Data.MaxDescriptionLength {
+	if utf8.RuneCountInString(body.Name) > config.Data.MaxDescriptionLength {
 		return c.JSON(http.StatusOK, responses.New(false, "Description too long", lang))
 	}
 
@@ -900,7 +900,7 @@ func (h *Handler) CreateTransaction(c echo.Context) error {
 	body.Title = strings.TrimSpace(body.Title)
 	body.Description = strings.TrimSpace(body.Description)
 
-	if len(body.Title) > config.Data.MaxNameLength {
+	if utf8.RuneCountInString(body.Title) > config.Data.MaxNameLength {
 		return c.JSON(http.StatusOK, responses.New(false, "Title too long", lang))
 	}
 
@@ -908,7 +908,7 @@ func (h *Handler) CreateTransaction(c echo.Context) error {
 		return c.JSON(http.StatusOK, responses.New(false, "Title too short", lang))
 	}
 
-	if len(body.Description) > config.Data.MaxDescriptionLength {
+	if utf8.RuneCountInString(body.Description) > config.Data.MaxDescriptionLength {
 		return c.JSON(http.StatusOK, responses.New(false, "Description too long", lang))
 	}
 
@@ -1177,7 +1177,7 @@ func (h *Handler) CreateInvitation(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
 	}
 
-	if len(body.Message) > config.Data.MaxDescriptionLength {
+	if utf8.RuneCountInString(body.Message) > config.Data.MaxDescriptionLength {
 		return c.JSON(http.StatusOK, responses.New(false, "Message too long", lang))
 	}
 
@@ -1674,7 +1674,7 @@ func (h *Handler) CreatePaymentPlan(c echo.Context) error {
 	body.Name = strings.TrimSpace(body.Name)
 	body.Description = strings.TrimSpace(body.Description)
 
-	if len(body.Name) > config.Data.MaxNameLength {
+	if utf8.RuneCountInString(body.Name) > config.Data.MaxNameLength {
 		return c.JSON(http.StatusOK, responses.New(false, "Name too long", lang))
 	}
 
@@ -1682,7 +1682,7 @@ func (h *Handler) CreatePaymentPlan(c echo.Context) error {
 		return c.JSON(http.StatusOK, responses.New(false, "Name too short", lang))
 	}
 
-	if len(body.Description) > config.Data.MaxDescriptionLength {
+	if utf8.RuneCountInString(body.Description) > config.Data.MaxDescriptionLength {
 		return c.JSON(http.StatusOK, responses.New(false, "Description too long", lang))
 	}
 
@@ -1880,7 +1880,7 @@ func (h *Handler) UpdatePaymentPlan(c echo.Context) error {
 	body.Name = strings.TrimSpace(body.Name)
 	body.Description = strings.TrimSpace(body.Description)
 
-	if len(body.Name) > config.Data.MaxNameLength {
+	if utf8.RuneCountInString(body.Name) > config.Data.MaxNameLength {
 		return c.JSON(http.StatusOK, responses.New(false, "Name too long", lang))
 	}
 
@@ -1888,7 +1888,7 @@ func (h *Handler) UpdatePaymentPlan(c echo.Context) error {
 		return c.JSON(http.StatusOK, responses.New(false, "Name too short", lang))
 	}
 
-	if len(body.Description) > config.Data.MaxDescriptionLength {
+	if utf8.RuneCountInString(body.Description) > config.Data.MaxDescriptionLength {
 		return c.JSON(http.StatusOK, responses.New(false, "Description too long", lang))
 	}
 

@@ -499,7 +499,7 @@ func (h *Handler) AddCashLogEntry(c echo.Context) error {
 	body.Title = strings.TrimSpace(body.Title)
 	body.Description = strings.TrimSpace(body.Description)
 
-	if len(body.Title) > config.Data.MaxNameLength {
+	if utf8.RuneCountInString(body.Title) > config.Data.MaxNameLength {
 		return c.JSON(http.StatusOK, responses.New(false, "Title too long", lang))
 	}
 
@@ -507,7 +507,7 @@ func (h *Handler) AddCashLogEntry(c echo.Context) error {
 		return c.JSON(http.StatusOK, responses.New(false, "Title too short", lang))
 	}
 
-	if len(body.Description) > config.Data.MaxDescriptionLength {
+	if utf8.RuneCountInString(body.Description) > config.Data.MaxDescriptionLength {
 		return c.JSON(http.StatusOK, responses.New(false, "Description too long", lang))
 	}
 
