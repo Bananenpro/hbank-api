@@ -538,7 +538,7 @@ func (h *Handler) GetGroupPicture(c echo.Context) error {
 		return c.JSON(http.StatusForbidden, responses.New(false, "Not a member/admin of the group", lang))
 	}
 
-	if c.QueryParam("id") != "" && c.QueryParam("id") != user.ProfilePictureId.String() {
+	if c.QueryParam("id") != "" && c.QueryParam("id") != group.GroupPictureId.String() {
 		return c.JSON(http.StatusNotFound, responses.New(false, "Wrong group picture id", lang))
 	}
 
