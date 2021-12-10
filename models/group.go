@@ -83,9 +83,10 @@ type GroupMembership struct {
 
 type GroupInvitation struct {
 	Base
-	Message string
-	GroupId uuid.UUID `gorm:"type:uuid"`
-	UserId  uuid.UUID `gorm:"type:uuid"`
+	GroupName string
+	Message   string
+	GroupId   uuid.UUID `gorm:"type:uuid"`
+	UserId    uuid.UUID `gorm:"type:uuid"`
 }
 
 type TransactionLogEntry struct {

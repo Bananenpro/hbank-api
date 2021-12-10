@@ -94,6 +94,7 @@ type invitation struct {
 	Id                string `json:"id"`
 	Created           int64  `json:"created"`
 	InvitationMessage string `json:"invitationMessage"`
+	GroupName         string `json:"groupName,omitempty"`
 	GroupId           string `json:"groupId,omitempty"`
 	UserId            string `json:"userId,omitempty"`
 }
@@ -105,6 +106,7 @@ func NewInvitations(invitations []models.GroupInvitation, count int64) interface
 		dtos[i].Created = in.Created
 		dtos[i].InvitationMessage = in.Message
 		dtos[i].UserId = in.UserId.String()
+		dtos[i].GroupName = in.GroupName
 		dtos[i].GroupId = in.GroupId.String()
 	}
 
@@ -137,6 +139,7 @@ func NewInvitation(invitationModel *models.GroupInvitation) interface{} {
 			Id:                invitationModel.Id.String(),
 			Created:           invitationModel.Created,
 			InvitationMessage: invitationModel.Message,
+			GroupName:         invitationModel.GroupName,
 			GroupId:           invitationModel.GroupId.String(),
 			UserId:            invitationModel.UserId.String(),
 		},

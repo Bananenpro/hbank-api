@@ -458,9 +458,10 @@ func (gs *GroupStore) CreateTransactionFromPaymentPlan(group *models.Group, send
 
 func (gs *GroupStore) CreateInvitation(group *models.Group, user *models.User, message string) (*models.GroupInvitation, error) {
 	invitation := &models.GroupInvitation{
-		Message: message,
-		GroupId: group.Id,
-		UserId:  user.Id,
+		Message:   message,
+		GroupName: group.Name,
+		GroupId:   group.Id,
+		UserId:    user.Id,
 	}
 
 	err := gs.db.Create(invitation).Error
