@@ -22,7 +22,7 @@ func NewUserStore(db *gorm.DB) *UserStore {
 	}
 }
 
-func (us *UserStore) GetAll(except *models.User, page, pageSize int, descending bool) ([]models.User, error) {
+func (us *UserStore) GetAll(except *models.User, searchInput string, page, pageSize int, descending bool) ([]models.User, error) {
 	var users []models.User
 	var err error
 
@@ -33,15 +33,15 @@ func (us *UserStore) GetAll(except *models.User, page, pageSize int, descending 
 
 	if except == nil {
 		if page < 0 || pageSize < 0 {
-			err = us.db.Omit("profile_picture").Order("name " + order).Find(&users).Error
+			err = us.db.Omit("profile_picture").Order("name "+order).Find(&users, "name LIKE ?", "%"+searchInput+"%").Error
 		} else {
-			err = us.db.Omit("profile_picture").Order("name " + order).Offset(page * pageSize).Limit(pageSize).Find(&users).Error
+			err = us.db.Omit("profile_picture").Order("name "+order).Offset(page*pageSize).Limit(pageSize).Find(&users, "name LIKE ?", "%"+searchInput+"%").Error
 		}
 	} else {
 		if page < 0 || pageSize < 0 {
-			err = us.db.Omit("profile_picture").Not("id = ?", except.Id).Order("name " + order).Find(&users).Error
+			err = us.db.Omit("profile_picture").Not("id = ?", except.Id).Order("name "+order).Find(&users, "name LIKE ?", "%"+searchInput+"%").Error
 		} else {
-			err = us.db.Omit("profile_picture").Not("id = ?", except.Id).Order("name " + order).Offset(page * pageSize).Limit(pageSize).Find(&users).Error
+			err = us.db.Omit("profile_picture").Not("id = ?", except.Id).Order("name "+order).Offset(page*pageSize).Limit(pageSize).Find(&users, "name LIKE ?", "%"+searchInput+"%").Error
 		}
 	}
 	return users, err

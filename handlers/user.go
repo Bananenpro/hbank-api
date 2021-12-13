@@ -58,9 +58,9 @@ func (h *Handler) GetUsers(c echo.Context) error {
 
 	var users []models.User
 	if services.StrToBool(c.QueryParams().Get("includeSelf")) {
-		users, err = h.userStore.GetAll(nil, page, pageSize, descending)
+		users, err = h.userStore.GetAll(nil, c.QueryParam("search"), page, pageSize, descending)
 	} else {
-		users, err = h.userStore.GetAll(authUser, page, pageSize, descending)
+		users, err = h.userStore.GetAll(authUser, c.QueryParam("search"), page, pageSize, descending)
 	}
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
