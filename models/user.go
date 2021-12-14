@@ -5,7 +5,7 @@ import (
 )
 
 type UserStore interface {
-	GetAll(except *User, searchInput string, page, pageSize int, descending bool) ([]User, error)
+	GetAll(exclude []uuid.UUID, searchInput string, page, pageSize int, descending bool) ([]User, error)
 	Count() (int64, error)
 	GetById(id uuid.UUID) (*User, error)
 	GetByEmail(email string) (*User, error)

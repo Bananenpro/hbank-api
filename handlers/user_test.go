@@ -60,20 +60,20 @@ func TestHandler_GetUsers(t *testing.T) {
 		tName         string
 		user          *models.User
 		pageSize      int
-		includeSelf   bool
+		exclude       string
 		wantCode      int
 		wantSuccess   bool
 		wantAllInfo   bool
 		wantUserCount int
 	}{
-		{tName: "All", user: user1, pageSize: 10, includeSelf: true, wantCode: http.StatusOK, wantSuccess: true, wantUserCount: 2},
-		{tName: "Don't include self", user: user1, pageSize: 10, includeSelf: false, wantCode: http.StatusOK, wantSuccess: true, wantUserCount: 1},
-		{tName: "Only 1 user", user: user1, pageSize: 1, includeSelf: true, wantCode: http.StatusOK, wantSuccess: true, wantUserCount: 1},
-		{tName: "Invalid page size", user: user1, pageSize: -1, includeSelf: true, wantCode: http.StatusBadRequest, wantSuccess: false},
+		{tName: "All", user: user1, pageSize: 10, exclude: "", wantCode: http.StatusOK, wantSuccess: true, wantUserCount: 2},
+		{tName: "Don't include self", user: user1, pageSize: 10, exclude: user1.Id.String(), wantCode: http.StatusOK, wantSuccess: true, wantUserCount: 1},
+		{tName: "Only 1 user", user: user1, pageSize: 1, exclude: "", wantCode: http.StatusOK, wantSuccess: true, wantUserCount: 1},
+		{tName: "Invalid page size", user: user1, pageSize: -1, exclude: "", wantCode: http.StatusBadRequest, wantSuccess: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.tName, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?pageSize=%d&includeSelf=%t", tt.pageSize, tt.includeSelf), nil)
+			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?pageSize=%d&exclude=%s", tt.pageSize, tt.exclude), nil)
 			rec := httptest.NewRecorder()
 			c := r.NewContext(req, rec)
 			c.Set("lang", "en")

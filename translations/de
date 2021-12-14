@@ -118,3 +118,4 @@
 "'count' query parameter too big"="'count' Anfrageparameter zu groß"
 "Successfully activated TwoFaOTP"="TwoFaOTP wurde erfolgreich aktiviert"
 "Successfully created new otp"="Erfolgreich neues OTP erstellt"
+"Invalid 'exclude' query parameter"="Ungültiger 'exclude' Anfrageparameter"
