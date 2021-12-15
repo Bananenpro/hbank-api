@@ -230,9 +230,9 @@ func (h *Handler) GetGroupMembers(c echo.Context) error {
 
 	var members []models.User
 	if includeSelf {
-		members, err = h.groupStore.GetMembers(nil, group, page, pageSize, descending)
+		members, err = h.groupStore.GetMembers(nil, c.QueryParam("search"), group, page, pageSize, descending)
 	} else {
-		members, err = h.groupStore.GetMembers(user, group, page, pageSize, descending)
+		members, err = h.groupStore.GetMembers(user, c.QueryParam("search"), group, page, pageSize, descending)
 	}
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -345,9 +345,9 @@ func (h *Handler) GetGroupAdmins(c echo.Context) error {
 	includeSelf := services.StrToBool(c.QueryParam("includeSelf"))
 	var admins []models.User
 	if includeSelf {
-		admins, err = h.groupStore.GetAdmins(nil, group, page, pageSize, descending)
+		admins, err = h.groupStore.GetAdmins(nil, c.QueryParam("search"), group, page, pageSize, descending)
 	} else {
-		admins, err = h.groupStore.GetAdmins(user, group, page, pageSize, descending)
+		admins, err = h.groupStore.GetAdmins(user, c.QueryParam("search"), group, page, pageSize, descending)
 	}
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -480,7 +480,7 @@ func (h *Handler) RemoveAdminRights(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	admins, err := h.groupStore.GetAdmins(nil, group, 0, 2, false)
+	admins, err := h.groupStore.GetAdmins(nil, "", group, 0, 2, false)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}

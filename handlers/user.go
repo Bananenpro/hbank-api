@@ -162,7 +162,7 @@ func (h *Handler) DeleteUser(c echo.Context) error {
 				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 			}
 
-			admins, err := h.groupStore.GetAdmins(nil, &g, 0, 2, false)
+			admins, err := h.groupStore.GetAdmins(nil, "", &g, 0, 2, false)
 			if err != nil {
 				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 			}
