@@ -559,9 +559,9 @@ func (gs *GroupStore) GetPaymentPlans(group *models.Group, user *models.User, pa
 	}
 
 	if page < 0 || pageSize < 0 {
-		err = gs.db.Order("name "+order).Where("group_id = ? AND sender_id = ?", group.Id, user.Id).Or("group_id = ? AND receiver_id = ?", group.Id, user.Id).Find(&paymentPlans).Error
+		err = gs.db.Order("next_execute "+order).Where("group_id = ? AND sender_id = ?", group.Id, user.Id).Or("group_id = ? AND receiver_id = ?", group.Id, user.Id).Find(&paymentPlans).Error
 	} else {
-		err = gs.db.Order("name "+order).Offset(page*pageSize).Limit(pageSize).Where("group_id = ? AND sender_id = ?", group.Id, user.Id).Or("group_id = ? AND receiver_id = ?", group.Id, user.Id).Find(&paymentPlans).Error
+		err = gs.db.Order("next_execute "+order).Offset(page*pageSize).Limit(pageSize).Where("group_id = ? AND sender_id = ?", group.Id, user.Id).Or("group_id = ? AND receiver_id = ?", group.Id, user.Id).Find(&paymentPlans).Error
 	}
 
 	return paymentPlans, err
@@ -583,9 +583,9 @@ func (gs *GroupStore) GetBankPaymentPlans(group *models.Group, page, pageSize in
 	}
 
 	if page < 0 || pageSize < 0 {
-		err = gs.db.Order("name "+order).Where("group_id = ? AND sender_is_bank = ?", group.Id, true).Or("group_id = ? AND receiver_is_bank = ?", group.Id, true).Find(&paymentPlans).Error
+		err = gs.db.Order("next_execute "+order).Where("group_id = ? AND sender_is_bank = ?", group.Id, true).Or("group_id = ? AND receiver_is_bank = ?", group.Id, true).Find(&paymentPlans).Error
 	} else {
-		err = gs.db.Order("name "+order).Where("group_id = ? AND sender_is_bank = ?", group.Id, true).Or("group_id = ? AND receiver_is_bank = ?", group.Id, true).Offset(page * pageSize).Limit(pageSize).Find(&paymentPlans).Error
+		err = gs.db.Order("next_execute "+order).Where("group_id = ? AND sender_is_bank = ?", group.Id, true).Or("group_id = ? AND receiver_is_bank = ?", group.Id, true).Offset(page * pageSize).Limit(pageSize).Find(&paymentPlans).Error
 	}
 
 	return paymentPlans, err
