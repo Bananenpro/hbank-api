@@ -312,9 +312,9 @@ func (gs *GroupStore) GetTransactionLog(group *models.Group, user *models.User, 
 	}
 
 	if page < 0 || pageSize < 0 {
-		err = gs.db.Order("created "+order).Where("group_id = ? AND sender_id = ?", group.Id, user.Id).Or("group_id = ? AND receiver_id = ?", group.Id, user.Id).Find(&log, "title LIKE ?", "%"+searchInput+"%").Error
+		err = gs.db.Order("created "+order).Where("group_id = ? AND sender_id = ? AND title LIKE ?", group.Id, user.Id, "%"+searchInput+"%").Or("group_id = ? AND receiver_id = ? AND title LIKE ?", group.Id, user.Id, "%"+searchInput+"%").Find(&log).Error
 	} else {
-		err = gs.db.Order("created "+order).Offset(page*pageSize).Limit(pageSize).Where("group_id = ? AND sender_id = ?", group.Id, user.Id).Or("group_id = ? AND receiver_id = ?", group.Id, user.Id).Find(&log, "title LIKE ?", "%"+searchInput+"%").Error
+		err = gs.db.Order("created "+order).Offset(page*pageSize).Limit(pageSize).Where("group_id = ? AND sender_id = ? AND title LIKE ?", group.Id, user.Id, "%"+searchInput+"%").Or("group_id = ? AND receiver_id = ? AND title LIKE ?", group.Id, user.Id, "%"+searchInput+"%").Find(&log).Error
 	}
 
 	return log, err
@@ -336,9 +336,9 @@ func (gs *GroupStore) GetBankTransactionLog(group *models.Group, searchInput str
 	}
 
 	if page < 0 || pageSize < 0 {
-		err = gs.db.Order("created "+order).Where("group_id = ? AND sender_is_bank = ?", group.Id, true).Or("group_id = ? AND receiver_is_bank = ?", group.Id, true).Find(&log, "title LIKE ?", "%"+searchInput+"%").Error
+		err = gs.db.Order("created "+order).Where("group_id = ? AND sender_is_bank = ? AND title LIKE ?", group.Id, true, "%"+searchInput+"%").Or("group_id = ? AND receiver_is_bank = ? AND title LIKE ?", group.Id, true, "%"+searchInput+"%").Find(&log).Error
 	} else {
-		err = gs.db.Order("created "+order).Offset(page*pageSize).Limit(pageSize).Where("group_id = ? AND sender_is_bank = ?", group.Id, true).Or("group_id = ? AND receiver_is_bank = ?", group.Id, true).Find(&log, "title LIKE ?", "%"+searchInput+"%").Error
+		err = gs.db.Order("created "+order).Offset(page*pageSize).Limit(pageSize).Where("group_id = ? AND sender_is_bank = ? AND title LIKE ?", group.Id, true, "%"+searchInput+"%").Or("group_id = ? AND receiver_is_bank = ? AND title LIKE ?", group.Id, true, "%"+searchInput+"%").Find(&log, "title LIKE ?").Error
 	}
 
 	return log, err
