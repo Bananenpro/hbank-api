@@ -769,7 +769,7 @@ func (h *Handler) GetTransactionById(c echo.Context) error {
 
 }
 
-// /v1/group/:id/transaction?bank=bool&page=int&pageSize=int&oldestFirst=bool (GET)
+// /v1/group/:id/transaction?bank=bool&search=string&page=int&pageSize=int&oldestFirst=bool (GET)
 func (h *Handler) GetTransactionLog(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -828,7 +828,7 @@ func (h *Handler) GetTransactionLog(c echo.Context) error {
 			return c.JSON(http.StatusForbidden, responses.New(false, "Not a member of the group", lang))
 		}
 
-		log, err := h.groupStore.GetTransactionLog(group, user, page, pageSize, oldestFirst)
+		log, err := h.groupStore.GetTransactionLog(group, user, c.QueryParam("search"), page, pageSize, oldestFirst)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
@@ -849,7 +849,7 @@ func (h *Handler) GetTransactionLog(c echo.Context) error {
 			return c.JSON(http.StatusForbidden, responses.New(false, "Not an admin of the group", lang))
 		}
 
-		log, err := h.groupStore.GetBankTransactionLog(group, page, pageSize, oldestFirst)
+		log, err := h.groupStore.GetBankTransactionLog(group, c.QueryParam("search"), page, pageSize, oldestFirst)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}

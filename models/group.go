@@ -30,9 +30,9 @@ type GroupStore interface {
 	IsInGroup(group *Group, user *User) (bool, error)
 	GetUserCount(group *Group) (int64, error)
 
-	GetTransactionLog(group *Group, user *User, page, pageSize int, oldestFirst bool) ([]TransactionLogEntry, error)
+	GetTransactionLog(group *Group, user *User, searchInput string, page, pageSize int, oldestFirst bool) ([]TransactionLogEntry, error)
 	TransactionLogEntryCount(group *Group, user *User) (int64, error)
-	GetBankTransactionLog(group *Group, page, pageSize int, oldestFirst bool) ([]TransactionLogEntry, error)
+	GetBankTransactionLog(group *Group, searchInput string, page, pageSize int, oldestFirst bool) ([]TransactionLogEntry, error)
 	BankTransactionLogEntryCount(group *Group) (int64, error)
 	GetTransactionLogEntryById(group *Group, id uuid.UUID) (*TransactionLogEntry, error)
 	GetLastTransactionLogEntry(group *Group, user *User) (*TransactionLogEntry, error)

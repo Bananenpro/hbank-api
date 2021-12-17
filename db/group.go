@@ -302,7 +302,7 @@ func (gs *GroupStore) GetUserCount(group *models.Group) (int64, error) {
 	return count, err
 }
 
-func (gs *GroupStore) GetTransactionLog(group *models.Group, user *models.User, page, pageSize int, oldestFirst bool) ([]models.TransactionLogEntry, error) {
+func (gs *GroupStore) GetTransactionLog(group *models.Group, user *models.User, searchInput string, page, pageSize int, oldestFirst bool) ([]models.TransactionLogEntry, error) {
 	var log []models.TransactionLogEntry
 	var err error
 
@@ -312,9 +312,9 @@ func (gs *GroupStore) GetTransactionLog(group *models.Group, user *models.User, 
 	}
 
 	if page < 0 || pageSize < 0 {
-		err = gs.db.Order("created "+order).Where("group_id = ? AND sender_id = ?", group.Id, user.Id).Or("group_id = ? AND receiver_id = ?", group.Id, user.Id).Find(&log).Error
+		err = gs.db.Order("created "+order).Where("group_id = ? AND sender_id = ?", group.Id, user.Id).Or("group_id = ? AND receiver_id = ?", group.Id, user.Id).Find(&log, "title LIKE ?", "%"+searchInput+"%").Error
 	} else {
-		err = gs.db.Order("created "+order).Offset(page*pageSize).Limit(pageSize).Where("group_id = ? AND sender_id = ?", group.Id, user.Id).Or("group_id = ? AND receiver_id = ?", group.Id, user.Id).Find(&log).Find(&log).Error
+		err = gs.db.Order("created "+order).Offset(page*pageSize).Limit(pageSize).Where("group_id = ? AND sender_id = ?", group.Id, user.Id).Or("group_id = ? AND receiver_id = ?", group.Id, user.Id).Find(&log, "title LIKE ?", "%"+searchInput+"%").Error
 	}
 
 	return log, err
@@ -326,7 +326,7 @@ func (gs *GroupStore) TransactionLogEntryCount(group *models.Group, user *models
 	return count, err
 }
 
-func (gs *GroupStore) GetBankTransactionLog(group *models.Group, page, pageSize int, oldestFirst bool) ([]models.TransactionLogEntry, error) {
+func (gs *GroupStore) GetBankTransactionLog(group *models.Group, searchInput string, page, pageSize int, oldestFirst bool) ([]models.TransactionLogEntry, error) {
 	var log []models.TransactionLogEntry
 	var err error
 
@@ -336,9 +336,9 @@ func (gs *GroupStore) GetBankTransactionLog(group *models.Group, page, pageSize 
 	}
 
 	if page < 0 || pageSize < 0 {
-		err = gs.db.Order("created "+order).Where("group_id = ? AND sender_is_bank = ?", group.Id, true).Or("group_id = ? AND receiver_is_bank = ?", group.Id, true).Find(&log).Error
+		err = gs.db.Order("created "+order).Where("group_id = ? AND sender_is_bank = ?", group.Id, true).Or("group_id = ? AND receiver_is_bank = ?", group.Id, true).Find(&log, "title LIKE ?", "%"+searchInput+"%").Error
 	} else {
-		err = gs.db.Order("created "+order).Offset(page*pageSize).Limit(pageSize).Where("group_id = ? AND sender_is_bank = ?", group.Id, true).Or("group_id = ? AND receiver_is_bank = ?", group.Id, true).Find(&log).Find(&log).Error
+		err = gs.db.Order("created "+order).Offset(page*pageSize).Limit(pageSize).Where("group_id = ? AND sender_is_bank = ?", group.Id, true).Or("group_id = ? AND receiver_is_bank = ?", group.Id, true).Find(&log, "title LIKE ?", "%"+searchInput+"%").Error
 	}
 
 	return log, err
