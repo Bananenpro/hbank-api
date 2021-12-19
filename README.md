@@ -180,6 +180,11 @@ sudo systemctl enable --now hbank-api.service
 sudo systemctl enable --now hbank-payment-plans.timer
 ```
 
+Set the system timezone to UTC to avoid problems with payment plan execution:
+```bash
+sudo timedatectl set-timezone UTC
+```
+
 ## Configuration
 
 HBank-API is looking for configuration in the following locations in order of decreasing precedence: `<working dir>/config.json`, `XDG_CONFIG_HOME/hbank/config.json`.
