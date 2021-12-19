@@ -1419,7 +1419,7 @@ func (h *Handler) GetPaymentPlanById(c echo.Context) error {
 
 }
 
-// /v1/group/:id/paymentPlan?bank=bool&page=int&pageSize=int&oldestFirst=bool (GET)
+// /v1/group/:id/paymentPlan?bank=bool&search=string&page=int&pageSize=int&oldestFirst=bool (GET)
 func (h *Handler) GetPaymentPlans(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -1478,7 +1478,7 @@ func (h *Handler) GetPaymentPlans(c echo.Context) error {
 			return c.JSON(http.StatusForbidden, responses.New(false, "Not a member of the group", lang))
 		}
 
-		paymentPlans, err := h.groupStore.GetPaymentPlans(group, user, page, pageSize, oldestFirst)
+		paymentPlans, err := h.groupStore.GetPaymentPlans(group, user, c.QueryParam("search"), page, pageSize, oldestFirst)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
@@ -1499,7 +1499,7 @@ func (h *Handler) GetPaymentPlans(c echo.Context) error {
 			return c.JSON(http.StatusForbidden, responses.New(false, "Not an admin of the group", lang))
 		}
 
-		paymentPlans, err := h.groupStore.GetBankPaymentPlans(group, page, pageSize, oldestFirst)
+		paymentPlans, err := h.groupStore.GetBankPaymentPlans(group, c.QueryParam("search"), page, pageSize, oldestFirst)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}

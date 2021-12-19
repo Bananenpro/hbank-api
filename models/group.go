@@ -49,9 +49,9 @@ type GroupStore interface {
 	GetInvitationByGroupAndUser(group *Group, user *User) (*GroupInvitation, error)
 	DeleteInvitation(invitation *GroupInvitation) error
 
-	GetPaymentPlans(group *Group, user *User, page, pageSize int, descending bool) ([]PaymentPlan, error)
+	GetPaymentPlans(group *Group, user *User, searchInput string, page, pageSize int, descending bool) ([]PaymentPlan, error)
 	PaymentPlanCount(group *Group, user *User) (int64, error)
-	GetBankPaymentPlans(group *Group, page, pageSize int, descending bool) ([]PaymentPlan, error)
+	GetBankPaymentPlans(group *Group, searchInput string, page, pageSize int, descending bool) ([]PaymentPlan, error)
 	BankPaymentPlanCount(group *Group) (int64, error)
 	GetPaymentPlansThatNeedToBeExecuted() ([]PaymentPlan, error)
 	GetPaymentPlanById(group *Group, id uuid.UUID) (*PaymentPlan, error)

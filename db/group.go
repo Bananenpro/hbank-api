@@ -549,7 +549,7 @@ func (gs *GroupStore) DeleteInvitation(invitation *models.GroupInvitation) error
 	return gs.db.Delete(invitation).Error
 }
 
-func (gs *GroupStore) GetPaymentPlans(group *models.Group, user *models.User, page, pageSize int, descending bool) ([]models.PaymentPlan, error) {
+func (gs *GroupStore) GetPaymentPlans(group *models.Group, user *models.User, searchInput string, page, pageSize int, descending bool) ([]models.PaymentPlan, error) {
 	var paymentPlans []models.PaymentPlan
 	var err error
 
@@ -559,9 +559,9 @@ func (gs *GroupStore) GetPaymentPlans(group *models.Group, user *models.User, pa
 	}
 
 	if page < 0 || pageSize < 0 {
-		err = gs.db.Order("next_execute "+order).Where("group_id = ? AND sender_id = ?", group.Id, user.Id).Or("group_id = ? AND receiver_id = ?", group.Id, user.Id).Find(&paymentPlans).Error
+		err = gs.db.Order("next_execute "+order).Where("group_id = ? AND sender_id = ? AND name LIKE ?", group.Id, user.Id, "%"+searchInput+"%").Or("group_id = ? AND receiver_id = ? AND name LIKE ?", group.Id, user.Id, "%"+searchInput+"%").Find(&paymentPlans).Error
 	} else {
-		err = gs.db.Order("next_execute "+order).Offset(page*pageSize).Limit(pageSize).Where("group_id = ? AND sender_id = ?", group.Id, user.Id).Or("group_id = ? AND receiver_id = ?", group.Id, user.Id).Find(&paymentPlans).Error
+		err = gs.db.Order("next_execute "+order).Offset(page*pageSize).Limit(pageSize).Where("group_id = ? AND sender_id = ? AND name LIKE ?", group.Id, user.Id, "%"+searchInput+"%").Or("group_id = ? AND receiver_id = ? AND name LIKE ?", group.Id, user.Id, "%"+searchInput+"%").Find(&paymentPlans).Error
 	}
 
 	return paymentPlans, err
@@ -573,7 +573,7 @@ func (gs *GroupStore) PaymentPlanCount(group *models.Group, user *models.User) (
 	return count, err
 }
 
-func (gs *GroupStore) GetBankPaymentPlans(group *models.Group, page, pageSize int, descending bool) ([]models.PaymentPlan, error) {
+func (gs *GroupStore) GetBankPaymentPlans(group *models.Group, searchInput string, page, pageSize int, descending bool) ([]models.PaymentPlan, error) {
 	var paymentPlans []models.PaymentPlan
 	var err error
 
@@ -583,9 +583,9 @@ func (gs *GroupStore) GetBankPaymentPlans(group *models.Group, page, pageSize in
 	}
 
 	if page < 0 || pageSize < 0 {
-		err = gs.db.Order("next_execute "+order).Where("group_id = ? AND sender_is_bank = ?", group.Id, true).Or("group_id = ? AND receiver_is_bank = ?", group.Id, true).Find(&paymentPlans).Error
+		err = gs.db.Order("next_execute "+order).Where("group_id = ? AND sender_is_bank = ? AND name LIKE ?", group.Id, true, "%"+searchInput+"%").Or("group_id = ? AND receiver_is_bank = ? AND name LIKE ?", group.Id, true, "%"+searchInput+"%").Find(&paymentPlans).Error
 	} else {
-		err = gs.db.Order("next_execute "+order).Where("group_id = ? AND sender_is_bank = ?", group.Id, true).Or("group_id = ? AND receiver_is_bank = ?", group.Id, true).Offset(page * pageSize).Limit(pageSize).Find(&paymentPlans).Error
+		err = gs.db.Order("next_execute "+order).Where("group_id = ? AND sender_is_bank = ? AND name LIKE ?", group.Id, true, "%"+searchInput+"%").Or("group_id = ? AND receiver_is_bank = ? AND name LIKE ?", group.Id, true, "%"+searchInput+"%").Offset(page * pageSize).Limit(pageSize).Find(&paymentPlans).Error
 	}
 
 	return paymentPlans, err
