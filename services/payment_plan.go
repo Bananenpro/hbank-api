@@ -27,12 +27,14 @@ func ExecutePaymentPlan(userStore models.UserStore, groupStore models.GroupStore
 			return err
 		}
 
-		balance, err := groupStore.GetUserBalance(group, sender)
-		if err != nil {
-			return err
-		}
-		if balance-paymentPlan.Amount < 0 {
-			break
+		if !paymentPlan.SenderIsBank {
+			balance, err := groupStore.GetUserBalance(group, sender)
+			if err != nil {
+				return err
+			}
+			if balance-paymentPlan.Amount < 0 {
+				break
+			}
 		}
 
 		_, err = groupStore.CreateTransactionFromPaymentPlan(group, paymentPlan.SenderIsBank, paymentPlan.ReceiverIsBank, sender, receiver, paymentPlan.Name, paymentPlan.Description, paymentPlan.Amount, paymentPlan.Id)
