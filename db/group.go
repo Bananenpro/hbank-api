@@ -234,6 +234,34 @@ func (gs *GroupStore) AdminCount(group *models.Group) (int64, error) {
 	return count, err
 }
 
+func (gs *GroupStore) GetMemberships(except *models.User, searchInput string, group *models.Group, page int, pageSize int, descending bool) ([]models.GroupMembership, error) {
+	var memberships []models.GroupMembership
+	var err error
+
+	order := "ASC"
+	if descending {
+		order = "DESC"
+	}
+
+	if except == nil {
+		except = &models.User{}
+	}
+
+	if page < 0 || pageSize < 0 {
+		err = gs.db.Model(group).Order("user_name "+order).Not("user_id = ?", except.Id).Association("Memberships").Find(&memberships, "user_name LIKE ?", "%"+searchInput+"%")
+	} else {
+		err = gs.db.Model(group).Order("user_name "+order).Not("user_id = ?", except.Id).Offset(page*pageSize).Limit(pageSize).Association("Memberships").Find(&memberships, "user_name LIKE ?", "%"+searchInput+"%")
+	}
+
+	return memberships, err
+}
+
+func (gs *GroupStore) MembershipCount(group *models.Group) (int64, error) {
+	var count int64
+	err := gs.db.Model(&models.GroupMembership{}).Where("group_id = ?", group.Id).Count(&count).Error
+	return count, err
+}
+
 func (gs *GroupStore) IsAdmin(group *models.Group, user *models.User) (bool, error) {
 	err := gs.db.First(&models.GroupMembership{}, "group_id = ? AND user_id = ? AND is_admin = ?", group.Id, user.Id, true).Error
 	if err != nil {

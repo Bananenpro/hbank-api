@@ -27,6 +27,9 @@ type GroupStore interface {
 	AddAdmin(group *Group, user *User) error
 	RemoveAdmin(group *Group, user *User) error
 
+	GetMemberships(except *User, searchInput string, group *Group, page, pageSize int, descending bool) ([]GroupMembership, error)
+	MembershipCount(group *Group) (int64, error)
+
 	IsInGroup(group *Group, user *User) (bool, error)
 	GetUserCount(group *Group) (int64, error)
 

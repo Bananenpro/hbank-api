@@ -172,6 +172,113 @@ func (h *Handler) CreateGroup(c echo.Context) error {
 	return c.JSON(http.StatusCreated, responses.NewGroup(group, !body.OnlyAdmin, true))
 }
 
+// /v1/group/:id/user (GET)
+func (h *Handler) GetGroupUsers(c echo.Context) error {
+	lang := c.Get("lang").(string)
+	userId := c.Get("userId").(uuid.UUID)
+	user, err := h.userStore.GetById(userId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
+	}
+
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	}
+
+	page := 0
+	pageSize := 20
+
+	if c.QueryParam("page") != "" {
+		page, err = strconv.Atoi(c.QueryParam("page"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "'page' query parameter not a number", lang))
+		}
+	}
+
+	if c.QueryParam("pageSize") != "" {
+		pageSize, err = strconv.Atoi(c.QueryParam("pageSize"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "'pageSize' query parameter not a number", lang))
+		}
+		if pageSize > config.Data.MaxPageSize || pageSize < 1 {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "Unsupported page size", lang))
+		}
+	}
+
+	descending := services.StrToBool(c.QueryParam("descending"))
+	includeSelf := services.StrToBool(c.QueryParam("includeSelf"))
+
+	group, err := h.groupStore.GetById(id)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if group == nil {
+		return c.JSON(http.StatusNotFound, responses.NewNotFound(lang))
+	}
+
+	isInGroup, err := h.groupStore.IsInGroup(group, user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if !isInGroup {
+		return c.JSON(http.StatusForbidden, responses.New(false, "Not a member/admin of the group", lang))
+	}
+
+	var memberships []models.GroupMembership
+	if includeSelf {
+		memberships, err = h.groupStore.GetMemberships(nil, c.QueryParam("search"), group, page, pageSize, descending)
+	} else {
+		memberships, err = h.groupStore.GetMemberships(user, c.QueryParam("search"), group, page, pageSize, descending)
+	}
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	count, err := h.groupStore.MembershipCount(group)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	type dto struct {
+		Id               string `json:"id"`
+		Name             string `json:"name"`
+		ProfilePictureId string `json:"profilePictureId"`
+		Member           bool   `json:"member"`
+		Admin            bool   `json:"admin"`
+	}
+	dtos := make([]dto, len(memberships))
+	for i, m := range memberships {
+		member, err := h.userStore.GetById(m.UserId)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+		dtos[i] = dto{
+			Id:               member.Id.String(),
+			Name:             member.Name,
+			ProfilePictureId: member.ProfilePictureId.String(),
+			Member:           m.IsMember,
+			Admin:            m.IsAdmin,
+		}
+	}
+
+	type response struct {
+		responses.Base
+		Users []dto `json:"users"`
+		Count int64 `json:"count"`
+	}
+	return c.JSON(http.StatusOK, response{
+		Base: responses.Base{
+			Success: true,
+		},
+		Users: dtos,
+		Count: count,
+	})
+}
+
 // /v1/group/:id/member (GET)
 func (h *Handler) GetGroupMembers(c echo.Context) error {
 	lang := c.Get("lang").(string)

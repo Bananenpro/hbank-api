@@ -99,6 +99,14 @@ type invitation struct {
 	UserId            string `json:"userId,omitempty"`
 }
 
+type groupUser struct {
+	Id               string `json:"id"`
+	Name             string `json:"name"`
+	ProfilePictureId string `json:"profilePictureId"`
+	Member           bool   `json:"member"`
+	Admin            bool   `json:"admin"`
+}
+
 func NewInvitations(invitations []models.GroupInvitation, count int64) interface{} {
 	dtos := make([]invitation, len(invitations))
 	for i, in := range invitations {
