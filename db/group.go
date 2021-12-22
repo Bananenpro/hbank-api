@@ -338,7 +338,7 @@ func (gs *GroupStore) GetBankTransactionLog(group *models.Group, searchInput str
 	if page < 0 || pageSize < 0 {
 		err = gs.db.Order("created "+order).Where("group_id = ? AND sender_is_bank = ? AND title LIKE ?", group.Id, true, "%"+searchInput+"%").Or("group_id = ? AND receiver_is_bank = ? AND title LIKE ?", group.Id, true, "%"+searchInput+"%").Find(&log).Error
 	} else {
-		err = gs.db.Order("created "+order).Offset(page*pageSize).Limit(pageSize).Where("group_id = ? AND sender_is_bank = ? AND title LIKE ?", group.Id, true, "%"+searchInput+"%").Or("group_id = ? AND receiver_is_bank = ? AND title LIKE ?", group.Id, true, "%"+searchInput+"%").Find(&log, "title LIKE ?").Error
+		err = gs.db.Order("created "+order).Offset(page*pageSize).Limit(pageSize).Where("group_id = ? AND sender_is_bank = ? AND title LIKE ?", group.Id, true, "%"+searchInput+"%").Or("group_id = ? AND receiver_is_bank = ? AND title LIKE ?", group.Id, true, "%"+searchInput+"%").Find(&log).Error
 	}
 
 	return log, err
