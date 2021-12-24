@@ -424,21 +424,21 @@ func (us *UserStore) SetForgotPasswordEmailLastSent(email string, time int64) er
 	return us.db.Updates(&lastSent).Error
 }
 
-func (us *UserStore) GetCashLog(user *models.User, page, pageSize int, oldestFirst bool) ([]models.CashLogEntry, error) {
+func (us *UserStore) GetCashLog(user *models.User, searchInput string, page, pageSize int, oldestFirst bool) ([]models.CashLogEntry, error) {
 	var cashLog []models.CashLogEntry
 	var err error
 	if page < 0 || pageSize < 0 {
 		if oldestFirst {
-			err = us.db.Where("user_id = ?", user.Id).Order("created ASC").Find(&cashLog).Error
+			err = us.db.Where("user_id = ? AND change_title LIKE ?", user.Id, "%"+searchInput+"%").Order("created ASC").Find(&cashLog).Error
 		} else {
-			err = us.db.Where("user_id = ?", user.Id).Order("created DESC").Find(&cashLog).Error
+			err = us.db.Where("user_id = ? AND change_title LIKE ?", user.Id, "%"+searchInput+"%").Order("created DESC").Find(&cashLog).Error
 		}
 	} else {
 		offset := page * pageSize
 		if oldestFirst {
-			err = us.db.Where("user_id = ?", user.Id).Order("created ASC").Offset(offset).Limit(pageSize).Find(&cashLog).Error
+			err = us.db.Where("user_id = ? AND change_title LIKE ?", user.Id, "%"+searchInput+"%").Order("created ASC").Offset(offset).Limit(pageSize).Find(&cashLog).Error
 		} else {
-			err = us.db.Where("user_id = ?", user.Id).Order("created DESC").Offset(offset).Limit(pageSize).Find(&cashLog).Error
+			err = us.db.Where("user_id = ? AND change_title LIKE ?", user.Id, "%"+searchInput+"%").Order("created DESC").Offset(offset).Limit(pageSize).Find(&cashLog).Error
 		}
 	}
 

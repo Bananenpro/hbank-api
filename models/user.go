@@ -19,7 +19,7 @@ type UserStore interface {
 
 	GetProfilePicture(user *User) ([]byte, error)
 
-	GetCashLog(user *User, page, pageSize int, oldestFirst bool) ([]CashLogEntry, error)
+	GetCashLog(user *User, searchInput string, page, pageSize int, oldestFirst bool) ([]CashLogEntry, error)
 	CashLogEntryCount(user *User) (int64, error)
 	GetLastCashLogEntry(user *User) (*CashLogEntry, error)
 	GetCashLogEntryById(user *User, id uuid.UUID) (*CashLogEntry, error)

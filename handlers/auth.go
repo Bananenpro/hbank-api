@@ -717,7 +717,7 @@ func (h *Handler) Logout(c echo.Context) error {
 		}
 
 		err = h.userStore.DeleteRefreshToken(refreshToken)
-		if err != nil || refreshToken == nil {
+		if err != nil {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 	}

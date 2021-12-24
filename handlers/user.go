@@ -470,7 +470,7 @@ func (h *Handler) GetCashLog(c echo.Context) error {
 
 	oldestFirst := services.StrToBool(c.QueryParam("oldestFirst"))
 
-	entries, err := h.userStore.GetCashLog(user, page, pageSize, oldestFirst)
+	entries, err := h.userStore.GetCashLog(user, c.QueryParam("search"), page, pageSize, oldestFirst)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
