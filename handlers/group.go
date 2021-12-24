@@ -851,14 +851,6 @@ func (h *Handler) GetTransactionById(c echo.Context) error {
 	isReceiver := bytes.Equal(user.Id[:], transaction.ReceiverId[:])
 
 	if isSender || isReceiver {
-		isMember, err := h.groupStore.IsMember(group, user)
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-		}
-		if !isMember {
-			return c.JSON(http.StatusForbidden, responses.New(false, "Not a member of the group", lang))
-		}
-
 		return c.JSON(http.StatusOK, responses.NewTransaction(transaction, user))
 	} else if transaction.SenderIsBank || transaction.ReceiverIsBank {
 		isAdmin, err := h.groupStore.IsAdmin(group, user)
