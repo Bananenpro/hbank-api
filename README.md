@@ -211,7 +211,7 @@ HBank-API is looking for configuration in the following locations in order of de
   "emailUsername": "", // Username for email account to use for sending emails
   "emailPassword": "", // Password for email account to use for sending emails
   "minNameLength": 3, // Min length of names like usernames, group names, transaction names, payment plan names, etc.
-  "maxNameLength": 20, // Max length of names like usernames, group names, transaction names, payment plan names, etc.
+  "maxNameLength": 30, // Max length of names like usernames, group names, transaction names, payment plan names, etc.
   "minDescriptionLength": 0, // Min length of descriptions like group descriptions, transaction descriptions, payment plan descriptions, etc.
   "maxDescriptionLength": 256, // Max length of names like group descriptions, transaction descriptions, payment plan descriptions, etc.
   "minPasswordLength": 6, // Min password length
