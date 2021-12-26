@@ -111,7 +111,7 @@ func (h *Handler) GetUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.NewUser(user))
 }
 
-// /v1/user (DELETE)
+// /v1/user/delete (POST)
 func (h *Handler) DeleteUser(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	userId := c.Get("userId").(uuid.UUID)
