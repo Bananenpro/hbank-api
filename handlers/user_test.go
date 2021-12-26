@@ -316,7 +316,7 @@ func TestHandler_DeleteUser(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Empty(t, recoveryCodes, "RecoveryCodes")
 
-				cashLog, err := us.GetCashLog(tt.user, -1, -1, false)
+				cashLog, err := us.GetCashLog(tt.user, "", -1, -1, false)
 				assert.NoError(t, err)
 				assert.Empty(t, cashLog, "CashLog")
 
@@ -730,7 +730,7 @@ func TestHandler_AddCashLogEntry(t *testing.T) {
 	}{
 		{tName: "Success", user: user1, entry: bindings.AddCashLogEntry{Title: "Test"}, wantCode: http.StatusCreated, wantSuccess: true, wantMessage: "Successfully added new cash log entry"},
 		{tName: "Title too short", user: user2, entry: bindings.AddCashLogEntry{Title: "    hi   "}, wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Title too short"},
-		{tName: "Title too long", user: user2, entry: bindings.AddCashLogEntry{Title: "123456789012345678901"}, wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Title too long"},
+		{tName: "Title too long", user: user2, entry: bindings.AddCashLogEntry{Title: "12345678901234567890123456789012"}, wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Title too long"},
 		{tName: "Description too long", user: user2, entry: bindings.AddCashLogEntry{Title: "Test", Description: strings.Repeat("a", 257)}, wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Description too long"},
 	}
 	for _, tt := range tests {
@@ -751,7 +751,7 @@ func TestHandler_AddCashLogEntry(t *testing.T) {
 			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"success":%t`, tt.wantSuccess))
 			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
 
-			log, _ := us.GetCashLog(tt.user, 0, 10, false)
+			log, _ := us.GetCashLog(tt.user, "", 0, 10, false)
 			if tt.wantSuccess {
 				assert.Equal(t, 1, len(log))
 			} else {
