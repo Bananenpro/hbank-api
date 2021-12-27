@@ -268,7 +268,7 @@ func (h *Handler) SetProfilePicture(c echo.Context) error {
 
 	user.ProfilePicture = data
 	user.ProfilePictureId = uuid.New()
-	err = h.userStore.Update(user)
+	err = h.userStore.UpdateProfilePicture(user)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}

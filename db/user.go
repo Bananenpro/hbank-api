@@ -79,7 +79,11 @@ func (us *UserStore) Create(user *models.User) error {
 }
 
 func (us *UserStore) Update(user *models.User) error {
-	return us.db.Select("*").Updates(user).Error
+	return us.db.Select("*").Omit("profile_picture").Updates(user).Error
+}
+
+func (us *UserStore) UpdateProfilePicture(user *models.User) error {
+	return us.db.Select("profile_picture", "profile_picture_id").Updates(user).Error
 }
 
 func (us *UserStore) Delete(user *models.User) error {

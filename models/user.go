@@ -18,6 +18,7 @@ type UserStore interface {
 	RemoveDeleteToken(user *User) error
 
 	GetProfilePicture(user *User) ([]byte, error)
+	UpdateProfilePicture(user *User) error
 
 	GetCashLog(user *User, searchInput string, page, pageSize int, oldestFirst bool) ([]CashLogEntry, error)
 	CashLogEntryCount(user *User) (int64, error)
