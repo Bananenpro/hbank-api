@@ -172,6 +172,66 @@ func (h *Handler) CreateGroup(c echo.Context) error {
 	return c.JSON(http.StatusCreated, responses.NewGroup(group, !body.OnlyAdmin, true))
 }
 
+// /v1/group/:id (PUT)
+func (h *Handler) UpdateGroup(c echo.Context) error {
+	lang := c.Get("lang").(string)
+
+	userId := c.Get("userId").(uuid.UUID)
+	user, err := h.userStore.GetById(userId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
+	}
+
+	groupId, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	}
+	group, err := h.groupStore.GetById(groupId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if group == nil {
+		return c.JSON(http.StatusNotFound, responses.New(false, "Group not found", lang))
+	}
+
+	var body bindings.UpdateGroup
+	err = c.Bind(&body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
+	}
+
+	isAdmin, err := h.groupStore.IsAdmin(group, user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if !isAdmin {
+		return c.JSON(http.StatusForbidden, responses.New(false, "Not an admin of the group", lang))
+	}
+
+	body.Description = strings.TrimSpace(body.Description)
+
+	if utf8.RuneCountInString(body.Description) > config.Data.MaxDescriptionLength {
+		return c.JSON(http.StatusOK, responses.New(false, "Description too long", lang))
+	}
+
+	if utf8.RuneCountInString(body.Description) < config.Data.MinDescriptionLength {
+		return c.JSON(http.StatusOK, responses.New(false, "Description too short", lang))
+	}
+
+	group.Description = body.Description
+	h.groupStore.Update(group)
+
+	isMember, err := h.groupStore.IsMember(group, user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	return c.JSON(http.StatusOK, responses.NewGroup(group, isMember, isAdmin))
+}
+
 // /v1/group/:id/user (GET)
 func (h *Handler) GetGroupUsers(c echo.Context) error {
 	lang := c.Get("lang").(string)

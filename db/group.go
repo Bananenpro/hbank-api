@@ -73,6 +73,9 @@ func (gs *GroupStore) Create(group *models.Group) error {
 }
 
 func (gs *GroupStore) Update(group *models.Group) error {
+	if group.Description == "" {
+		return gs.db.Select("description").Updates(group).Error
+	}
 	return gs.db.Updates(group).Error
 }
 

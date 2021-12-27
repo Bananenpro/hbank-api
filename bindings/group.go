@@ -6,6 +6,10 @@ type CreateGroup struct {
 	OnlyAdmin   bool   `json:"onlyAdmin" form:"onlyAdmin"`
 }
 
+type UpdateGroup struct {
+	Description string `json:"description" from:"description"`
+}
+
 type CreateTransaction struct {
 	Title       string `json:"title" form:"title"`
 	Description string `json:"description" form:"description"`
