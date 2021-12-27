@@ -3,7 +3,6 @@ package handlers
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -15,8 +14,8 @@ import (
 	"github.com/Bananenpro/hbank-api/models"
 	"github.com/Bananenpro/hbank-api/responses"
 	"github.com/Bananenpro/hbank-api/services"
+	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/google/uuid"
-	"github.com/h2non/bimg"
 	"github.com/labstack/echo/v4"
 )
 
@@ -729,7 +728,21 @@ func (h *Handler) GetGroupPicture(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, responses.New(false, "No group picture set", lang))
 	}
 
-	data, err := bimg.NewImage(groupPicture).Thumbnail(size)
+	// data, err := bimg.NewImage(groupPicture).Thumbnail(size)
+	img, err := vips.NewImageFromBuffer(groupPicture)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	err = img.Thumbnail(size, size, vips.InterestingCentre)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	data, _, err := img.ExportJpeg(vips.NewJpegExportParams())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
 
 	return c.Blob(http.StatusOK, "image/jpeg", data)
 }
@@ -759,6 +772,14 @@ func (h *Handler) SetGroupPicture(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, responses.New(false, "Group not found", lang))
 	}
 
+	isAdmin, err := h.groupStore.IsAdmin(group, user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if !isAdmin {
+		return c.JSON(http.StatusForbidden, responses.New(false, "Not an admin of the group", lang))
+	}
+
 	file, err := c.FormFile("groupPicture")
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing group picture file", lang))
@@ -774,42 +795,26 @@ func (h *Handler) SetGroupPicture(c echo.Context) error {
 	}
 	defer src.Close()
 
-	var buffer bytes.Buffer
-	_, err = io.Copy(&buffer, src)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-	data := buffer.Bytes()
-
-	img := bimg.NewImage(data)
-	if img.Type() == "unknown" {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "File is not an image", lang))
-	}
-
-	data, err = img.Convert(bimg.JPEG)
+	img, err := vips.NewImageFromReader(src)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	data, err = bimg.NewImage(data).AutoRotate()
+	err = img.AutoRotate()
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	data, err = bimg.NewImage(data).Thumbnail(config.Data.ProfilePictureSize)
+	err = img.Thumbnail(config.Data.ProfilePictureSize, config.Data.ProfilePictureSize, vips.InterestingCentre)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	isAdmin, err := h.groupStore.IsAdmin(group, user)
+	group.GroupPicture, _, err = img.ExportJpeg(vips.NewJpegExportParams())
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
-	if !isAdmin {
-		return c.JSON(http.StatusForbidden, responses.New(false, "Not an admin of the group", lang))
-	}
 
-	group.GroupPicture = data
 	group.GroupPictureId = uuid.New()
 	h.groupStore.Update(group)
 

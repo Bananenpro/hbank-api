@@ -26,7 +26,7 @@ cd hbank-api
 
 - Go 1.17+
 - C compatible compiler such as gcc 4.6+ or clang 3.0+
-- [libvips](https://github.com/libvips/libvips) 8.8+
+- [libvips](https://github.com/libvips/libvips) 8.10+
 
 #### Arch Linux
 

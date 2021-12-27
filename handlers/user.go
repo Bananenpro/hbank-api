@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"crypto/subtle"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/davidbyttow/govips/v2/vips"
 
 	"github.com/Bananenpro/hbank-api/bindings"
 	"github.com/Bananenpro/hbank-api/config"
@@ -17,7 +18,6 @@ import (
 	"github.com/Bananenpro/hbank-api/responses"
 	"github.com/Bananenpro/hbank-api/services"
 	"github.com/google/uuid"
-	"github.com/h2non/bimg"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -239,34 +239,26 @@ func (h *Handler) SetProfilePicture(c echo.Context) error {
 	}
 	defer src.Close()
 
-	var buffer bytes.Buffer
-	_, err = io.Copy(&buffer, src)
+	img, err := vips.NewImageFromReader(src)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-	data := buffer.Bytes()
-
-	img := bimg.NewImage(data)
-	if img.Type() == "unknown" {
 		return c.JSON(http.StatusBadRequest, responses.New(false, "File is not an image", lang))
 	}
 
-	data, err = img.Convert(bimg.JPEG)
+	err = img.AutoRotate()
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	data, err = bimg.NewImage(data).AutoRotate()
+	err = img.Thumbnail(config.Data.ProfilePictureSize, config.Data.ProfilePictureSize, vips.InterestingCentre)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	data, err = bimg.NewImage(data).Thumbnail(config.Data.ProfilePictureSize)
+	user.ProfilePicture, _, err = img.ExportJpeg(vips.NewJpegExportParams())
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	user.ProfilePicture = data
 	user.ProfilePictureId = uuid.New()
 	err = h.userStore.UpdateProfilePicture(user)
 	if err != nil {
@@ -339,7 +331,20 @@ func (h *Handler) GetProfilePicture(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, responses.New(false, "No profile picture set", lang))
 	}
 
-	data, err := bimg.NewImage(profilePicture).Thumbnail(size)
+	img, err := vips.NewImageFromBuffer(profilePicture)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	err = img.Thumbnail(size, size, vips.InterestingCentre)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+
+	data, _, err := img.ExportJpeg(vips.NewJpegExportParams())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
 
 	return c.Blob(http.StatusOK, "image/jpeg", data)
 }
