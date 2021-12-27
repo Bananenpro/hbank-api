@@ -786,7 +786,7 @@ func (h *Handler) SetGroupPicture(c echo.Context) error {
 	}
 
 	if file.Size > config.Data.MaxProfilePictureFileSize {
-		return c.JSON(http.StatusBadRequest, responses.New(false, fmt.Sprintf(services.Tr("File too big (max %d)", lang), services.SizeInBytesToStr(config.Data.MaxProfilePictureFileSize)), ""))
+		return c.JSON(http.StatusBadRequest, responses.New(false, fmt.Sprintf(services.Tr("File too big (max %s)", lang), services.SizeInBytesToStr(config.Data.MaxProfilePictureFileSize)), ""))
 	}
 
 	src, err := file.Open()

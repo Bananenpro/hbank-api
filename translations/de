@@ -39,7 +39,7 @@
 "Invalid or missing id parameter"="Ungültiger oder fehlender id Parameter"
 "Successfully deleted account"="Der Account wurde gelöscht"
 "Invalid or missing profile picture file"="Ungültige oder fehlende Profilbilddatei"
-"File too big (max %d)"="Datei zu groß (max %d)"
+"File too big (max %s)"="Datei zu groß (max %s)"
 "File is not an image"="Die Datei ist kein Bild"
 "Successfully updated profile picture"="Das Profilbild wurde erfolgreich aktualisiert"
 "The 'size' query parameter is not a number"="Der 'size' Anfrageparameter ist keine Zahl"
