@@ -256,11 +256,6 @@ func (h *Handler) SetProfilePicture(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	data, err = bimg.NewImage(data).AutoRotate()
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-
 	data, err = bimg.NewImage(data).Thumbnail(config.Data.ProfilePictureSize)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))

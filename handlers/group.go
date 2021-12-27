@@ -734,7 +734,7 @@ func (h *Handler) GetGroupPicture(c echo.Context) error {
 	return c.Blob(http.StatusOK, "image/jpeg", data)
 }
 
-// /v1/group/:id/picture?id=uuid (POST)
+// /v1/group/:id/picture (POST)
 func (h *Handler) SetGroupPicture(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -787,11 +787,6 @@ func (h *Handler) SetGroupPicture(c echo.Context) error {
 	}
 
 	data, err = img.Convert(bimg.JPEG)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-
-	data, err = bimg.NewImage(data).AutoRotate()
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
