@@ -128,7 +128,7 @@ func (h *Handler) SendConfirmEmail(c echo.Context) error {
 				body, err := services.ParseEmailTemplate("confirmEmail", c.Get("lang").(string), templateData{
 					Name:      user.Name,
 					Code:      code,
-					DeleteUrl: fmt.Sprintf("https://%s/account/delete?token=%s", config.Data.DomainName, user.DeleteToken),
+					DeleteUrl: fmt.Sprintf("https://%s/account/delete?id=%s&token=%s", config.Data.DomainName, user.Id, user.DeleteToken),
 				})
 				if err != nil {
 					return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
