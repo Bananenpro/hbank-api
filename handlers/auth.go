@@ -931,7 +931,7 @@ func (h *Handler) ForgotPassword(c echo.Context) error {
 			}
 			body, err := services.ParseEmailTemplate("forgotPassword", c.Get("lang").(string), templateData{
 				Name: user.Name,
-				Url:  fmt.Sprintf("https://%s/auth/forgotPassword?email=%s&token=%s", config.Data.DomainName, body.Email, code),
+				Url:  fmt.Sprintf("https://%s/auth/resetPassword?email=%s&token=%s", config.Data.DomainName, body.Email, code),
 			})
 			if err != nil {
 				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
