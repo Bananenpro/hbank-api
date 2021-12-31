@@ -13,6 +13,7 @@ type GroupStore interface {
 	Delete(group *Group) error
 	DeleteById(id uuid.UUID) error
 
+	UpdateGroupPicture(group *Group) error
 	GetGroupPicture(group *Group) ([]byte, error)
 
 	GetMembers(except *User, searchInput string, group *Group, page, pageSize int, descending bool) ([]User, error)

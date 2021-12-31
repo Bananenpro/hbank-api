@@ -38,6 +38,7 @@ func (h *Handler) RegisterV1(v1 *echo.Group) {
 	v1.DELETE("/user/:id", h.DeleteUserByDeleteToken)
 	v1.POST("/user/delete", h.DeleteUser, middlewares.JWT)
 	v1.POST("/user/picture", h.SetProfilePicture, middlewares.JWT)
+	v1.DELETE("/user/picture", h.RemoveProfilePicture, middlewares.JWT)
 	v1.GET("/user/:id/picture", h.GetProfilePicture, middlewares.JWT)
 
 	user := v1.Group("/user")
@@ -61,6 +62,7 @@ func (h *Handler) RegisterV1(v1 *echo.Group) {
 	group.GET("/:id/user", h.GetGroupUsers, middlewares.JWT)
 	group.GET("/:id/picture", h.GetGroupPicture, middlewares.JWT)
 	group.POST("/:id/picture", h.SetGroupPicture, middlewares.JWT)
+	group.DELETE("/:id/picture", h.RemoveGroupPicture, middlewares.JWT)
 
 	group.GET("/:id/transaction/balance", h.GetBalance, middlewares.JWT)
 	group.GET("/:id/transaction/:transactionId", h.GetTransactionById, middlewares.JWT)

@@ -816,7 +816,53 @@ func (h *Handler) SetGroupPicture(c echo.Context) error {
 	}
 
 	group.GroupPictureId = uuid.New()
-	h.groupStore.Update(group)
+	h.groupStore.UpdateGroupPicture(group)
+
+	return c.JSON(http.StatusOK, responses.Id{
+		Base: responses.Base{
+			Success: true,
+			Message: services.Tr("Successfully updated group picture", lang),
+		},
+		Id: group.GroupPictureId.String(),
+	})
+}
+
+// /v1/group/:id/picture (DELETE)
+func (h *Handler) RemoveGroupPicture(c echo.Context) error {
+	lang := c.Get("lang").(string)
+
+	userId := c.Get("userId").(uuid.UUID)
+	user, err := h.userStore.GetById(userId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
+	}
+
+	groupId, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	}
+	group, err := h.groupStore.GetById(groupId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if group == nil {
+		return c.JSON(http.StatusNotFound, responses.New(false, "Group not found", lang))
+	}
+
+	isAdmin, err := h.groupStore.IsAdmin(group, user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+	}
+	if !isAdmin {
+		return c.JSON(http.StatusForbidden, responses.New(false, "Not an admin of the group", lang))
+	}
+
+	group.GroupPicture = nil
+	group.GroupPictureId = uuid.New()
+	h.groupStore.UpdateGroupPicture(group)
 
 	return c.JSON(http.StatusOK, responses.Id{
 		Base: responses.Base{
