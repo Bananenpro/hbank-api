@@ -249,4 +249,4 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ## Copyright
 
-Copyright © 2021 Julian Hofmann
+Copyright © 2021-2022 Julian Hofmann
