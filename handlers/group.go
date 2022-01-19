@@ -728,7 +728,6 @@ func (h *Handler) GetGroupPicture(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, responses.New(false, "No group picture set", lang))
 	}
 
-	// data, err := bimg.NewImage(groupPicture).Thumbnail(size)
 	img, err := vips.NewImageFromBuffer(groupPicture)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -1152,6 +1151,9 @@ func (h *Handler) CreateTransaction(c echo.Context) error {
 			return c.JSON(http.StatusOK, responses.New(false, "Cannot send money from bank to bank", lang))
 		}
 		transaction, err = h.groupStore.CreateTransaction(group, false, true, user, nil, body.Title, body.Description, int(body.Amount))
+		if err != nil {
+			return c.JSON(http.StatusUnauthorized, responses.NewUnexpectedError(err, lang))
+		}
 	} else {
 		receiverId, err := uuid.Parse(body.ReceiverId)
 		if err != nil {
@@ -1182,6 +1184,9 @@ func (h *Handler) CreateTransaction(c echo.Context) error {
 				return c.JSON(http.StatusForbidden, responses.New(false, "Not an admin of the group", lang))
 			}
 			transaction, err = h.groupStore.CreateTransaction(group, true, false, nil, receiver, body.Title, body.Description, int(body.Amount))
+			if err != nil {
+				return c.JSON(http.StatusUnauthorized, responses.NewUnexpectedError(err, lang))
+			}
 		} else {
 			if bytes.Equal(user.Id[:], receiverId[:]) {
 				return c.JSON(http.StatusOK, responses.New(false, "Sender is the receiver", lang))
@@ -1935,6 +1940,9 @@ func (h *Handler) CreatePaymentPlan(c echo.Context) error {
 			return c.JSON(http.StatusOK, responses.New(false, "Cannot send money from bank to bank", lang))
 		}
 		paymentPlan, err = h.groupStore.CreatePaymentPlan(group, false, true, user, nil, body.Name, body.Description, int(body.Amount), body.PaymentCount, int(body.Schedule), body.ScheduleUnit, firstPayment.Unix())
+		if err != nil {
+			return c.JSON(http.StatusUnauthorized, responses.NewUnexpectedError(err, lang))
+		}
 	} else {
 		receiverId, err := uuid.Parse(body.ReceiverId)
 		if err != nil {
@@ -1965,6 +1973,9 @@ func (h *Handler) CreatePaymentPlan(c echo.Context) error {
 				return c.JSON(http.StatusForbidden, responses.New(false, "Not an admin of the group", lang))
 			}
 			paymentPlan, err = h.groupStore.CreatePaymentPlan(group, true, false, nil, receiver, body.Name, body.Description, int(body.Amount), body.PaymentCount, int(body.Schedule), body.ScheduleUnit, firstPayment.Unix())
+			if err != nil {
+				return c.JSON(http.StatusUnauthorized, responses.NewUnexpectedError(err, lang))
+			}
 		} else {
 			if bytes.Equal(user.Id[:], receiverId[:]) {
 				return c.JSON(http.StatusOK, responses.New(false, "Sender is the receiver", lang))

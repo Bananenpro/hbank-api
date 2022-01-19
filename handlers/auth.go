@@ -90,6 +90,10 @@ func (h *Handler) SendConfirmEmail(c echo.Context) error {
 	}
 
 	lastSend, err := h.userStore.GetConfirmEmailLastSent(email)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, responses.NewUnexpectedError(err, lang))
+	}
+
 	if lastSend+config.Data.SendEmailTimeout > time.Now().Unix() {
 		return c.JSON(http.StatusTooManyRequests, responses.Base{
 			Success: false,
@@ -900,6 +904,9 @@ func (h *Handler) ForgotPassword(c echo.Context) error {
 		}
 
 		lastSend, err := h.userStore.GetForgotPasswordEmailLastSent(body.Email)
+		if err != nil {
+			return c.JSON(http.StatusUnauthorized, responses.NewUnexpectedError(err, lang))
+		}
 		if lastSend+config.Data.SendEmailTimeout > time.Now().Unix() {
 			return c.JSON(http.StatusTooManyRequests, responses.Base{
 				Success: false,

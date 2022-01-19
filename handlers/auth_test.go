@@ -19,6 +19,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pquerna/otp/totp"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -108,6 +109,9 @@ func TestHandler_SendConfirmEmail(t *testing.T) {
 		Name:  "bob",
 		Email: "bob@gmail.com",
 	})
+	if err != nil {
+		t.Fatalf("Couldn't create test user")
+	}
 
 	handler := New(us, nil)
 
@@ -232,6 +236,7 @@ func TestHandler_VerifyConfirmEmailCode(t *testing.T) {
 			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
 
 			user, err := us.GetByEmail(tt.email)
+			require.NoError(t, err)
 			if user != nil {
 				code, err := us.GetConfirmEmailCode(user)
 				assert.NoError(t, err)
@@ -260,6 +265,7 @@ func TestHandler_Activate2FAOTP(t *testing.T) {
 	us := db.NewUserStore(database)
 
 	password, err := bcrypt.GenerateFromPassword([]byte("password"), config.Data.BcryptCost)
+	require.NoError(t, err)
 	us.Create(&models.User{
 		Name:         "bob",
 		Email:        "bob@gmail.com",
@@ -402,8 +408,10 @@ func TestHandler_VerifyOTPCode(t *testing.T) {
 		Issuer:      config.Data.DomainName,
 		AccountName: "paul",
 	})
+	require.NoError(t, err)
 	var qr bytes.Buffer
 	img, err := key.Image(200, 200)
+	require.NoError(t, err)
 	png.Encode(&qr, img)
 
 	us.Create(&models.User{
@@ -475,6 +483,7 @@ func TestHandler_PasswordAuth(t *testing.T) {
 	us := db.NewUserStore(database)
 
 	password, err := bcrypt.GenerateFromPassword([]byte("password"), config.Data.BcryptCost)
+	require.NoError(t, err)
 	us.Create(&models.User{
 		Name:            "bob",
 		Email:           "bob@gmail.com",
