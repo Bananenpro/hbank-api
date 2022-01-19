@@ -1,11 +1,13 @@
 package db
 
 import (
+	"fmt"
 	"log"
 	"os"
 
 	"github.com/Bananenpro/hbank-api/config"
 	"github.com/Bananenpro/hbank-api/models"
+	"github.com/google/uuid"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -23,14 +25,17 @@ func NewSqlite(filepath string) (*gorm.DB, error) {
 	}
 }
 
-func NewTestDB() (*gorm.DB, error) {
-	return gorm.Open(sqlite.Open("database_test.sqlite"), &gorm.Config{
+// returns db and the id of db file
+func NewTestDB() (*gorm.DB, string, error) {
+	id := uuid.NewString()
+	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("%s.sqlite", id)), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
+	return db, id, err
 }
 
-func DeleteTestDB() {
-	err := os.Remove("database_test.sqlite")
+func DeleteTestDB(id string) {
+	err := os.Remove(fmt.Sprintf("%s.sqlite", id))
 	if err != nil {
 		log.Fatalln("Failed to delete test database:", err)
 	}

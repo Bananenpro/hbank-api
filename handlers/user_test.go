@@ -23,14 +23,15 @@ import (
 )
 
 func TestHandler_GetUsers(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
-		t.Fatalf("Couldn't create in memory database")
+		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
@@ -91,21 +92,22 @@ func TestHandler_GetUsers(t *testing.T) {
 				Users []models.User `json:"users"`
 			}
 			var users usersResp
-			json.Unmarshal([]byte(rec.Body.String()), &users)
+			json.Unmarshal(rec.Body.Bytes(), &users)
 			assert.Equal(t, tt.wantUserCount, len(users.Users))
 		})
 	}
 }
 
 func TestHandler_GetUser(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
-		t.Fatalf("Couldn't create in memory database")
+		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
@@ -174,9 +176,9 @@ func TestHandler_GetUser(t *testing.T) {
 					assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"emailConfirmed":%t`, tt.user.EmailConfirmed))
 					assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"twoFAOTPEnabled":%t`, tt.user.TwoFaOTPEnabled))
 				} else {
-					assert.NotContains(t, rec.Body.String(), fmt.Sprintf(`"email"`))
-					assert.NotContains(t, rec.Body.String(), fmt.Sprintf(`"emailConfirmed"`))
-					assert.NotContains(t, rec.Body.String(), fmt.Sprintf(`"twoFAOTPEnabled"`))
+					assert.NotContains(t, rec.Body.String(), "email")
+					assert.NotContains(t, rec.Body.String(), "emailConfirmed")
+					assert.NotContains(t, rec.Body.String(), "twoFAOTPEnabled")
 				}
 			}
 		})
@@ -184,14 +186,15 @@ func TestHandler_GetUser(t *testing.T) {
 }
 
 func TestHandler_DeleteUser(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
-		t.Fatalf("Couldn't create in memory database")
+		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
@@ -340,14 +343,15 @@ func TestHandler_DeleteUser(t *testing.T) {
 }
 
 func TestHandler_DeleteUserByDeleteToken(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
-		t.Fatalf("Couldn't create in memory database")
+		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
@@ -410,14 +414,15 @@ func TestHandler_DeleteUserByDeleteToken(t *testing.T) {
 }
 
 func TestHandler_UpdateUser(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
-		t.Fatalf("Couldn't create in memory database")
+		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
@@ -489,14 +494,15 @@ func TestHandler_UpdateUser(t *testing.T) {
 }
 
 func TestHandler_GetCurrentCash(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
-		t.Fatalf("Couldn't create in memory database")
+		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
@@ -557,14 +563,15 @@ func TestHandler_GetCurrentCash(t *testing.T) {
 }
 
 func TestHandler_GetCashLogEntryById(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
-		t.Fatalf("Couldn't create in memory database")
+		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
@@ -621,14 +628,15 @@ func TestHandler_GetCashLogEntryById(t *testing.T) {
 }
 
 func TestHandler_GetCashLog(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
-		t.Fatalf("Couldn't create in memory database")
+		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
@@ -683,7 +691,7 @@ func TestHandler_GetCashLog(t *testing.T) {
 					CashLog []models.CashLogEntry `json:"log"`
 				}
 				var resp cashLogResp
-				json.Unmarshal([]byte(rec.Body.String()), &resp)
+				json.Unmarshal(rec.Body.Bytes(), &resp)
 				assert.Equal(t, tt.wantCount, len(resp.CashLog))
 			}
 		})
@@ -691,14 +699,15 @@ func TestHandler_GetCashLog(t *testing.T) {
 }
 
 func TestHandler_AddCashLogEntry(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
-		t.Fatalf("Couldn't create in memory database")
+		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")

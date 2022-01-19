@@ -24,14 +24,15 @@ import (
 )
 
 func TestRegister(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
 		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
@@ -90,14 +91,15 @@ func TestRegister(t *testing.T) {
 }
 
 func TestHandler_SendConfirmEmail(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
 		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
@@ -173,14 +175,15 @@ func TestHandler_SendConfirmEmail(t *testing.T) {
 }
 
 func TestHandler_VerifyConfirmEmailCode(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
 		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
@@ -249,14 +252,15 @@ func TestHandler_VerifyConfirmEmailCode(t *testing.T) {
 }
 
 func TestHandler_Activate2FAOTP(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
 		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
@@ -329,14 +333,15 @@ func TestHandler_Activate2FAOTP(t *testing.T) {
 }
 
 func TestHandler_GetOTPQRCode(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
 		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
@@ -389,14 +394,15 @@ func TestHandler_GetOTPQRCode(t *testing.T) {
 }
 
 func TestHandler_VerifyOTPCode(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
 		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
@@ -467,14 +473,15 @@ func TestHandler_VerifyOTPCode(t *testing.T) {
 }
 
 func TestHandler_PasswordAuth(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
 		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
@@ -535,14 +542,15 @@ func TestHandler_PasswordAuth(t *testing.T) {
 }
 
 func TestHandler_Login(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = false
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
 		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
@@ -643,7 +651,6 @@ func TestHandler_Login(t *testing.T) {
 					assert.Equal(t, 3, len(cookies), "Three auth cookies were returned")
 					for _, cookie := range cookies {
 						assert.True(t, cookie.Secure)
-						assert.Equal(t, http.SameSiteStrictMode, cookie.SameSite)
 					}
 
 					refreshTokens, _ := us.GetRefreshTokens(user)
@@ -670,14 +677,15 @@ func TestHandler_Login(t *testing.T) {
 }
 
 func TestHandler_VerifyRecoveryCode(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
 		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
@@ -737,14 +745,15 @@ func TestHandler_VerifyRecoveryCode(t *testing.T) {
 }
 
 func TestHandler_NewRecoveryCodes(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
 		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
@@ -804,14 +813,15 @@ func TestHandler_NewRecoveryCodes(t *testing.T) {
 }
 
 func TestHandler_NewOTP(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
 		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
@@ -874,14 +884,15 @@ func TestHandler_NewOTP(t *testing.T) {
 }
 
 func TestHandler_Logout(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
 		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
@@ -960,14 +971,15 @@ func TestHandler_Logout(t *testing.T) {
 }
 
 func TestHandler_ChangePassword(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
 		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
@@ -1038,14 +1050,15 @@ func TestHandler_ChangePassword(t *testing.T) {
 }
 
 func TestHandler_ForgotPassword(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
 		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
@@ -1135,14 +1148,15 @@ func TestHandler_ForgotPassword(t *testing.T) {
 }
 
 func TestHandler_ResetPassword(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
 		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
@@ -1219,14 +1233,15 @@ func TestHandler_ResetPassword(t *testing.T) {
 }
 
 func TestHandler_Refresh(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = false
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
 		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
@@ -1328,7 +1343,6 @@ func TestHandler_Refresh(t *testing.T) {
 				assert.Equal(t, 3, len(cookies), "Three new auth cookies were returned")
 				for _, cookie := range cookies {
 					assert.True(t, cookie.Secure)
-					assert.Equal(t, http.SameSiteStrictMode, cookie.SameSite)
 				}
 
 				refreshTokens, _ := us.GetRefreshTokens(user)
@@ -1352,14 +1366,15 @@ func TestHandler_Refresh(t *testing.T) {
 }
 
 func TestHandler_RequestChangeEmail(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
 		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
@@ -1426,14 +1441,15 @@ func TestHandler_RequestChangeEmail(t *testing.T) {
 }
 
 func TestHandler_ChangeEmail(t *testing.T) {
+	t.Parallel()
 	config.Data.Debug = true
 	r := router.New()
 
-	database, err := db.NewTestDB()
+	database, dbId, err := db.NewTestDB()
 	if err != nil {
 		t.Fatalf("Couldn't create test database")
 	}
-	defer db.DeleteTestDB()
+	defer db.DeleteTestDB(dbId)
 	err = db.AutoMigrate(database)
 	if err != nil {
 		t.Fatalf("Couldn't auto migrate database")
