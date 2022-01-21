@@ -14,7 +14,6 @@ import (
 	"github.com/Bananenpro/hbank-api/models"
 	"github.com/Bananenpro/hbank-api/responses"
 	"github.com/Bananenpro/hbank-api/services"
-	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
@@ -708,19 +707,16 @@ func (h *Handler) GetGroupPicture(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, responses.New(false, "Wrong group picture id", lang))
 	}
 
-	size := config.Data.ProfilePictureSize
+	size := services.PictureSize(c.QueryParam("size"))
 	if c.QueryParam("size") != "" {
-		size, err = strconv.Atoi(c.QueryParam("size"))
-		if err != nil {
-			return c.JSON(http.StatusBadRequest, responses.New(false, "The 'size' query parameter is not a number", lang))
+		if !size.Validate() {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid 'size' query parameter", lang))
 		}
-
-		if size > config.Data.ProfilePictureSize {
-			return c.JSON(http.StatusBadRequest, responses.New(false, fmt.Sprintf(services.Tr("Max allowed size is %d", lang), config.Data.ProfilePictureSize), ""))
-		}
+	} else {
+		size = services.PictureHuge
 	}
 
-	groupPicture, err := h.groupStore.GetGroupPicture(group)
+	groupPicture, err := h.groupStore.GetGroupPicture(group, size)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
@@ -728,22 +724,7 @@ func (h *Handler) GetGroupPicture(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, responses.New(false, "No group picture set", lang))
 	}
 
-	img, err := vips.NewImageFromBuffer(groupPicture)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-
-	err = img.Thumbnail(size, size, vips.InterestingCentre)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-
-	data, _, err := img.ExportJpeg(vips.NewJpegExportParams())
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-
-	return c.Blob(http.StatusOK, "image/jpeg", data)
+	return c.Blob(http.StatusOK, "image/jpeg", groupPicture)
 }
 
 // /v1/group/:id/picture (POST)
@@ -788,34 +769,36 @@ func (h *Handler) SetGroupPicture(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, responses.New(false, fmt.Sprintf(services.Tr("File too big (max %s)", lang), services.SizeInBytesToStr(config.Data.MaxProfilePictureFileSize)), ""))
 	}
 
+	mimeType := file.Header.Get("Content-Type")
+	if !services.SupportedPictureMimeType(mimeType) {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Unsupported MIME type", lang))
+	}
+
 	src, err := file.Open()
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	defer src.Close()
 
-	img, err := vips.NewImageFromReader(src)
+	var buf bytes.Buffer
+	_, err = buf.ReadFrom(src)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	err = img.AutoRotate()
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-
-	err = img.Thumbnail(config.Data.ProfilePictureSize, config.Data.ProfilePictureSize, vips.InterestingCentre)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-
-	group.GroupPicture, _, err = img.ExportJpeg(vips.NewJpegExportParams())
+	pic, err := services.NewPicture(buf.Bytes(), mimeType)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
 	group.GroupPictureId = uuid.New()
-	h.groupStore.UpdateGroupPicture(group)
+	h.groupStore.UpdateGroupPicture(group, &models.GroupPicture{
+		Tiny:   pic.Tiny,
+		Small:  pic.Small,
+		Medium: pic.Medium,
+		Large:  pic.Large,
+		Huge:   pic.Huge,
+	})
 
 	return c.JSON(http.StatusOK, responses.Id{
 		Base: responses.Base{
@@ -859,9 +842,8 @@ func (h *Handler) RemoveGroupPicture(c echo.Context) error {
 		return c.JSON(http.StatusForbidden, responses.New(false, "Not an admin of the group", lang))
 	}
 
-	group.GroupPicture = nil
 	group.GroupPictureId = uuid.New()
-	h.groupStore.UpdateGroupPicture(group)
+	h.groupStore.UpdateGroupPicture(group, nil)
 
 	return c.JSON(http.StatusOK, responses.Id{
 		Base: responses.Base{

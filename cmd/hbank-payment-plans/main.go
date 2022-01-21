@@ -6,7 +6,6 @@ import (
 	"github.com/Bananenpro/hbank-api/config"
 	"github.com/Bananenpro/hbank-api/db"
 	"github.com/Bananenpro/hbank-api/models"
-	"github.com/Bananenpro/hbank-api/services"
 	"github.com/adrg/xdg"
 )
 
@@ -19,7 +18,7 @@ func ExecutePaymentPlans(us models.UserStore, gs models.GroupStore) {
 	log.Printf("Executing %d payment plans...", len(paymentPlans))
 
 	for _, p := range paymentPlans {
-		err = services.ExecutePaymentPlan(us, gs, &p)
+		err = ExecutePaymentPlan(us, gs, &p)
 		if err != nil {
 			log.Printf("Couldn't execute payment plan with id '%s': %s", p.Id.String(), err)
 		}

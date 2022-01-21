@@ -10,8 +10,6 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/davidbyttow/govips/v2/vips"
-
 	"github.com/Bananenpro/hbank-api/bindings"
 	"github.com/Bananenpro/hbank-api/config"
 	"github.com/Bananenpro/hbank-api/models"
@@ -233,34 +231,36 @@ func (h *Handler) SetProfilePicture(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, responses.New(false, fmt.Sprintf(services.Tr("File too big (max %s)", lang), services.SizeInBytesToStr(config.Data.MaxProfilePictureFileSize)), ""))
 	}
 
+	mimeType := file.Header.Get("Content-Type")
+	if !services.SupportedPictureMimeType(mimeType) {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Unsupported MIME type", lang))
+	}
+
 	src, err := file.Open()
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	defer src.Close()
 
-	img, err := vips.NewImageFromReader(src)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "File is not an image", lang))
-	}
-
-	err = img.AutoRotate()
+	var buf bytes.Buffer
+	_, err = buf.ReadFrom(src)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	err = img.Thumbnail(config.Data.ProfilePictureSize, config.Data.ProfilePictureSize, vips.InterestingCentre)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-
-	user.ProfilePicture, _, err = img.ExportJpeg(vips.NewJpegExportParams())
+	pic, err := services.NewPicture(buf.Bytes(), mimeType)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
 	user.ProfilePictureId = uuid.New()
-	err = h.userStore.UpdateProfilePicture(user)
+	err = h.userStore.UpdateProfilePicture(user, &models.ProfilePicture{
+		Tiny:   pic.Tiny,
+		Small:  pic.Small,
+		Medium: pic.Medium,
+		Large:  pic.Large,
+		Huge:   pic.Huge,
+	})
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
@@ -287,10 +287,8 @@ func (h *Handler) RemoveProfilePicture(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	user.ProfilePicture = nil
 	user.ProfilePictureId = uuid.New()
-
-	err = h.userStore.UpdateProfilePicture(user)
+	err = h.userStore.UpdateProfilePicture(user, nil)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
@@ -304,7 +302,7 @@ func (h *Handler) RemoveProfilePicture(c echo.Context) error {
 	})
 }
 
-// /v1/user/:id/picture?id=uuid&size=int (GET)
+// /v1/user/:id/picture?id=uuid&size=tiny/small/medium/large/huge (GET)
 func (h *Handler) GetProfilePicture(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -341,19 +339,16 @@ func (h *Handler) GetProfilePicture(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, responses.New(false, "Wrong profile picture id", lang))
 	}
 
-	size := config.Data.ProfilePictureSize
+	size := services.PictureSize(c.QueryParam("size"))
 	if c.QueryParam("size") != "" {
-		size, err = strconv.Atoi(c.QueryParam("size"))
-		if err != nil {
-			return c.JSON(http.StatusBadRequest, responses.New(false, "The 'size' query parameter is not a number", lang))
+		if !size.Validate() {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid 'size' query parameter", lang))
 		}
-
-		if size > config.Data.ProfilePictureSize {
-			return c.JSON(http.StatusBadRequest, responses.New(false, fmt.Sprintf(services.Tr("Max allowed size is %d", lang), config.Data.ProfilePictureSize), ""))
-		}
+	} else {
+		size = services.PictureHuge
 	}
 
-	profilePicture, err := h.userStore.GetProfilePicture(user)
+	profilePicture, err := h.userStore.GetProfilePicture(user, size)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
@@ -361,22 +356,7 @@ func (h *Handler) GetProfilePicture(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, responses.New(false, "No profile picture set", lang))
 	}
 
-	img, err := vips.NewImageFromBuffer(profilePicture)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-
-	err = img.Thumbnail(size, size, vips.InterestingCentre)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-
-	data, _, err := img.ExportJpeg(vips.NewJpegExportParams())
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-
-	return c.Blob(http.StatusOK, "image/jpeg", data)
+	return c.Blob(http.StatusOK, "image/jpeg", profilePicture)
 }
 
 // /v1/user (PUT)

@@ -1,9 +1,11 @@
 package db
 
 import (
+	"errors"
 	"time"
 
 	"github.com/Bananenpro/hbank-api/models"
+	"github.com/Bananenpro/hbank-api/services"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -43,7 +45,7 @@ func (gs *GroupStore) GetAllByUser(user *models.User, page int, pageSize int, de
 	}
 
 	var groups []models.Group
-	err = gs.db.Omit("group_picture").Order("name "+order).Find(&groups, "id IN ?", groupIds).Error
+	err = gs.db.Order("name "+order).Find(&groups, "id IN ?", groupIds).Error
 
 	return groups, err
 }
@@ -56,7 +58,7 @@ func (gs *GroupStore) Count(user *models.User) (int64, error) {
 
 func (gs *GroupStore) GetById(id uuid.UUID) (*models.Group, error) {
 	var group models.Group
-	err := gs.db.Omit("group_picture").First(&group, id).Error
+	err := gs.db.First(&group, id).Error
 	if err != nil {
 		switch err {
 		case gorm.ErrRecordNotFound:
@@ -82,8 +84,21 @@ func (gs *GroupStore) Update(group *models.Group) error {
 	return gs.db.Updates(group).Error
 }
 
-func (gs *GroupStore) UpdateGroupPicture(group *models.Group) error {
-	return gs.db.Select("group_picture").Select("group_picture_id").Updates(group).Error
+func (gs *GroupStore) UpdateGroupPicture(group *models.Group, pic *models.GroupPicture) error {
+	err := gs.db.Select("group_picture_id").Updates(group).Error
+	if err != nil {
+		return err
+	}
+
+	var oldPic models.GroupPicture
+	err = gs.db.Model(group).Select("id").Association("GroupPicture").Find(&oldPic)
+	if err != nil {
+		return err
+	}
+
+	gs.db.Delete(&oldPic)
+
+	return gs.db.Model(group).Association("GroupPicture").Append(pic)
 }
 
 func (gs *GroupStore) Delete(group *models.Group) error {
@@ -107,9 +122,9 @@ func (gs *GroupStore) DeleteById(id uuid.UUID) error {
 	return nil
 }
 
-func (gs *GroupStore) GetGroupPicture(group *models.Group) ([]byte, error) {
-	var g models.Group
-	err := gs.db.Select("group_picture").First(&g, group.Id).Error
+func (gs *GroupStore) GetGroupPicture(group *models.Group, size services.PictureSize) ([]byte, error) {
+	var pic models.GroupPicture
+	err := gs.db.Model(group).Select(string(size)).Association("GroupPicture").Find(&pic)
 	if err != nil {
 		switch err {
 		case gorm.ErrRecordNotFound:
@@ -118,7 +133,21 @@ func (gs *GroupStore) GetGroupPicture(group *models.Group) ([]byte, error) {
 			return nil, err
 		}
 	}
-	return g.GroupPicture, nil
+
+	switch size {
+	case services.PictureTiny:
+		return pic.Tiny, nil
+	case services.PictureSmall:
+		return pic.Small, nil
+	case services.PictureMedium:
+		return pic.Medium, nil
+	case services.PictureLarge:
+		return pic.Large, nil
+	case services.PictureHuge:
+		return pic.Huge, nil
+	default:
+		return nil, errors.New("invalid picture size")
+	}
 }
 
 func (gs *GroupStore) GetMembers(except *models.User, searchInput string, group *models.Group, page int, pageSize int, descending bool) ([]models.User, error) {
@@ -139,6 +168,9 @@ func (gs *GroupStore) GetMembers(except *models.User, searchInput string, group 
 	} else {
 		err = gs.db.Model(group).Order("user_name "+order).Not("user_id = ?", except.Id).Offset(page*pageSize).Limit(pageSize).Association("Memberships").Find(&memberships, "is_member = ?  AND user_name LIKE ?", true, "%"+searchInput+"%")
 	}
+	if err != nil {
+		return nil, err
+	}
 
 	userIds := make([]uuid.UUID, len(memberships))
 	for i, m := range memberships {
@@ -146,7 +178,7 @@ func (gs *GroupStore) GetMembers(except *models.User, searchInput string, group 
 	}
 
 	var members []models.User
-	err = gs.db.Omit("profile_picture").Order("name "+order).Find(&members, "id IN ?", userIds).Error
+	err = gs.db.Order("name "+order).Find(&members, "id IN ?", userIds).Error
 
 	return members, err
 }
@@ -226,6 +258,9 @@ func (gs *GroupStore) GetAdmins(except *models.User, searchInput string, group *
 	} else {
 		err = gs.db.Model(group).Order("user_name "+order).Not("user_id = ?", except.Id).Offset(page*pageSize).Limit(pageSize).Association("Memberships").Find(&memberships, "is_admin = ? AND user_name LIKE ?", true, "%"+searchInput+"%")
 	}
+	if err != nil {
+		return nil, err
+	}
 
 	userIds := make([]uuid.UUID, len(memberships))
 	for i, m := range memberships {
@@ -233,7 +268,7 @@ func (gs *GroupStore) GetAdmins(except *models.User, searchInput string, group *
 	}
 
 	var members []models.User
-	err = gs.db.Omit("profile_picture").Order("name "+order).Find(&members, "id IN ?", userIds).Error
+	err = gs.db.Order("name "+order).Find(&members, "id IN ?", userIds).Error
 
 	return members, err
 }

@@ -34,7 +34,6 @@ type ConfigData struct {
 	MinEmailLength            int    `json:"minEmailLength"`
 	MaxEmailLength            int    `json:"maxEmailLength"`
 	MaxProfilePictureFileSize int64  `json:"maxProfilePictureFileSize"`
-	ProfilePictureSize        int    `json:"profilePictureSize"`
 	BcryptCost                int    `json:"bcryptCost"`
 	PBKDF2Iterations          int    `json:"pbkdf2Iterations"`
 	RecoveryCodeCount         uint   `json:"recoveryCodeCount"`
@@ -58,7 +57,6 @@ var defaultData = ConfigData{
 	MaxPasswordLength:         64,
 	MaxEmailLength:            64,
 	MaxProfilePictureFileSize: 10000000, // 10 MB
-	ProfilePictureSize:        500,
 	BcryptCost:                10,
 	PBKDF2Iterations:          10000,
 	RecoveryCodeCount:         5,

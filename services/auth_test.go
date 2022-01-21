@@ -5,8 +5,6 @@ import (
 	"testing"
 
 	"github.com/Bananenpro/hbank-api/config"
-	"github.com/Bananenpro/hbank-api/models"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -37,17 +35,11 @@ func Test_IsValidEmail(t *testing.T) {
 
 func TestNewAuthToken(t *testing.T) {
 	t.Run("Produces valid tokens", func(t *testing.T) {
-		user := &models.User{
-			Base: models.Base{
-				Id: uuid.New(),
-			},
-			Name: "Bob",
-		}
-		token, signature, err := NewAuthToken(user)
+		token, signature, err := NewAuthToken("name", "id")
 		assert.NoError(t, err)
 
 		id, valid := VerifyAuthToken(token + "." + signature)
-		assert.Equal(t, user.Id, id)
+		assert.Equal(t, "id", id)
 		assert.True(t, valid)
 	})
 }

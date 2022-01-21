@@ -18,7 +18,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/Bananenpro/hbank-api/config"
-	"github.com/Bananenpro/hbank-api/models"
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/pbkdf2"
@@ -103,14 +102,14 @@ type jwtClaims struct {
 	UserId string `json:"userId"`
 }
 
-func NewAuthToken(user *models.User) (string, string, error) {
+func NewAuthToken(name, id string) (string, string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwtClaims{
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Unix() + config.Data.AuthTokenLifetime,
 			IssuedAt:  time.Now().Unix(),
-			Subject:   user.Name,
+			Subject:   name,
 		},
-		UserId: user.Id.String(),
+		UserId: id,
 	})
 
 	str, err := token.SignedString([]byte(config.Data.JWTSecret))

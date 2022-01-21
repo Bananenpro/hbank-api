@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/Bananenpro/hbank-api/services"
 	"github.com/google/uuid"
 )
 
@@ -17,8 +18,8 @@ type UserStore interface {
 
 	RemoveDeleteToken(user *User) error
 
-	GetProfilePicture(user *User) ([]byte, error)
-	UpdateProfilePicture(user *User) error
+	GetProfilePicture(user *User, size services.PictureSize) ([]byte, error)
+	UpdateProfilePicture(user *User, pic *ProfilePicture) error
 
 	GetCashLog(user *User, searchInput string, page, pageSize int, oldestFirst bool) ([]CashLogEntry, error)
 	CashLogEntryCount(user *User) (int64, error)
@@ -71,7 +72,7 @@ type User struct {
 	Name                    string
 	Email                   string `gorm:"unique"`
 	PasswordHash            []byte
-	ProfilePicture          []byte
+	ProfilePicture          *ProfilePicture `gorm:"constraint:OnDelete:CASCADE"`
 	ProfilePictureId        uuid.UUID `gorm:"type:uuid"`
 	ProfilePicturePrivacy   string    `gorm:"default:everybody"`
 	DontSendInvitationEmail bool
@@ -90,6 +91,18 @@ type User struct {
 	RecoveryCodes           []RecoveryCode
 	GroupMemberships        []GroupMembership
 	GroupInvitations        []GroupInvitation
+}
+
+type ProfilePicture struct {
+	Base
+
+	Tiny   []byte
+	Small  []byte
+	Medium []byte
+	Large  []byte
+	Huge   []byte
+
+	UserId uuid.UUID `gorm:"type:uuid"`
 }
 
 type CashLogEntry struct {

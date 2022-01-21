@@ -26,12 +26,19 @@ cd hbank-api
 
 - Go 1.17+
 - C compatible compiler such as gcc 4.6+ or clang 3.0+
-- [libvips](https://github.com/libvips/libvips) 8.10+
+
+#### Windows
+
+Using [chocolatey](https://chocolatey.org/) as administrator:
+
+```powershell
+choco install golang mingw
+```
 
 #### Arch Linux
 
 ```bash
-sudo pacman -S go libvips gcc
+sudo pacman -S go gcc
 ```
 
 ### Running
@@ -219,7 +226,6 @@ HBank-API is looking for configuration in the following locations in order of de
   "minEmailLength": 3, // Min allowed length of email addresses
   "maxEmailLength": 64, // Max allowed length of email addresses
   "maxProfilePictureFileSize": 10000000, // Max size of uploaded profile pictures in bytes
-  "profilePictureSize": 500, // Size of profile picture to store in database in pixels (500 meaning 500x500)
   "bcryptCost": 10, // Bcrypt cost to use for hashing passwords
   "pbkdf2Iterations": 10000, // Number of iterations of PBKDF2 for hashing tokens
   "recoveryCodeCount": 5, // Number of recovery codes to generate per user

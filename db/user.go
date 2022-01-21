@@ -32,9 +32,9 @@ func (us *UserStore) GetAll(exclude []uuid.UUID, searchInput string, page, pageS
 	}
 
 	if page < 0 || pageSize < 0 {
-		err = us.db.Omit("profile_picture").Not(map[string]interface{}{"id": exclude}).Order("name "+order).Find(&users, "name LIKE ?", "%"+searchInput+"%").Error
+		err = us.db.Not(map[string]interface{}{"id": exclude}).Order("name "+order).Find(&users, "name LIKE ?", "%"+searchInput+"%").Error
 	} else {
-		err = us.db.Omit("profile_picture").Not(map[string]interface{}{"id": exclude}).Order("name "+order).Offset(page*pageSize).Limit(pageSize).Find(&users, "name LIKE ?", "%"+searchInput+"%").Error
+		err = us.db.Not(map[string]interface{}{"id": exclude}).Order("name "+order).Offset(page*pageSize).Limit(pageSize).Find(&users, "name LIKE ?", "%"+searchInput+"%").Error
 	}
 
 	return users, err
@@ -48,7 +48,7 @@ func (us *UserStore) Count() (int64, error) {
 
 func (us *UserStore) GetById(id uuid.UUID) (*models.User, error) {
 	var user models.User
-	err := us.db.Omit("profile_picture").First(&user, id).Error
+	err := us.db.First(&user, id).Error
 	if err != nil {
 		switch err {
 		case gorm.ErrRecordNotFound:
@@ -62,7 +62,7 @@ func (us *UserStore) GetById(id uuid.UUID) (*models.User, error) {
 
 func (us *UserStore) GetByEmail(email string) (*models.User, error) {
 	var user models.User
-	err := us.db.Omit("profile_picture").First(&user, "email = ?", email).Error
+	err := us.db.First(&user, "email = ?", email).Error
 	if err != nil {
 		switch err {
 		case gorm.ErrRecordNotFound:
@@ -79,11 +79,24 @@ func (us *UserStore) Create(user *models.User) error {
 }
 
 func (us *UserStore) Update(user *models.User) error {
-	return us.db.Select("*").Omit("profile_picture").Updates(user).Error
+	return us.db.Select("*").Updates(user).Error
 }
 
-func (us *UserStore) UpdateProfilePicture(user *models.User) error {
-	return us.db.Select("profile_picture", "profile_picture_id").Updates(user).Error
+func (us *UserStore) UpdateProfilePicture(user *models.User, pic *models.ProfilePicture) error {
+	err := us.db.Select("profile_picture_id").Updates(user).Error
+	if err != nil {
+		return err
+	}
+
+	var oldPic models.ProfilePicture
+	err = us.db.Model(user).Select("id").Association("ProfilePicture").Find(&oldPic)
+	if err != nil {
+		return err
+	}
+
+	us.db.Delete(&oldPic)
+
+	return us.db.Model(user).Association("ProfilePicture").Append(pic)
 }
 
 func (us *UserStore) Delete(user *models.User) error {
@@ -129,10 +142,9 @@ func (us *UserStore) DeleteByEmail(email string) error {
 func (us *UserStore) RemoveDeleteToken(user *models.User) error {
 	return us.db.Model(user).Update("delete_token", "").Error
 }
-
-func (us *UserStore) GetProfilePicture(user *models.User) ([]byte, error) {
-	var u models.User
-	err := us.db.Select("profile_picture").First(&u, user.Id).Error
+func (us *UserStore) GetProfilePicture(user *models.User, size services.PictureSize) ([]byte, error) {
+	var pic models.ProfilePicture
+	err := us.db.Model(user).Select(string(size)).Association("ProfilePicture").Find(&pic)
 	if err != nil {
 		switch err {
 		case gorm.ErrRecordNotFound:
@@ -141,7 +153,21 @@ func (us *UserStore) GetProfilePicture(user *models.User) ([]byte, error) {
 			return nil, err
 		}
 	}
-	return u.ProfilePicture, nil
+
+	switch size {
+	case services.PictureTiny:
+		return pic.Tiny, nil
+	case services.PictureSmall:
+		return pic.Small, nil
+	case services.PictureMedium:
+		return pic.Medium, nil
+	case services.PictureLarge:
+		return pic.Large, nil
+	case services.PictureHuge:
+		return pic.Huge, nil
+	default:
+		return nil, errors.New("invalid picture size")
+	}
 }
 
 func (us *UserStore) GetConfirmEmailCode(user *models.User) (*models.ConfirmEmailCode, error) {
@@ -228,7 +254,7 @@ func (us *UserStore) AddRefreshToken(user *models.User, refreshToken *models.Ref
 
 func (us *UserStore) RotateRefreshToken(user *models.User, oldRefreshToken *models.RefreshToken) (*models.RefreshToken, string, error) {
 	if oldRefreshToken.UserId.String() != user.Id.String() {
-		return nil, "", errors.New("Refresh-token doesn't belong to user")
+		return nil, "", errors.New("refresh-token doesn't belong to user")
 	}
 	oldRefreshToken.Used = true
 	err := us.db.Model(oldRefreshToken).Select("used").Updates(oldRefreshToken).Error

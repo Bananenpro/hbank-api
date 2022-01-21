@@ -44,6 +44,7 @@ func DeleteTestDB(id string) {
 func AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(
 		&models.User{},
+		&models.ProfilePicture{},
 		&models.ConfirmEmailLastSent{},
 		&models.ForgotPasswordEmailLastSent{},
 		&models.ConfirmEmailCode{},
@@ -57,6 +58,7 @@ func AutoMigrate(db *gorm.DB) error {
 
 		&models.Group{},
 		&models.GroupMembership{},
+		&models.GroupPicture{},
 		&models.GroupInvitation{},
 		&models.TransactionLogEntry{},
 		&models.PaymentPlan{},

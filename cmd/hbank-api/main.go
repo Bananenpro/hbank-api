@@ -15,13 +15,9 @@ import (
 	"github.com/Bananenpro/hbank-api/router"
 	"github.com/Bananenpro/hbank-api/services"
 	"github.com/adrg/xdg"
-	"github.com/davidbyttow/govips/v2/vips"
 )
 
 func main() {
-	vips.Startup(nil)
-	defer vips.Shutdown()
-
 	config.Load([]string{"config.json", xdg.ConfigHome + "/hbank/config.json"})
 	services.LoadTranslations()
 

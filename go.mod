@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/adrg/xdg v0.3.4
-	github.com/davidbyttow/govips/v2 v2.8.1
+	github.com/disintegration/imaging v1.6.2
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/labstack/echo/v4 v4.6.1

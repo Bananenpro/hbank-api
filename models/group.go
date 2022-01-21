@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/Bananenpro/hbank-api/services"
 	"github.com/google/uuid"
 )
 
@@ -13,8 +14,8 @@ type GroupStore interface {
 	Delete(group *Group) error
 	DeleteById(id uuid.UUID) error
 
-	UpdateGroupPicture(group *Group) error
-	GetGroupPicture(group *Group) ([]byte, error)
+	GetGroupPicture(group *Group, size services.PictureSize) ([]byte, error)
+	UpdateGroupPicture(group *Group, pic *GroupPicture) error
 
 	GetMembers(except *User, searchInput string, group *Group, page, pageSize int, descending bool) ([]User, error)
 	MemberCount(group *Group) (int64, error)
@@ -68,11 +69,23 @@ type Group struct {
 	Base
 	Name           string
 	Description    string
-	GroupPicture   []byte
+	GroupPicture   *GroupPicture `gorm:"constraint:OnDelete:CASCADE"`
 	GroupPictureId uuid.UUID `gorm:"type:uuid"`
 
 	Memberships []GroupMembership
 	Invitations []GroupInvitation
+}
+
+type GroupPicture struct {
+	Base
+
+	Tiny   []byte
+	Small  []byte
+	Medium []byte
+	Large  []byte
+	Huge   []byte
+
+	GroupId   uuid.UUID `gorm:"type:uuid"`
 }
 
 type GroupMembership struct {

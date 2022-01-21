@@ -533,7 +533,7 @@ func (h *Handler) Login(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	authToken, authTokenSignature, err := services.NewAuthToken(user)
+	authToken, authTokenSignature, err := services.NewAuthToken(user.Name, user.Id.String())
 	if err != nil {
 		h.userStore.DeleteRefreshToken(refreshToken)
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -642,7 +642,7 @@ func (h *Handler) Refresh(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	authToken, authTokenSignature, err := services.NewAuthToken(user)
+	authToken, authTokenSignature, err := services.NewAuthToken(user.Name, user.Id.String())
 	if err != nil {
 		h.userStore.DeleteRefreshToken(newRefreshToken)
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))

@@ -1,10 +1,10 @@
-package services
+package main
 
 import (
-	"log"
 	"time"
 
 	"github.com/Bananenpro/hbank-api/models"
+	"github.com/Bananenpro/hbank-api/services"
 )
 
 func ExecutePaymentPlan(userStore models.UserStore, groupStore models.GroupStore, paymentPlan *models.PaymentPlan) error {
@@ -42,7 +42,7 @@ func ExecutePaymentPlan(userStore models.UserStore, groupStore models.GroupStore
 			return err
 		}
 
-		paymentPlan.NextExecute = AddTime(paymentPlan.NextExecute, paymentPlan.Schedule, paymentPlan.ScheduleUnit)
+		paymentPlan.NextExecute = services.AddTime(paymentPlan.NextExecute, paymentPlan.Schedule, paymentPlan.ScheduleUnit)
 
 		if paymentPlan.PaymentCount >= 0 {
 			paymentPlan.PaymentCount -= 1
@@ -59,21 +59,4 @@ func ExecutePaymentPlan(userStore models.UserStore, groupStore models.GroupStore
 	}
 
 	return nil
-}
-
-func AddTime(unixTime int64, value int, unit string) int64 {
-	t := time.Unix(unixTime, 0).UTC()
-	switch unit {
-	case models.ScheduleUnitDay:
-		return t.AddDate(0, 0, value).Unix()
-	case models.ScheduleUnitWeek:
-		return t.AddDate(0, 0, value*7).Unix()
-	case models.ScheduleUnitMonth:
-		return t.AddDate(0, value, 0).Unix()
-	case models.ScheduleUnitYear:
-		return t.AddDate(value, 0, 0).Unix()
-	default:
-		log.Println("Error: unknown time unit:", unit)
-		return 0
-	}
 }
