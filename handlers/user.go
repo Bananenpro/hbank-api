@@ -5,6 +5,7 @@ import (
 	"crypto/subtle"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -331,7 +332,11 @@ func (h *Handler) GetProfilePicture(c echo.Context) error {
 	switch user.ProfilePicturePrivacy {
 	case models.ProfilePictureNobody:
 		if user.Id.String() != authUser.Id.String() {
-			return c.JSON(http.StatusNotFound, responses.New(false, "Profile picture hidden", lang))
+			data, err := os.ReadFile("assets/fallback-profile-picture.svg")
+			if err != nil {
+				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+			}
+			return c.Blob(http.StatusOK, "image/svg", data)
 		}
 	}
 
@@ -353,7 +358,11 @@ func (h *Handler) GetProfilePicture(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if len(profilePicture) == 0 {
-		return c.JSON(http.StatusNotFound, responses.New(false, "No profile picture set", lang))
+		data, err := os.ReadFile("assets/fallback-profile-picture.svg")
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+		return c.Blob(http.StatusOK, "image/svg", data)
 	}
 
 	return c.Blob(http.StatusOK, "image/jpeg", profilePicture)

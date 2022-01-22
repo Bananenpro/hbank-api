@@ -1,4 +1,4 @@
-![H-Bank](images/banner.png)
+![H-Bank](assets/banner.png)
 <h1 align="center">H-Bank API</h1>
 
 ![License](https://img.shields.io/github/license/Bananenpro/hbank-api)
@@ -99,6 +99,7 @@ cp <repo-dir>/bin/hbank-payment-plans ~/hbank
 
 Copy other required directories and files into the `hbank` directory:
 ```bash
+cp -r <repo-dir>/assets ~/hbank
 cp -r <repo-dir>/templates ~/hbank
 cp -r <repo-dir>/translations ~/hbank
 ```

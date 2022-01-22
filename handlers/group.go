@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -721,7 +722,11 @@ func (h *Handler) GetGroupPicture(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if len(groupPicture) == 0 {
-		return c.JSON(http.StatusNotFound, responses.New(false, "No group picture set", lang))
+		data, err := os.ReadFile("assets/fallback-group-picture.svg")
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+		return c.Blob(http.StatusOK, "image/svg", data)
 	}
 
 	return c.Blob(http.StatusOK, "image/jpeg", groupPicture)
