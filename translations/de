@@ -40,7 +40,7 @@
 "Successfully deleted account"="Der Account wurde gelöscht"
 "Invalid or missing profile picture file"="Ungültige oder fehlende Profilbilddatei"
 "File too big (max %s)"="Datei zu groß (max %s)"
-"Unsupported MIME type"="Nicht unterstützter MIME Typ"
+"Unsupported file type"="Dateiformat wird nicht unterstützt"
 "Successfully updated profile picture"="Das Profilbild wurde erfolgreich aktualisiert"
 "Invalid 'size' query parameter"="Ungültiger 'size' Anfrageparameter"
 "Wrong profile picture id"="Falsche Profilbild-ID"

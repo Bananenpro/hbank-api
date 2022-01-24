@@ -776,7 +776,7 @@ func (h *Handler) SetGroupPicture(c echo.Context) error {
 
 	mimeType := file.Header.Get("Content-Type")
 	if !services.SupportedPictureMimeType(mimeType) {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Unsupported MIME type", lang))
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Unsupported file type", lang))
 	}
 
 	src, err := file.Open()
