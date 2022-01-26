@@ -30,6 +30,8 @@ func serveFrontend(router *echo.Echo, path string) {
 			log.Fatalf("Couldn't open '%s': %s", config.Data.FrontendRoot, err)
 		}
 	}
+	mime.AddExtensionType(".html", "text/html")
+	mime.AddExtensionType(".css", "text/css")
 	mime.AddExtensionType(".js", "application/javascript")
 	router.Use(middleware.StaticWithConfig(middleware.StaticConfig{
 		Root:  config.Data.FrontendRoot,
