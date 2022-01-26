@@ -5,10 +5,10 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func (h *Handler) RegisterV1(v1 *echo.Group) {
-	v1.GET("/status", h.Status)
+func (h *Handler) RegisterApi(api *echo.Group) {
+	api.GET("/status", h.Status)
 
-	auth := v1.Group("/auth")
+	auth := api.Group("/auth")
 	auth.POST("/register", h.Register)
 	auth.GET("/confirmEmail/:email", h.SendConfirmEmail)
 	auth.POST("/confirmEmail", h.VerifyConfirmEmailCode)
@@ -32,28 +32,28 @@ func (h *Handler) RegisterV1(v1 *echo.Group) {
 	twoFactor.POST("/recovery/verify", h.VerifyRecoveryCode)
 	twoFactor.POST("/recovery/new", h.NewRecoveryCodes, middlewares.JWT)
 
-	v1.GET("/user", h.GetUsers, middlewares.JWT)
-	v1.GET("/user/:id", h.GetUser, middlewares.JWT)
-	v1.PUT("/user", h.UpdateUser, middlewares.JWT)
-	v1.DELETE("/user/:id", h.DeleteUserByDeleteToken)
-	v1.POST("/user/delete", h.DeleteUser, middlewares.JWT)
-	v1.POST("/user/picture", h.SetProfilePicture, middlewares.JWT)
-	v1.DELETE("/user/picture", h.RemoveProfilePicture, middlewares.JWT)
-	v1.GET("/user/:id/picture", h.GetProfilePicture, middlewares.JWT)
+	api.GET("/user", h.GetUsers, middlewares.JWT)
+	api.GET("/user/:id", h.GetUser, middlewares.JWT)
+	api.PUT("/user", h.UpdateUser, middlewares.JWT)
+	api.DELETE("/user/:id", h.DeleteUserByDeleteToken)
+	api.POST("/user/delete", h.DeleteUser, middlewares.JWT)
+	api.POST("/user/picture", h.SetProfilePicture, middlewares.JWT)
+	api.DELETE("/user/picture", h.RemoveProfilePicture, middlewares.JWT)
+	api.GET("/user/:id/picture", h.GetProfilePicture, middlewares.JWT)
 
-	user := v1.Group("/user")
+	user := api.Group("/user")
 
 	user.GET("/cash/current", h.GetCurrentCash, middlewares.JWT)
 	user.GET("/cash/:id", h.GetCashLogEntryById, middlewares.JWT)
 	user.GET("/cash", h.GetCashLog, middlewares.JWT)
 	user.POST("/cash", h.AddCashLogEntry, middlewares.JWT)
 
-	v1.GET("/group", h.GetGroups, middlewares.JWT)
-	v1.GET("/group/:id", h.GetGroupById, middlewares.JWT)
-	v1.POST("/group", h.CreateGroup, middlewares.JWT)
-	v1.PUT("/group/:id", h.UpdateGroup, middlewares.JWT)
+	api.GET("/group", h.GetGroups, middlewares.JWT)
+	api.GET("/group/:id", h.GetGroupById, middlewares.JWT)
+	api.POST("/group", h.CreateGroup, middlewares.JWT)
+	api.PUT("/group/:id", h.UpdateGroup, middlewares.JWT)
 
-	group := v1.Group("/group")
+	group := api.Group("/group")
 	group.GET("/:id/member", h.GetGroupMembers, middlewares.JWT)
 	group.DELETE("/:id/member", h.LeaveGroup, middlewares.JWT)
 	group.GET("/:id/admin", h.GetGroupAdmins, middlewares.JWT)

@@ -43,10 +43,11 @@ type ConfigData struct {
 	RefreshTokenLifetime      int64  `json:"refreshTokenLifetime"`
 	SendEmailTimeout          int64  `json:"sendEmailTimeout"`
 	MaxPageSize               int    `json:"maxPageSize"`
+	FrontendRoot              string `json:"frontendRoot"`
 }
 
 var defaultData = ConfigData{
-	ServerPort:                8080,
+	ServerPort:                80,
 	DomainName:                "hbank",
 	MinNameLength:             3,
 	MaxNameLength:             30,
@@ -110,6 +111,10 @@ func verifyData() {
 			log.Fatalf("ERROR: Cannot find ssl key file `%s`\n", Data.SSLCertPath)
 		} else {
 			f.Close()
+		}
+
+		if Data.ServerPort == 80 {
+			Data.ServerPort = 443
 		}
 	}
 

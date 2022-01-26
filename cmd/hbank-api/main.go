@@ -2,8 +2,11 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"log"
+	"mime"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,7 +18,24 @@ import (
 	"github.com/Bananenpro/hbank-api/router"
 	"github.com/Bananenpro/hbank-api/services"
 	"github.com/adrg/xdg"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
+
+func serveFrontend(router *echo.Echo, path string) {
+	if _, err := os.Stat(config.Data.FrontendRoot); err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			log.Fatalf("Couldn't find '%s'!", config.Data.FrontendRoot)
+		} else {
+			log.Fatalf("Couldn't open '%s': %s", config.Data.FrontendRoot, err)
+		}
+	}
+	mime.AddExtensionType(".js", "application/javascript")
+	router.Use(middleware.StaticWithConfig(middleware.StaticConfig{
+		Root:  config.Data.FrontendRoot,
+		HTML5: true,
+	}))
+}
 
 func main() {
 	config.Load([]string{"config.json", xdg.ConfigHome + "/hbank/config.json"})
@@ -24,6 +44,10 @@ func main() {
 	services.EmailAuthenticate()
 
 	r := router.New()
+
+	if config.Data.FrontendRoot != "" {
+		serveFrontend(r, config.Data.FrontendRoot)
+	}
 
 	database, err := db.NewSqlite("database.sqlite")
 	if err != nil {
@@ -38,8 +62,8 @@ func main() {
 	gs := db.NewGroupStore(database)
 	handler := handlers.New(us, gs)
 
-	v1 := r.Group("/v1")
-	handler.RegisterV1(v1)
+	api := r.Group("/api")
+	handler.RegisterApi(api)
 
 	go func() {
 		if config.Data.SSL {

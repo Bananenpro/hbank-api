@@ -193,6 +193,13 @@ Set the system timezone to UTC to avoid problems with payment plan execution:
 sudo timedatectl set-timezone UTC
 ```
 
+You can optionally serve the frontend using this api by simply specifying the `frontendRoot` configuration option. Example:
+```js
+{
+  "frontendRoot": "web"
+}
+```
+
 ## Configuration
 
 HBank-API is looking for configuration in the following locations in order of decreasing precedence: `<working dir>/config.json`, `XDG_CONFIG_HOME/hbank/config.json`.
@@ -203,7 +210,7 @@ HBank-API is looking for configuration in the following locations in order of de
 {
   "debug": false, // !!DO NOT USE IN PRODUCTION!! Disables SameSite for cookies. Returns error messages on HTTP-500 responses.
   "dbVerbose": false, // Prints all sql queries to stdout
-  "serverPort": 8080, // The port to use for the webserver
+  "serverPort": 80, // The port to use for the webserver (if ssl: default = 443)
   "ssl": false, // Enable ssl
   "sslCertPath": "", // Path to ssl cert file
   "sslKeyPath": "", // Path to ssl key file
@@ -236,6 +243,7 @@ HBank-API is looking for configuration in the following locations in order of de
   "refreshTokenLifetime": 31536000, // Time after which refresh tokens expire in seconds
   "sendEmailTimeout": 180, // Timeout for sending the same email to the same address in seconds
   "maxPageSize": 100 // Max allowed page size for lists
+  "frontendRoot": "" // Path to the web root of the frontend
 }
 ```
 

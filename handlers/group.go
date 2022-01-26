@@ -19,7 +19,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// /v1/group?page=int&pageSize=int&descending=bool (GET)
+// /api/group?page=int&pageSize=int&descending=bool (GET)
 func (h *Handler) GetGroups(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	userId := c.Get("userId").(uuid.UUID)
@@ -66,7 +66,7 @@ func (h *Handler) GetGroups(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.NewGroups(groups, count))
 }
 
-// /v1/group/:id (GET)
+// /api/group/:id (GET)
 func (h *Handler) GetGroupById(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	userId := c.Get("userId").(uuid.UUID)
@@ -108,7 +108,7 @@ func (h *Handler) GetGroupById(c echo.Context) error {
 	}
 }
 
-// /v1/group (POST)
+// /api/group (POST)
 func (h *Handler) CreateGroup(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	userId := c.Get("userId").(uuid.UUID)
@@ -171,7 +171,7 @@ func (h *Handler) CreateGroup(c echo.Context) error {
 	return c.JSON(http.StatusCreated, responses.NewGroup(group, !body.OnlyAdmin, true))
 }
 
-// /v1/group/:id (PUT)
+// /api/group/:id (PUT)
 func (h *Handler) UpdateGroup(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -231,7 +231,7 @@ func (h *Handler) UpdateGroup(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.NewGroup(group, isMember, isAdmin))
 }
 
-// /v1/group/:id/user (GET)
+// /api/group/:id/user (GET)
 func (h *Handler) GetGroupUsers(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	userId := c.Get("userId").(uuid.UUID)
@@ -338,7 +338,7 @@ func (h *Handler) GetGroupUsers(c echo.Context) error {
 	})
 }
 
-// /v1/group/:id/member (GET)
+// /api/group/:id/member (GET)
 func (h *Handler) GetGroupMembers(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	userId := c.Get("userId").(uuid.UUID)
@@ -412,7 +412,7 @@ func (h *Handler) GetGroupMembers(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.NewUsers(members, count))
 }
 
-// /v1/group/:id/member (DELETE)
+// /api/group/:id/member (DELETE)
 func (h *Handler) LeaveGroup(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	userId := c.Get("userId").(uuid.UUID)
@@ -453,7 +453,7 @@ func (h *Handler) LeaveGroup(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.New(true, "Successfully left group", lang))
 }
 
-// /v1/group/:id/admin (GET)
+// /api/group/:id/admin (GET)
 func (h *Handler) GetGroupAdmins(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	userId := c.Get("userId").(uuid.UUID)
@@ -527,7 +527,7 @@ func (h *Handler) GetGroupAdmins(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.NewUsers(admins, count))
 }
 
-// /v1/group/:id/admin (POST)
+// /api/group/:id/admin (POST)
 func (h *Handler) AddGroupAdmin(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	authUserId := c.Get("userId").(uuid.UUID)
@@ -603,7 +603,7 @@ func (h *Handler) AddGroupAdmin(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.New(true, "Successfully made user an admin", lang))
 }
 
-// /v1/group/:id/admin (DELETE)
+// /api/group/:id/admin (DELETE)
 func (h *Handler) RemoveAdminRights(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	userId := c.Get("userId").(uuid.UUID)
@@ -671,7 +671,7 @@ func (h *Handler) RemoveAdminRights(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.New(true, "Successfully removed admin rights", lang))
 }
 
-// /v1/group/:id/picture?id=uuid (GET)
+// /api/group/:id/picture?id=uuid (GET)
 func (h *Handler) GetGroupPicture(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	userId := c.Get("userId").(uuid.UUID)
@@ -732,7 +732,7 @@ func (h *Handler) GetGroupPicture(c echo.Context) error {
 	return c.Blob(http.StatusOK, "image/jpeg", groupPicture)
 }
 
-// /v1/group/:id/picture (POST)
+// /api/group/:id/picture (POST)
 func (h *Handler) SetGroupPicture(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -814,7 +814,7 @@ func (h *Handler) SetGroupPicture(c echo.Context) error {
 	})
 }
 
-// /v1/group/:id/picture (DELETE)
+// /api/group/:id/picture (DELETE)
 func (h *Handler) RemoveGroupPicture(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -859,7 +859,7 @@ func (h *Handler) RemoveGroupPicture(c echo.Context) error {
 	})
 }
 
-// /v1/group/:id/transaction/balance (GET)
+// /api/group/:id/transaction/balance (GET)
 func (h *Handler) GetBalance(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -906,7 +906,7 @@ func (h *Handler) GetBalance(c echo.Context) error {
 	})
 }
 
-// /v1/group/:id/transaction/:transactionId (GET)
+// /api/group/:id/transaction/:transactionId (GET)
 func (h *Handler) GetTransactionById(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -965,7 +965,7 @@ func (h *Handler) GetTransactionById(c echo.Context) error {
 
 }
 
-// /v1/group/:id/transaction?bank=bool&search=string&page=int&pageSize=int&oldestFirst=bool (GET)
+// /api/group/:id/transaction?bank=bool&search=string&page=int&pageSize=int&oldestFirst=bool (GET)
 func (h *Handler) GetTransactionLog(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -1059,7 +1059,7 @@ func (h *Handler) GetTransactionLog(c echo.Context) error {
 	}
 }
 
-// /v1/group/:id/transaction (POST)
+// /api/group/:id/transaction (POST)
 func (h *Handler) CreateTransaction(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -1188,7 +1188,7 @@ func (h *Handler) CreateTransaction(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.NewTransaction(transaction, user))
 }
 
-// /v1/group/invitation?page=int&pageSize=int&oldestFirst=bool (GET)
+// /api/group/invitation?page=int&pageSize=int&oldestFirst=bool (GET)
 func (h *Handler) GetInvitationsByUser(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -1236,7 +1236,7 @@ func (h *Handler) GetInvitationsByUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.NewInvitations(invitations, count))
 }
 
-// /v1/group/:id/invitation?page=int&pageSize=int&oldestFirst=bool (GET)
+// /api/group/:id/invitation?page=int&pageSize=int&oldestFirst=bool (GET)
 func (h *Handler) GetInvitationsByGroup(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -1304,7 +1304,7 @@ func (h *Handler) GetInvitationsByGroup(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.NewInvitations(invitations, count))
 }
 
-// /v1/group/invitation/:id (GET)
+// /api/group/invitation/:id (GET)
 func (h *Handler) GetInvitationById(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -1348,7 +1348,7 @@ func (h *Handler) GetInvitationById(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.NewInvitation(invitation))
 }
 
-// /v1/group/:id/invitation (POST)
+// /api/group/:id/invitation (POST)
 func (h *Handler) CreateInvitation(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -1454,7 +1454,7 @@ func (h *Handler) CreateInvitation(c echo.Context) error {
 	return c.JSON(http.StatusCreated, responses.NewInvitation(invitation))
 }
 
-// /v1/group/invitation/:id (POST)
+// /api/group/invitation/:id (POST)
 func (h *Handler) AcceptInvitation(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -1511,7 +1511,7 @@ func (h *Handler) AcceptInvitation(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.NewGroup(group, true, false))
 }
 
-// /v1/group/invitation/:id (DELETE)
+// /api/group/invitation/:id (DELETE)
 func (h *Handler) DenyInvitation(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -1554,7 +1554,7 @@ func (h *Handler) DenyInvitation(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.New(true, "Successfully denied invitation", lang))
 }
 
-// /v1/group/:id/paymentPlan/:paymentPlanId (GET)
+// /api/group/:id/paymentPlan/:paymentPlanId (GET)
 func (h *Handler) GetPaymentPlanById(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -1621,7 +1621,7 @@ func (h *Handler) GetPaymentPlanById(c echo.Context) error {
 
 }
 
-// /v1/group/:id/paymentPlan?bank=bool&search=string&page=int&pageSize=int&oldestFirst=bool (GET)
+// /api/group/:id/paymentPlan?bank=bool&search=string&page=int&pageSize=int&oldestFirst=bool (GET)
 func (h *Handler) GetPaymentPlans(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -1715,7 +1715,7 @@ func (h *Handler) GetPaymentPlans(c echo.Context) error {
 	}
 }
 
-// /v1/group/:id/paymentPlan/nextPayment?id=uuid&firstPayment=int&schedule=int&scheduleUnit=string&count=int
+// /api/group/:id/paymentPlan/nextPayment?id=uuid&firstPayment=int&schedule=int&scheduleUnit=string&count=int
 func (h *Handler) GetPaymentPlanNextPayments(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -1834,7 +1834,7 @@ func (h *Handler) GetPaymentPlanNextPayments(c echo.Context) error {
 	})
 }
 
-// /v1/group/:id/paymentPlan (POST)
+// /api/group/:id/paymentPlan (POST)
 func (h *Handler) CreatePaymentPlan(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -1977,7 +1977,7 @@ func (h *Handler) CreatePaymentPlan(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.NewPaymentPlan(paymentPlan))
 }
 
-// /v1/group/:id/paymentPlan/:paymentPlanId (DELETE)
+// /api/group/:id/paymentPlan/:paymentPlanId (DELETE)
 func (h *Handler) DeletePaymentPlan(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -2028,7 +2028,7 @@ func (h *Handler) DeletePaymentPlan(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.New(true, "Successfully deleted payment plan", lang))
 }
 
-// /v1/group/:id/paymentPlan/:paymentPlanId (PUT)
+// /api/group/:id/paymentPlan/:paymentPlanId (PUT)
 func (h *Handler) UpdatePaymentPlan(c echo.Context) error {
 	lang := c.Get("lang").(string)
 

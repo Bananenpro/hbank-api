@@ -21,7 +21,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// /v1/auth/register (POST)
+// /api/auth/register (POST)
 func (h *Handler) Register(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	var body bindings.Register
@@ -81,7 +81,7 @@ func (h *Handler) Register(c echo.Context) error {
 	return c.JSON(http.StatusCreated, responses.NewAuthUser(user))
 }
 
-// /v1/auth/confirmEmail/:email (GET)
+// /api/auth/confirmEmail/:email (GET)
 func (h *Handler) SendConfirmEmail(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	email := c.Param("email")
@@ -145,7 +145,7 @@ func (h *Handler) SendConfirmEmail(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.New(true, "If the email address is linked to a user whose email has not yet been confirmed, a code has been sent to the specified address", lang))
 }
 
-// /v1/auth/confirmEmail (POST)
+// /api/auth/confirmEmail (POST)
 func (h *Handler) VerifyConfirmEmailCode(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	var body bindings.ConfirmEmail
@@ -181,7 +181,7 @@ func (h *Handler) VerifyConfirmEmailCode(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.New(false, "Email was not confirmed", lang))
 }
 
-// /v1/auth/twoFactor/otp/activate (POST)
+// /api/auth/twoFactor/otp/activate (POST)
 func (h *Handler) Activate2FAOTP(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	var body bindings.EmailPassword
@@ -236,7 +236,7 @@ func (h *Handler) Activate2FAOTP(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.New(false, "TwoFaOTP is already activated", lang))
 }
 
-// /v1/auth/twoFactor/otp/qr (POST)
+// /api/auth/twoFactor/otp/qr (POST)
 func (h *Handler) GetOTPQRCode(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -265,7 +265,7 @@ func (h *Handler) GetOTPQRCode(c echo.Context) error {
 	}
 }
 
-// /v1/auth/twoFactor/otp/key (POST)
+// /api/auth/twoFactor/otp/key (POST)
 func (h *Handler) GetOTPKey(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -299,7 +299,7 @@ func (h *Handler) GetOTPKey(c echo.Context) error {
 	}
 }
 
-// /v1/auth/twoFactor/otp/verify (POST)
+// /api/auth/twoFactor/otp/verify (POST)
 func (h *Handler) VerifyOTPCode(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	var body bindings.VerifyCode
@@ -356,7 +356,7 @@ func (h *Handler) VerifyOTPCode(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.NewInvalidCredentials(lang))
 }
 
-// /v1/auth/twoFactor/otp/new
+// /api/auth/twoFactor/otp/new
 func (h *Handler) NewOTP(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	var body bindings.Password
@@ -411,7 +411,7 @@ func (h *Handler) NewOTP(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.New(false, "Please enable otp first", lang))
 }
 
-// /v1/auth/passwordAuth (POST)
+// /api/auth/passwordAuth (POST)
 func (h *Handler) PasswordAuth(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	var body bindings.PasswordAuth
@@ -462,7 +462,7 @@ func (h *Handler) PasswordAuth(c echo.Context) error {
 	})
 }
 
-// /v1/auth/login (POST)
+// /api/auth/login (POST)
 func (h *Handler) Login(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	var body bindings.Login
@@ -553,7 +553,7 @@ func (h *Handler) Login(c echo.Context) error {
 		HttpOnly: true,
 		SameSite: sameSite,
 		Domain:   config.Data.DomainName,
-		Path:     "/v1/auth",
+		Path:     "/api/auth",
 	})
 
 	c.SetCookie(&http.Cookie{
@@ -581,7 +581,7 @@ func (h *Handler) Login(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.NewAuthUser(user))
 }
 
-// /v1/auth/refresh (POST)
+// /api/auth/refresh (POST)
 func (h *Handler) Refresh(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	var body bindings.Refresh
@@ -662,7 +662,7 @@ func (h *Handler) Refresh(c echo.Context) error {
 		HttpOnly: true,
 		SameSite: sameSite,
 		Domain:   config.Data.DomainName,
-		Path:     "/v1/auth",
+		Path:     "/api/auth",
 	})
 
 	c.SetCookie(&http.Cookie{
@@ -690,7 +690,7 @@ func (h *Handler) Refresh(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.New(true, "Successfully refreshed tokens", lang))
 }
 
-// /v1/auth/logout?all=bool (POST)
+// /api/auth/logout?all=bool (POST)
 func (h *Handler) Logout(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
@@ -729,7 +729,7 @@ func (h *Handler) Logout(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.New(true, "Successfully signed out", lang))
 }
 
-// /v1/auth/twoFactor/recovery/verify (POST)
+// /api/auth/twoFactor/recovery/verify (POST)
 func (h *Handler) VerifyRecoveryCode(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	var body bindings.VerifyCode
@@ -789,7 +789,7 @@ func (h *Handler) VerifyRecoveryCode(c echo.Context) error {
 	})
 }
 
-// /v1/auth/twoFactor/recovery/new (POST)
+// /api/auth/twoFactor/recovery/new (POST)
 func (h *Handler) NewRecoveryCodes(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
@@ -823,7 +823,7 @@ func (h *Handler) NewRecoveryCodes(c echo.Context) error {
 	})
 }
 
-// /v1/auth/changePassword (POST)
+// /api/auth/changePassword (POST)
 func (h *Handler) ChangePassword(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
@@ -870,7 +870,7 @@ func (h *Handler) ChangePassword(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.New(true, "Successfully changed password", lang))
 }
 
-// /v1/auth/forgotPassword (POST)
+// /api/auth/forgotPassword (POST)
 func (h *Handler) ForgotPassword(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	var body bindings.ForgotPassword
@@ -951,7 +951,7 @@ func (h *Handler) ForgotPassword(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.New(false, "Invalid captcha token", lang))
 }
 
-// /v1/auth/resetPassword (POST)
+// /api/auth/resetPassword (POST)
 func (h *Handler) ResetPassword(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	var body bindings.ResetPassword
@@ -1010,7 +1010,7 @@ func (h *Handler) ResetPassword(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.New(true, "Successfully changed password", lang))
 }
 
-// /v1/auth/requestChangeEmail (POST)
+// /api/auth/requestChangeEmail (POST)
 func (h *Handler) RequestChangeEmail(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))
@@ -1077,7 +1077,7 @@ func (h *Handler) RequestChangeEmail(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.New(false, "Invalid captcha token", lang))
 }
 
-// /v1/auth/changeEmail (POST)
+// /api/auth/changeEmail (POST)
 func (h *Handler) ChangeEmail(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	user, err := h.userStore.GetById(c.Get("userId").(uuid.UUID))

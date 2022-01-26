@@ -21,7 +21,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// /v1/user?except=uuid,uuid,…&page=int&pageSize=int&descending=bool (GET)
+// /api/user?except=uuid,uuid,…&page=int&pageSize=int&descending=bool (GET)
 func (h *Handler) GetUsers(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	authUserId := c.Get("userId").(uuid.UUID)
@@ -79,7 +79,7 @@ func (h *Handler) GetUsers(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.NewUsers(users, count))
 }
 
-// /v1/user/:id (GET)
+// /api/user/:id (GET)
 func (h *Handler) GetUser(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	authUserId := c.Get("userId").(uuid.UUID)
@@ -110,7 +110,7 @@ func (h *Handler) GetUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.NewUser(user))
 }
 
-// /v1/user/delete (POST)
+// /api/user/delete (POST)
 func (h *Handler) DeleteUser(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	userId := c.Get("userId").(uuid.UUID)
@@ -183,7 +183,7 @@ func (h *Handler) DeleteUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.New(true, "Successfully deleted account", lang))
 }
 
-// /v1/user/:id?token=string (DELETE)
+// /api/user/:id?token=string (DELETE)
 func (h *Handler) DeleteUserByDeleteToken(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -210,7 +210,7 @@ func (h *Handler) DeleteUserByDeleteToken(c echo.Context) error {
 	return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 }
 
-// /v1/user/picture (POST)
+// /api/user/picture (POST)
 func (h *Handler) SetProfilePicture(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -275,7 +275,7 @@ func (h *Handler) SetProfilePicture(c echo.Context) error {
 	})
 }
 
-// /v1/user/picture (DELETE)
+// /api/user/picture (DELETE)
 func (h *Handler) RemoveProfilePicture(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -303,7 +303,7 @@ func (h *Handler) RemoveProfilePicture(c echo.Context) error {
 	})
 }
 
-// /v1/user/:id/picture?id=uuid&size=tiny/small/medium/large/huge (GET)
+// /api/user/:id/picture?id=uuid&size=tiny/small/medium/large/huge (GET)
 func (h *Handler) GetProfilePicture(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -368,7 +368,7 @@ func (h *Handler) GetProfilePicture(c echo.Context) error {
 	return c.Blob(http.StatusOK, "image/jpeg", profilePicture)
 }
 
-// /v1/user (PUT)
+// /api/user (PUT)
 func (h *Handler) UpdateUser(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -402,7 +402,7 @@ func (h *Handler) UpdateUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.NewAuthUser(user))
 }
 
-// /v1/user/cash/current (GET)
+// /api/user/cash/current (GET)
 func (h *Handler) GetCurrentCash(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -430,7 +430,7 @@ func (h *Handler) GetCurrentCash(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.NewCashLogEntry(entry))
 }
 
-// /v1/user/cash/:id (GET)
+// /api/user/cash/:id (GET)
 func (h *Handler) GetCashLogEntryById(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -459,7 +459,7 @@ func (h *Handler) GetCashLogEntryById(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.NewCashLogEntry(entry))
 }
 
-// /v1/user/cash?page=int&pageSize=int&oldestFirst=bool (GET)
+// /api/user/cash?page=int&pageSize=int&oldestFirst=bool (GET)
 func (h *Handler) GetCashLog(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
@@ -507,7 +507,7 @@ func (h *Handler) GetCashLog(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.NewCashLog(entries, count))
 }
 
-// /v1/user/cash (POST)
+// /api/user/cash (POST)
 func (h *Handler) AddCashLogEntry(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
