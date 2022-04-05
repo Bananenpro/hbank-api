@@ -107,7 +107,7 @@ cp -r <repo-dir>/translations ~/hbank
 Create a configuration file named `config.json` in the same directory.
 
 Example configuration:
-```js
+```jsonc
 {
   "domainName": "hbank.example",
   "jwtSecret": "&#aMv5g^m5fzon29eY!QVqkRLMqugFYz",
@@ -194,7 +194,7 @@ sudo timedatectl set-timezone UTC
 ```
 
 You can optionally serve the frontend using this api by simply specifying the `frontendRoot` configuration option. Example:
-```js
+```jsonc
 {
   "frontendRoot": "web"
 }
@@ -206,7 +206,7 @@ HBank-API is looking for configuration in the following locations in order of de
 *Note:* The first config file to be found is used and all others are discarded.
 
 ### Default configuration
-```js
+```jsonc
 {
   "debug": false, // !!DO NOT USE IN PRODUCTION!! Disables SameSite for cookies. Returns error messages on HTTP-500 responses.
   "dbVerbose": false, // Prints all sql queries to stdout
