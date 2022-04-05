@@ -388,6 +388,7 @@ func (h *Handler) UpdateUser(c echo.Context) error {
 	}
 
 	user.DontSendInvitationEmail = body.DontSendInvitationEmail
+	user.PubliclyVisible = body.PubliclyVisible
 
 	body.ProfilePicturePrivacy = strings.ToLower(body.ProfilePicturePrivacy)
 	switch body.ProfilePicturePrivacy {

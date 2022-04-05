@@ -10,6 +10,7 @@ type AuthUser struct {
 	TwoFAOTPEnabled         bool   `json:"twoFAOTPEnabled"`
 	ProfilePictureId        string `json:"profilePictureId"`
 	ProfilePicturePrivacy   string `json:"profilePicturePrivacy"`
+	PubliclyVisible         bool   `json:"publiclyVisible"`
 	DontSendInvitationEmail bool   `json:"dontSendInvitationEmail"`
 	DeleteToken             string `json:"deleteToken,omitempty"`
 }
@@ -137,6 +138,7 @@ func NewAuthUser(user *models.User) interface{} {
 			TwoFAOTPEnabled:         user.TwoFaOTPEnabled,
 			ProfilePictureId:        user.ProfilePictureId.String(),
 			ProfilePicturePrivacy:   user.ProfilePicturePrivacy,
+			PubliclyVisible:         user.PubliclyVisible,
 			DontSendInvitationEmail: user.DontSendInvitationEmail,
 			DeleteToken:             user.DeleteToken,
 		},

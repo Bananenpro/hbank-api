@@ -73,8 +73,9 @@ type User struct {
 	Email                   string `gorm:"unique"`
 	PasswordHash            []byte
 	ProfilePicture          *ProfilePicture `gorm:"constraint:OnDelete:CASCADE"`
-	ProfilePictureId        uuid.UUID `gorm:"type:uuid"`
-	ProfilePicturePrivacy   string    `gorm:"default:everybody"`
+	ProfilePictureId        uuid.UUID       `gorm:"type:uuid"`
+	ProfilePicturePrivacy   string          `gorm:"default:everybody"`
+	PubliclyVisible         bool            `gorm:"default:true"`
 	DontSendInvitationEmail bool
 	CashLog                 []CashLogEntry
 	EmailConfirmed          bool

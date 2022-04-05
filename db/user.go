@@ -32,9 +32,9 @@ func (us *UserStore) GetAll(exclude []uuid.UUID, searchInput string, page, pageS
 	}
 
 	if page < 0 || pageSize < 0 {
-		err = us.db.Not(map[string]interface{}{"id": exclude}).Order("name "+order).Find(&users, "name LIKE ?", "%"+searchInput+"%").Error
+		err = us.db.Not(map[string]interface{}{"id": exclude}).Order("name "+order).Find(&users, "name LIKE ? AND publicly_visible = ?", "%"+searchInput+"%", true).Error
 	} else {
-		err = us.db.Not(map[string]interface{}{"id": exclude}).Order("name "+order).Offset(page*pageSize).Limit(pageSize).Find(&users, "name LIKE ?", "%"+searchInput+"%").Error
+		err = us.db.Not(map[string]interface{}{"id": exclude}).Order("name "+order).Offset(page*pageSize).Limit(pageSize).Find(&users, "name LIKE ? AND publicly_visible = ?", "%"+searchInput+"%", true).Error
 	}
 
 	return users, err
@@ -42,7 +42,7 @@ func (us *UserStore) GetAll(exclude []uuid.UUID, searchInput string, page, pageS
 
 func (us *UserStore) Count() (int64, error) {
 	var count int64
-	err := us.db.Model(&models.User{}).Count(&count).Error
+	err := us.db.Model(&models.User{}).Where("publicly_visible = ?", true).Count(&count).Error
 	return count, err
 }
 
