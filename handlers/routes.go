@@ -82,4 +82,6 @@ func (h *Handler) RegisterApi(api *echo.Group) {
 	group.POST("/:id/paymentPlan", h.CreatePaymentPlan, middlewares.JWT)
 	group.PUT("/:id/paymentPlan/:paymentPlanId", h.UpdatePaymentPlan, middlewares.JWT)
 	group.DELETE("/:id/paymentPlan/:paymentPlanId", h.DeletePaymentPlan, middlewares.JWT)
+
+	group.GET("/:id/total", h.GetTotalMoney, middlewares.JWT)
 }

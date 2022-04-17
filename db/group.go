@@ -727,3 +727,21 @@ func (gs *GroupStore) DeletePaymentPlan(paymentPlan *models.PaymentPlan) error {
 	gs.db.Model(&models.TransactionLogEntry{}).Where("payment_plan_id = ?", paymentPlan.Id).Update("payment_plan_id", uuid.UUID{})
 	return gs.db.Delete(paymentPlan).Error
 }
+
+func (gs *GroupStore) GetTotalMoney(group *models.Group) (int, error) {
+	users, err := gs.GetMembers(nil, "", group, -1, -1, false)
+	if err != nil {
+		return 0, err
+	}
+
+	total := 0
+	for _, u := range users {
+		balance, err := gs.GetUserBalance(group, &u)
+		if err != nil {
+			return 0, err
+		}
+		total += balance
+	}
+
+	return total, nil
+}

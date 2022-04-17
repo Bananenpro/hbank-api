@@ -485,3 +485,16 @@ func NewPaymentPlans(paymentPlans []models.PaymentPlan, count int64) interface{}
 		PaymentPlans: paymentPlanDTOs,
 	}
 }
+
+func NewTotalMoney(total int) interface{} {
+	type totalMoney struct {
+		Base
+		Total int `json:"total"`
+	}
+	return totalMoney{
+		Base: Base{
+			Success: true,
+		},
+		Total: total,
+	}
+}

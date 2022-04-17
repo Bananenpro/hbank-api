@@ -63,6 +63,8 @@ type GroupStore interface {
 	CreatePaymentPlan(group *Group, senderIsBank, receiverIsBank bool, sender *User, receiver *User, name, description string, amount, repeats, schedule int, scheduleUnit string, firstPayment int64) (*PaymentPlan, error)
 	UpdatePaymentPlan(paymentPlan *PaymentPlan) error
 	DeletePaymentPlan(paymentPlan *PaymentPlan) error
+
+	GetTotalMoney(group *Group) (int, error)
 }
 
 type Group struct {
