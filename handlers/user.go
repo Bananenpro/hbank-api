@@ -329,14 +329,26 @@ func (h *Handler) GetProfilePicture(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, responses.NewNotFound(lang))
 	}
 
-	switch user.ProfilePicturePrivacy {
-	case models.ProfilePictureNobody:
-		if user.Id.String() != authUser.Id.String() {
+	if user.Id.String() != authUser.Id.String() {
+		switch user.ProfilePicturePrivacy {
+		case models.ProfilePictureNobody:
 			data, err := os.ReadFile("assets/fallback-profile-picture.svg")
 			if err != nil {
 				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 			}
 			return c.Blob(http.StatusOK, "image/svg+xml", data)
+		case models.ProfilePictureGroup:
+			sameGroup, err := h.groupStore.AreInSameGroup(authUser.Id, user.Id)
+			if err != nil {
+				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+			}
+			if !sameGroup {
+				data, err := os.ReadFile("assets/fallback-profile-picture.svg")
+				if err != nil {
+					return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+				}
+				return c.Blob(http.StatusOK, "image/svg+xml", data)
+			}
 		}
 	}
 
@@ -392,7 +404,7 @@ func (h *Handler) UpdateUser(c echo.Context) error {
 
 	body.ProfilePicturePrivacy = strings.ToLower(body.ProfilePicturePrivacy)
 	switch body.ProfilePicturePrivacy {
-	case models.ProfilePictureEverybody, models.ProfilePictureNobody:
+	case models.ProfilePictureEverybody, models.ProfilePictureGroup, models.ProfilePictureNobody:
 		user.ProfilePicturePrivacy = body.ProfilePicturePrivacy
 	default:
 		return c.JSON(http.StatusOK, responses.New(false, "Invalid profile picture privacy", lang))

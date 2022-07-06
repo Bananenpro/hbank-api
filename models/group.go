@@ -65,6 +65,8 @@ type GroupStore interface {
 	DeletePaymentPlan(paymentPlan *PaymentPlan) error
 
 	GetTotalMoney(group *Group) (int, error)
+
+	AreInSameGroup(userId1, userId2 uuid.UUID) (bool, error)
 }
 
 type Group struct {
@@ -72,7 +74,7 @@ type Group struct {
 	Name           string
 	Description    string
 	GroupPicture   *GroupPicture `gorm:"constraint:OnDelete:CASCADE"`
-	GroupPictureId uuid.UUID `gorm:"type:uuid"`
+	GroupPictureId uuid.UUID     `gorm:"type:uuid"`
 
 	Memberships []GroupMembership
 	Invitations []GroupInvitation
@@ -87,7 +89,7 @@ type GroupPicture struct {
 	Large  []byte
 	Huge   []byte
 
-	GroupId   uuid.UUID `gorm:"type:uuid"`
+	GroupId uuid.UUID `gorm:"type:uuid"`
 }
 
 type GroupMembership struct {

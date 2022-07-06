@@ -745,3 +745,12 @@ func (gs *GroupStore) GetTotalMoney(group *models.Group) (int, error) {
 
 	return total, nil
 }
+
+func (gs *GroupStore) AreInSameGroup(userId1, userId2 uuid.UUID) (bool, error) {
+	var count int
+	err := gs.db.Raw("select count(*) from group_memberships where group_memberships.user_id = ? and group_memberships.group_id in (select group_memberships.group_id from group_memberships where group_memberships.user_id = ?)", userId1, userId2).Scan(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}

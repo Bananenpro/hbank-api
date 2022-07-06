@@ -64,6 +64,7 @@ type UserStore interface {
 
 const (
 	ProfilePictureEverybody = "everybody"
+	ProfilePictureGroup     = "group"
 	ProfilePictureNobody    = "nobody"
 )
 
@@ -74,7 +75,7 @@ type User struct {
 	PasswordHash            []byte
 	ProfilePicture          *ProfilePicture `gorm:"constraint:OnDelete:CASCADE"`
 	ProfilePictureId        uuid.UUID       `gorm:"type:uuid"`
-	ProfilePicturePrivacy   string          `gorm:"default:everybody"`
+	ProfilePicturePrivacy   string          `gorm:"default:group"`
 	PubliclyVisible         bool            `gorm:"default:true"`
 	DontSendInvitationEmail bool
 	CashLog                 []CashLogEntry
