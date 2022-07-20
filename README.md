@@ -2,16 +2,14 @@
 <h1 align="center">H-Bank API</h1>
 
 ![License](https://img.shields.io/github/license/Bananenpro/hbank-api)
-![Commit Activity](https://img.shields.io/github/commit-activity/m/Bananenpro/hbank-api)
 ![Go Version](https://img.shields.io/github/go-mod/go-version/Bananenpro/hbank-api)
 ![Total Lines](https://img.shields.io/tokei/lines/github/Bananenpro/hbank-api)
 ![Issues](https://img.shields.io/github/issues/Bananenpro/hbank-api)
 ![Stars](https://img.shields.io/github/stars/Bananenpro/hbank-api)
-![Forks](https://img.shields.io/github/forks/Bananenpro/hbank-api)
 
 ## Description
 
-The API for the [H-Bank](https://github.com/Bananenpro/hbank) application.
+The API for the [H-Bank](https://github.com/Bananenpro/hbank-web) application.
 
 ## Setup
 
