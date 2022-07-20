@@ -33,9 +33,11 @@ type CreatePaymentPlan struct {
 }
 
 type UpdatePaymentPlan struct {
-	Name         string `json:"name" form:"name"`
-	Description  string `json:"description" form:"description"`
-	Amount       uint   `json:"amount" form:"amount"`
+	Name        string `json:"name" form:"name"`
+	Description string `json:"description" form:"description"`
+	Amount      uint   `json:"amount" form:"amount"`
+	// UTC date of next payment with format "YYYY-MM-DD"
+	NextPayment  string `json:"nextPayment"`
 	Schedule     uint   `json:"schedule" form:"schedule"`
 	ScheduleUnit string `json:"scheduleUnit" form:"scheduleUnit"`
 }

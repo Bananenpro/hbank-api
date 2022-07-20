@@ -2116,9 +2116,18 @@ func (h *Handler) UpdatePaymentPlan(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid schedule unit", lang))
 	}
 
+	nextPayment, err := time.Parse("2006-01-02", body.NextPayment)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid date string", lang))
+	}
+	if nextPayment.Before(time.Now()) {
+		return c.JSON(http.StatusOK, responses.New(false, "Next payment can't be in the past", lang))
+	}
+
 	paymentPlan.Amount = int(body.Amount)
 	paymentPlan.Name = body.Name
 	paymentPlan.Description = body.Description
+	paymentPlan.NextExecute = nextPayment.Unix()
 	paymentPlan.Schedule = int(body.Schedule)
 	paymentPlan.ScheduleUnit = body.ScheduleUnit
 
