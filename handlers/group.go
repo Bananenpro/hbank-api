@@ -2068,7 +2068,13 @@ func (h *Handler) UpdatePaymentPlan(c echo.Context) error {
 
 	isSender := bytes.Equal(user.Id[:], paymentPlan.SenderId[:])
 	if !isSender {
-		return c.JSON(http.StatusForbidden, responses.New(false, "User not the sender of the payment plan", lang))
+		isAdmin, err := h.groupStore.IsAdmin(group, user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+		if !paymentPlan.SenderIsBank || !isAdmin {
+			return c.JSON(http.StatusForbidden, responses.New(false, "User not the sender of the payment plan", lang))
+		}
 	}
 
 	var body bindings.UpdatePaymentPlan
