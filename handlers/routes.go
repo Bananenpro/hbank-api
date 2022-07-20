@@ -27,7 +27,7 @@ func (h *Handler) RegisterApi(api *echo.Group) {
 	twoFactor.POST("/otp/qr", h.GetOTPQRCode)
 	twoFactor.POST("/otp/key", h.GetOTPKey)
 	twoFactor.POST("/otp/verify", h.VerifyOTPCode)
-	twoFactor.POST("/otp/new", h.NewOTP, middlewares.JWT)
+	twoFactor.POST("/otp/reset", h.ResetOTP, middlewares.JWT)
 
 	twoFactor.POST("/recovery/verify", h.VerifyRecoveryCode)
 	twoFactor.POST("/recovery/new", h.NewRecoveryCodes, middlewares.JWT)

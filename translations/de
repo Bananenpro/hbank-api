@@ -113,5 +113,5 @@
 "'firstPayment' query parameter not a number"="'firstPayment' Anfrageparameter keine Zahl"
 "'count' query parameter too big"="'count' Anfrageparameter zu groß"
 "Successfully activated TwoFaOTP"="TwoFaOTP wurde erfolgreich aktiviert"
-"Successfully created new otp"="Erfolgreich neues OTP erstellt"
+"Successfully reset otp"="Erfolgreich OTP zurückgesetzt"
 "Invalid 'exclude' query parameter"="Ungültiger 'exclude' Anfrageparameter"

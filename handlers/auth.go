@@ -313,7 +313,11 @@ func (h *Handler) VerifyOTPCode(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 	if user == nil {
-		return c.JSON(http.StatusOK, responses.NewInvalidCredentials(lang))
+		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
+	}
+
+	if user.OtpSecret == "" {
+		return c.JSON(http.StatusOK, responses.New(false, "Two factor authentication is not enabled", lang))
 	}
 
 	if totp.Validate(body.Code, user.OtpSecret) {
@@ -353,11 +357,11 @@ func (h *Handler) VerifyOTPCode(c echo.Context) error {
 		})
 	}
 
-	return c.JSON(http.StatusOK, responses.NewInvalidCredentials(lang))
+	return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
 }
 
-// /api/auth/twoFactor/otp/new
-func (h *Handler) NewOTP(c echo.Context) error {
+// /api/auth/twoFactor/otp/reset
+func (h *Handler) ResetOTP(c echo.Context) error {
 	lang := c.Get("lang").(string)
 	var body bindings.Password
 	err := c.Bind(&body)
@@ -378,34 +382,15 @@ func (h *Handler) NewOTP(c echo.Context) error {
 	}
 
 	if user.TwoFaOTPEnabled {
-		key, err := totp.Generate(totp.GenerateOpts{
-			Issuer:      config.Data.DomainName,
-			AccountName: user.Email,
-		})
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-		}
-
-		img, err := key.Image(200, 200)
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-		}
-
-		var qr bytes.Buffer
-
-		png.Encode(&qr, img)
-
-		secret := key.Secret()
-
-		user.OtpSecret = secret
-		user.OtpQrCode = qr.Bytes()
-
+		user.TwoFaOTPEnabled = false
+		user.OtpSecret = ""
+		user.OtpQrCode = nil
 		err = h.userStore.Update(user)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 
-		return c.JSON(http.StatusOK, responses.New(true, "Successfully created new otp", lang))
+		return c.JSON(http.StatusOK, responses.New(true, "Successfully reset otp", lang))
 	}
 
 	return c.JSON(http.StatusOK, responses.New(false, "Please enable otp first", lang))

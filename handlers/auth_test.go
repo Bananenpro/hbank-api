@@ -421,10 +421,11 @@ func TestHandler_VerifyOTPCode(t *testing.T) {
 	png.Encode(&qr, img)
 
 	us.Create(&models.User{
-		Name:      "bob",
-		Email:     "bob@gmail.com",
-		OtpSecret: key.Secret(),
-		OtpQrCode: qr.Bytes(),
+		Name:            "bob",
+		Email:           "bob@gmail.com",
+		OtpSecret:       key.Secret(),
+		OtpQrCode:       qr.Bytes(),
+		TwoFaOTPEnabled: true,
 	})
 
 	pastCode, _ := totp.GenerateCode(key.Secret(), time.Unix(0, 0))
@@ -812,7 +813,7 @@ func TestHandler_NewRecoveryCodes(t *testing.T) {
 	}
 }
 
-func TestHandler_NewOTP(t *testing.T) {
+func TestHandler_ResetOTP(t *testing.T) {
 	t.Parallel()
 	config.Data.Debug = true
 	r := router.New()
@@ -858,7 +859,7 @@ func TestHandler_NewOTP(t *testing.T) {
 		wantSuccess bool
 		wantMessage string
 	}{
-		{tName: "Success", user: user1, password: "123456", wantCode: http.StatusOK, wantSuccess: true, wantMessage: "Successfully created new otp"},
+		{tName: "Success", user: user1, password: "123456", wantCode: http.StatusOK, wantSuccess: true, wantMessage: "Successfully reset otp"},
 		{tName: "Wrong password", user: user1, password: "654321", wantCode: http.StatusForbidden, wantSuccess: false, wantMessage: "Invalid credentials"},
 		{tName: "OTP not enabled", user: user2, password: "123456", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Please enable otp first"},
 	}
@@ -873,12 +874,19 @@ func TestHandler_NewOTP(t *testing.T) {
 
 			c.Set("userId", tt.user.Id)
 
-			err := handler.NewOTP(c)
+			err := handler.ResetOTP(c)
 
 			assert.NoError(t, err)
 			assert.Equal(t, tt.wantCode, rec.Code)
 			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"success":%t`, tt.wantSuccess))
 			assert.Contains(t, rec.Body.String(), fmt.Sprintf(`"message":"%s"`, tt.wantMessage))
+
+			user, _ := us.GetById(tt.user.Id)
+			if tt.wantSuccess {
+				assert.False(t, user.TwoFaOTPEnabled)
+				assert.Empty(t, user.OtpSecret)
+				assert.Empty(t, user.OtpQrCode)
+			}
 		})
 	}
 }
