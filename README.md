@@ -3,7 +3,6 @@
 
 ![License](https://img.shields.io/github/license/Bananenpro/hbank-api)
 ![Go Version](https://img.shields.io/github/go-mod/go-version/Bananenpro/hbank-api)
-![Total Lines](https://img.shields.io/tokei/lines/github/Bananenpro/hbank-api)
 ![Issues](https://img.shields.io/github/issues/Bananenpro/hbank-api)
 ![Stars](https://img.shields.io/github/stars/Bananenpro/hbank-api)
 
