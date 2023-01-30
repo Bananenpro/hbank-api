@@ -10,19 +10,20 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/google/uuid"
+	"github.com/labstack/echo/v4"
+
 	"github.com/Bananenpro/hbank-api/bindings"
 	"github.com/Bananenpro/hbank-api/config"
 	"github.com/Bananenpro/hbank-api/models"
 	"github.com/Bananenpro/hbank-api/responses"
 	"github.com/Bananenpro/hbank-api/services"
-	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
 )
 
 // /api/group?page=int&pageSize=int&descending=bool (GET)
 func (h *Handler) GetGroups(c echo.Context) error {
 	lang := c.Get("lang").(string)
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -69,7 +70,7 @@ func (h *Handler) GetGroups(c echo.Context) error {
 // /api/group/:id (GET)
 func (h *Handler) GetGroupById(c echo.Context) error {
 	lang := c.Get("lang").(string)
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -78,9 +79,9 @@ func (h *Handler) GetGroupById(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	id, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	id := c.Param("id")
+	if id == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 
 	group, err := h.groupStore.GetById(id)
@@ -111,7 +112,7 @@ func (h *Handler) GetGroupById(c echo.Context) error {
 // /api/group (POST)
 func (h *Handler) CreateGroup(c echo.Context) error {
 	lang := c.Get("lang").(string)
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -148,7 +149,7 @@ func (h *Handler) CreateGroup(c echo.Context) error {
 	group := &models.Group{
 		Name:           body.Name,
 		Description:    body.Description,
-		GroupPictureId: uuid.New(),
+		GroupPictureId: uuid.NewString(),
 	}
 
 	err = h.groupStore.Create(group)
@@ -175,7 +176,7 @@ func (h *Handler) CreateGroup(c echo.Context) error {
 func (h *Handler) UpdateGroup(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -184,9 +185,9 @@ func (h *Handler) UpdateGroup(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	groupId, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	groupId := c.Param("id")
+	if groupId == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 	group, err := h.groupStore.GetById(groupId)
 	if err != nil {
@@ -234,7 +235,7 @@ func (h *Handler) UpdateGroup(c echo.Context) error {
 // /api/group/:id/user (GET)
 func (h *Handler) GetGroupUsers(c echo.Context) error {
 	lang := c.Get("lang").(string)
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -243,9 +244,9 @@ func (h *Handler) GetGroupUsers(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	id, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	id := c.Param("id")
+	if id == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 
 	page := 0
@@ -303,11 +304,10 @@ func (h *Handler) GetGroupUsers(c echo.Context) error {
 	}
 
 	type dto struct {
-		Id               string `json:"id"`
-		Name             string `json:"name"`
-		ProfilePictureId string `json:"profilePictureId"`
-		Member           bool   `json:"member"`
-		Admin            bool   `json:"admin"`
+		Id     string `json:"id"`
+		Name   string `json:"name"`
+		Member bool   `json:"member"`
+		Admin  bool   `json:"admin"`
 	}
 	dtos := make([]dto, len(memberships))
 	for i, m := range memberships {
@@ -316,11 +316,10 @@ func (h *Handler) GetGroupUsers(c echo.Context) error {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
 		dtos[i] = dto{
-			Id:               member.Id.String(),
-			Name:             member.Name,
-			ProfilePictureId: member.ProfilePictureId.String(),
-			Member:           m.IsMember,
-			Admin:            m.IsAdmin,
+			Id:     member.Id,
+			Name:   member.Name,
+			Member: m.IsMember,
+			Admin:  m.IsAdmin,
 		}
 	}
 
@@ -341,7 +340,7 @@ func (h *Handler) GetGroupUsers(c echo.Context) error {
 // /api/group/:id/member (GET)
 func (h *Handler) GetGroupMembers(c echo.Context) error {
 	lang := c.Get("lang").(string)
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -350,9 +349,9 @@ func (h *Handler) GetGroupMembers(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	id, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	id := c.Param("id")
+	if id == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 
 	page := 0
@@ -415,7 +414,7 @@ func (h *Handler) GetGroupMembers(c echo.Context) error {
 // /api/group/:id/member (DELETE)
 func (h *Handler) LeaveGroup(c echo.Context) error {
 	lang := c.Get("lang").(string)
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -424,9 +423,9 @@ func (h *Handler) LeaveGroup(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	id, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	id := c.Param("id")
+	if id == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 
 	group, err := h.groupStore.GetById(id)
@@ -456,7 +455,7 @@ func (h *Handler) LeaveGroup(c echo.Context) error {
 // /api/group/:id/admin (GET)
 func (h *Handler) GetGroupAdmins(c echo.Context) error {
 	lang := c.Get("lang").(string)
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -465,9 +464,9 @@ func (h *Handler) GetGroupAdmins(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	id, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	id := c.Param("id")
+	if id == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 
 	page := 0
@@ -530,7 +529,7 @@ func (h *Handler) GetGroupAdmins(c echo.Context) error {
 // /api/group/:id/admin (POST)
 func (h *Handler) AddGroupAdmin(c echo.Context) error {
 	lang := c.Get("lang").(string)
-	authUserId := c.Get("userId").(uuid.UUID)
+	authUserId := c.Get("userId").(string)
 	authUser, err := h.userStore.GetById(authUserId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -539,9 +538,9 @@ func (h *Handler) AddGroupAdmin(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	id, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	id := c.Param("id")
+	if id == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 
 	group, err := h.groupStore.GetById(id)
@@ -566,12 +565,7 @@ func (h *Handler) AddGroupAdmin(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
 	}
 
-	userId, err := uuid.Parse(body.Id)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
-	}
-
-	user, err := h.userStore.GetById(userId)
+	user, err := h.userStore.GetById(body.Id)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
@@ -606,7 +600,7 @@ func (h *Handler) AddGroupAdmin(c echo.Context) error {
 // /api/group/:id/admin (DELETE)
 func (h *Handler) RemoveAdminRights(c echo.Context) error {
 	lang := c.Get("lang").(string)
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -615,9 +609,9 @@ func (h *Handler) RemoveAdminRights(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	id, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	id := c.Param("id")
+	if id == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 
 	group, err := h.groupStore.GetById(id)
@@ -674,7 +668,7 @@ func (h *Handler) RemoveAdminRights(c echo.Context) error {
 // /api/group/:id/picture?id=uuid (GET)
 func (h *Handler) GetGroupPicture(c echo.Context) error {
 	lang := c.Get("lang").(string)
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -683,9 +677,9 @@ func (h *Handler) GetGroupPicture(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	id, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	id := c.Param("id")
+	if id == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 
 	group, err := h.groupStore.GetById(id)
@@ -704,7 +698,7 @@ func (h *Handler) GetGroupPicture(c echo.Context) error {
 		return c.JSON(http.StatusForbidden, responses.New(false, "Not a member/admin of the group", lang))
 	}
 
-	if c.QueryParam("id") != "" && c.QueryParam("id") != group.GroupPictureId.String() {
+	if c.QueryParam("id") != "" && c.QueryParam("id") != group.GroupPictureId {
 		return c.JSON(http.StatusNotFound, responses.New(false, "Wrong group picture id", lang))
 	}
 
@@ -736,7 +730,7 @@ func (h *Handler) GetGroupPicture(c echo.Context) error {
 func (h *Handler) SetGroupPicture(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -745,10 +739,11 @@ func (h *Handler) SetGroupPicture(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	groupId, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	groupId := c.Param("id")
+	if groupId == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
+
 	group, err := h.groupStore.GetById(groupId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -796,7 +791,7 @@ func (h *Handler) SetGroupPicture(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	group.GroupPictureId = uuid.New()
+	group.GroupPictureId = uuid.NewString()
 	h.groupStore.UpdateGroupPicture(group, &models.GroupPicture{
 		Tiny:   pic.Tiny,
 		Small:  pic.Small,
@@ -810,7 +805,7 @@ func (h *Handler) SetGroupPicture(c echo.Context) error {
 			Success: true,
 			Message: services.Tr("Successfully updated group picture", lang),
 		},
-		Id: group.GroupPictureId.String(),
+		Id: group.GroupPictureId,
 	})
 }
 
@@ -818,7 +813,7 @@ func (h *Handler) SetGroupPicture(c echo.Context) error {
 func (h *Handler) RemoveGroupPicture(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -827,9 +822,9 @@ func (h *Handler) RemoveGroupPicture(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	groupId, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	groupId := c.Param("id")
+	if groupId == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 	group, err := h.groupStore.GetById(groupId)
 	if err != nil {
@@ -847,7 +842,7 @@ func (h *Handler) RemoveGroupPicture(c echo.Context) error {
 		return c.JSON(http.StatusForbidden, responses.New(false, "Not an admin of the group", lang))
 	}
 
-	group.GroupPictureId = uuid.New()
+	group.GroupPictureId = uuid.NewString()
 	h.groupStore.UpdateGroupPicture(group, nil)
 
 	return c.JSON(http.StatusOK, responses.Id{
@@ -855,7 +850,7 @@ func (h *Handler) RemoveGroupPicture(c echo.Context) error {
 			Success: true,
 			Message: services.Tr("Successfully updated group picture", lang),
 		},
-		Id: group.GroupPictureId.String(),
+		Id: group.GroupPictureId,
 	})
 }
 
@@ -863,7 +858,7 @@ func (h *Handler) RemoveGroupPicture(c echo.Context) error {
 func (h *Handler) GetBalance(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -872,9 +867,9 @@ func (h *Handler) GetBalance(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	groupId, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	groupId := c.Param("id")
+	if groupId == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 	group, err := h.groupStore.GetById(groupId)
 	if err != nil {
@@ -910,7 +905,7 @@ func (h *Handler) GetBalance(c echo.Context) error {
 func (h *Handler) GetTransactionById(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -919,9 +914,9 @@ func (h *Handler) GetTransactionById(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	groupId, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	groupId := c.Param("id")
+	if groupId == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 	group, err := h.groupStore.GetById(groupId)
 	if err != nil {
@@ -931,9 +926,9 @@ func (h *Handler) GetTransactionById(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, responses.New(false, "Group not found", lang))
 	}
 
-	transactionId, err := uuid.Parse(c.Param("transactionId"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing transactionId parameter", lang))
+	transactionId := c.Param("transactionId")
+	if transactionId == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing transactionId parameter", lang))
 	}
 
 	transaction, err := h.groupStore.GetTransactionLogEntryById(group, transactionId)
@@ -944,8 +939,8 @@ func (h *Handler) GetTransactionById(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, responses.NewNotFound(lang))
 	}
 
-	isSender := bytes.Equal(user.Id[:], transaction.SenderId[:])
-	isReceiver := bytes.Equal(user.Id[:], transaction.ReceiverId[:])
+	isSender := user.Id == transaction.SenderId
+	isReceiver := user.Id == transaction.ReceiverId
 
 	if isSender || isReceiver {
 		return c.JSON(http.StatusOK, responses.NewTransaction(transaction, user))
@@ -962,14 +957,13 @@ func (h *Handler) GetTransactionById(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusForbidden, responses.New(false, "User not allowed to view transaction", lang))
-
 }
 
 // /api/group/:id/transaction?bank=bool&search=string&page=int&pageSize=int&oldestFirst=bool (GET)
 func (h *Handler) GetTransactionLog(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -1000,9 +994,9 @@ func (h *Handler) GetTransactionLog(c echo.Context) error {
 
 	oldestFirst := services.StrToBool(c.QueryParam("oldestFirst"))
 
-	groupId, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	groupId := c.Param("id")
+	if groupId == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 	group, err := h.groupStore.GetById(groupId)
 	if err != nil {
@@ -1063,7 +1057,7 @@ func (h *Handler) GetTransactionLog(c echo.Context) error {
 func (h *Handler) CreateTransaction(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -1072,9 +1066,9 @@ func (h *Handler) CreateTransaction(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	groupId, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	groupId := c.Param("id")
+	if groupId == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 	group, err := h.groupStore.GetById(groupId)
 	if err != nil {
@@ -1142,12 +1136,7 @@ func (h *Handler) CreateTransaction(c echo.Context) error {
 			return c.JSON(http.StatusUnauthorized, responses.NewUnexpectedError(err, lang))
 		}
 	} else {
-		receiverId, err := uuid.Parse(body.ReceiverId)
-		if err != nil {
-			return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid receiver id", lang))
-		}
-
-		receiver, err := h.userStore.GetById(receiverId)
+		receiver, err := h.userStore.GetById(body.ReceiverId)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
@@ -1175,7 +1164,7 @@ func (h *Handler) CreateTransaction(c echo.Context) error {
 				return c.JSON(http.StatusUnauthorized, responses.NewUnexpectedError(err, lang))
 			}
 		} else {
-			if bytes.Equal(user.Id[:], receiverId[:]) {
+			if user.Id == body.ReceiverId {
 				return c.JSON(http.StatusOK, responses.New(false, "Sender is the receiver", lang))
 			}
 			transaction, err = h.groupStore.CreateTransaction(group, false, false, user, receiver, body.Title, body.Description, int(body.Amount))
@@ -1192,7 +1181,7 @@ func (h *Handler) CreateTransaction(c echo.Context) error {
 func (h *Handler) GetInvitationsByUser(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -1240,7 +1229,7 @@ func (h *Handler) GetInvitationsByUser(c echo.Context) error {
 func (h *Handler) GetInvitationsByGroup(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -1271,10 +1260,11 @@ func (h *Handler) GetInvitationsByGroup(c echo.Context) error {
 
 	oldestFirst := services.StrToBool(c.QueryParam("oldestFirst"))
 
-	groupId, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	groupId := c.Param("id")
+	if groupId == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
+
 	group, err := h.groupStore.GetById(groupId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -1308,7 +1298,7 @@ func (h *Handler) GetInvitationsByGroup(c echo.Context) error {
 func (h *Handler) GetInvitationById(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -1317,9 +1307,9 @@ func (h *Handler) GetInvitationById(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	id, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	id := c.Param("id")
+	if id == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 
 	invitation, err := h.groupStore.GetInvitationById(id)
@@ -1335,7 +1325,7 @@ func (h *Handler) GetInvitationById(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	if !bytes.Equal(userId[:], invitation.UserId[:]) {
+	if userId != invitation.UserId {
 		isAdmin, err := h.groupStore.IsAdmin(group, user)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -1352,7 +1342,7 @@ func (h *Handler) GetInvitationById(c echo.Context) error {
 func (h *Handler) CreateInvitation(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
-	authUserId := c.Get("userId").(uuid.UUID)
+	authUserId := c.Get("userId").(string)
 	authUser, err := h.userStore.GetById(authUserId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -1361,9 +1351,9 @@ func (h *Handler) CreateInvitation(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	groupId, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	groupId := c.Param("id")
+	if groupId == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 	group, err := h.groupStore.GetById(groupId)
 	if err != nil {
@@ -1387,16 +1377,11 @@ func (h *Handler) CreateInvitation(c echo.Context) error {
 		return c.JSON(http.StatusOK, responses.New(false, "Message too short", lang))
 	}
 
-	userId, err := uuid.Parse(body.UserId)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
-	}
-
-	if bytes.Equal(userId[:], authUserId[:]) {
+	if body.UserId == authUserId {
 		return c.JSON(http.StatusOK, responses.New(false, "You can't invite yourself", lang))
 	}
 
-	user, err := h.userStore.GetById(userId)
+	user, err := h.userStore.GetById(body.UserId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
@@ -1443,7 +1428,7 @@ func (h *Handler) CreateInvitation(c echo.Context) error {
 		body, err := services.ParseEmailTemplate("invitation", c.Get("lang").(string), templateData{
 			Name:           user.Name,
 			GroupName:      group.Name,
-			InvitationsUrl: fmt.Sprintf("https://%s/invitations", config.Data.DomainName),
+			InvitationsUrl: fmt.Sprintf("%s/invitations", config.Data.BaseURL),
 		})
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -1458,7 +1443,7 @@ func (h *Handler) CreateInvitation(c echo.Context) error {
 func (h *Handler) AcceptInvitation(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -1467,9 +1452,9 @@ func (h *Handler) AcceptInvitation(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	id, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	id := c.Param("id")
+	if id == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 
 	invitation, err := h.groupStore.GetInvitationById(id)
@@ -1485,7 +1470,7 @@ func (h *Handler) AcceptInvitation(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	if !bytes.Equal(userId[:], invitation.UserId[:]) {
+	if userId != invitation.UserId {
 		return c.JSON(http.StatusForbidden, responses.New(false, "User is not the receiver of the invitation", lang))
 	}
 
@@ -1515,7 +1500,7 @@ func (h *Handler) AcceptInvitation(c echo.Context) error {
 func (h *Handler) DenyInvitation(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -1524,9 +1509,9 @@ func (h *Handler) DenyInvitation(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	id, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	id := c.Param("id")
+	if id == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 
 	invitation, err := h.groupStore.GetInvitationById(id)
@@ -1542,7 +1527,7 @@ func (h *Handler) DenyInvitation(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 	}
 
-	if !bytes.Equal(userId[:], invitation.UserId[:]) {
+	if userId != invitation.UserId {
 		return c.JSON(http.StatusForbidden, responses.New(false, "User is not the receiver of the invitation", lang))
 	}
 
@@ -1558,7 +1543,7 @@ func (h *Handler) DenyInvitation(c echo.Context) error {
 func (h *Handler) GetPaymentPlanById(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -1567,9 +1552,9 @@ func (h *Handler) GetPaymentPlanById(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	groupId, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	groupId := c.Param("id")
+	if groupId == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 	group, err := h.groupStore.GetById(groupId)
 	if err != nil {
@@ -1579,9 +1564,9 @@ func (h *Handler) GetPaymentPlanById(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, responses.New(false, "Group not found", lang))
 	}
 
-	paymentPlanId, err := uuid.Parse(c.Param("paymentPlanId"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing paymentPlanId parameter", lang))
+	paymentPlanId := c.Param("paymentPlanId")
+	if paymentPlanId == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 
 	paymentPlan, err := h.groupStore.GetPaymentPlanById(group, paymentPlanId)
@@ -1592,8 +1577,8 @@ func (h *Handler) GetPaymentPlanById(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, responses.NewNotFound(lang))
 	}
 
-	isSender := bytes.Equal(user.Id[:], paymentPlan.SenderId[:])
-	isReceiver := bytes.Equal(user.Id[:], paymentPlan.ReceiverId[:])
+	isSender := user.Id == paymentPlan.SenderId
+	isReceiver := user.Id == paymentPlan.ReceiverId
 
 	if isSender || isReceiver {
 		isMember, err := h.groupStore.IsMember(group, user)
@@ -1618,14 +1603,13 @@ func (h *Handler) GetPaymentPlanById(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusForbidden, responses.New(false, "User not allowed to view payment plan", lang))
-
 }
 
 // /api/group/:id/paymentPlan?bank=bool&search=string&page=int&pageSize=int&oldestFirst=bool (GET)
 func (h *Handler) GetPaymentPlans(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -1656,9 +1640,9 @@ func (h *Handler) GetPaymentPlans(c echo.Context) error {
 
 	oldestFirst := services.StrToBool(c.QueryParam("oldestFirst"))
 
-	groupId, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	groupId := c.Param("id")
+	if groupId == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 	group, err := h.groupStore.GetById(groupId)
 	if err != nil {
@@ -1719,7 +1703,7 @@ func (h *Handler) GetPaymentPlans(c echo.Context) error {
 func (h *Handler) GetPaymentPlanNextPayments(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -1728,9 +1712,9 @@ func (h *Handler) GetPaymentPlanNextPayments(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	groupId, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	groupId := c.Param("id")
+	if groupId == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 	group, err := h.groupStore.GetById(groupId)
 	if err != nil {
@@ -1756,9 +1740,9 @@ func (h *Handler) GetPaymentPlanNextPayments(c echo.Context) error {
 	firstPayment := int64(-1)
 
 	if c.QueryParam("id") != "" {
-		id, err := uuid.Parse(c.QueryParam("id"))
-		if err != nil {
-			return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid 'id' query parameter", lang))
+		id := c.QueryParam("id")
+		if id == "" {
+			return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 		}
 
 		paymentPlan, err := h.groupStore.GetPaymentPlanById(group, id)
@@ -1769,8 +1753,8 @@ func (h *Handler) GetPaymentPlanNextPayments(c echo.Context) error {
 			return c.JSON(http.StatusNotFound, responses.NewNotFound(lang))
 		}
 
-		isSender := bytes.Equal(user.Id[:], paymentPlan.SenderId[:])
-		isReceiver := bytes.Equal(user.Id[:], paymentPlan.ReceiverId[:])
+		isSender := user.Id == paymentPlan.SenderId
+		isReceiver := user.Id == paymentPlan.ReceiverId
 
 		if isSender || isReceiver {
 			isMember, err := h.groupStore.IsMember(group, user)
@@ -1838,7 +1822,7 @@ func (h *Handler) GetPaymentPlanNextPayments(c echo.Context) error {
 func (h *Handler) CreatePaymentPlan(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -1847,9 +1831,9 @@ func (h *Handler) CreatePaymentPlan(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	groupId, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	groupId := c.Param("id")
+	if groupId == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 	group, err := h.groupStore.GetById(groupId)
 	if err != nil {
@@ -1931,12 +1915,7 @@ func (h *Handler) CreatePaymentPlan(c echo.Context) error {
 			return c.JSON(http.StatusUnauthorized, responses.NewUnexpectedError(err, lang))
 		}
 	} else {
-		receiverId, err := uuid.Parse(body.ReceiverId)
-		if err != nil {
-			return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid receiver id", lang))
-		}
-
-		receiver, err := h.userStore.GetById(receiverId)
+		receiver, err := h.userStore.GetById(body.ReceiverId)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 		}
@@ -1964,7 +1943,7 @@ func (h *Handler) CreatePaymentPlan(c echo.Context) error {
 				return c.JSON(http.StatusUnauthorized, responses.NewUnexpectedError(err, lang))
 			}
 		} else {
-			if bytes.Equal(user.Id[:], receiverId[:]) {
+			if user.Id == body.ReceiverId {
 				return c.JSON(http.StatusOK, responses.New(false, "Sender is the receiver", lang))
 			}
 			paymentPlan, err = h.groupStore.CreatePaymentPlan(group, false, false, user, receiver, body.Name, body.Description, int(body.Amount), body.PaymentCount, int(body.Schedule), body.ScheduleUnit, firstPayment.Unix())
@@ -1981,7 +1960,7 @@ func (h *Handler) CreatePaymentPlan(c echo.Context) error {
 func (h *Handler) DeletePaymentPlan(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -1990,9 +1969,9 @@ func (h *Handler) DeletePaymentPlan(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	groupId, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	groupId := c.Param("id")
+	if groupId == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 	group, err := h.groupStore.GetById(groupId)
 	if err != nil {
@@ -2002,9 +1981,9 @@ func (h *Handler) DeletePaymentPlan(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, responses.New(false, "Group not found", lang))
 	}
 
-	paymentPlanId, err := uuid.Parse(c.Param("paymentPlanId"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing paymentPlanId parameter", lang))
+	paymentPlanId := c.Param("paymentPlanId")
+	if paymentPlanId == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 
 	paymentPlan, err := h.groupStore.GetPaymentPlanById(group, paymentPlanId)
@@ -2015,7 +1994,7 @@ func (h *Handler) DeletePaymentPlan(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, responses.NewNotFound(lang))
 	}
 
-	isSender := bytes.Equal(user.Id[:], paymentPlan.SenderId[:])
+	isSender := user.Id == paymentPlan.SenderId
 	if !isSender {
 		return c.JSON(http.StatusForbidden, responses.New(false, "User not the sender of the payment plan", lang))
 	}
@@ -2032,7 +2011,7 @@ func (h *Handler) DeletePaymentPlan(c echo.Context) error {
 func (h *Handler) UpdatePaymentPlan(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -2041,9 +2020,9 @@ func (h *Handler) UpdatePaymentPlan(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	groupId, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	groupId := c.Param("id")
+	if groupId == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 	group, err := h.groupStore.GetById(groupId)
 	if err != nil {
@@ -2053,9 +2032,9 @@ func (h *Handler) UpdatePaymentPlan(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, responses.New(false, "Group not found", lang))
 	}
 
-	paymentPlanId, err := uuid.Parse(c.Param("paymentPlanId"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing paymentPlanId parameter", lang))
+	paymentPlanId := c.Param("paymentPlanId")
+	if paymentPlanId == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 
 	paymentPlan, err := h.groupStore.GetPaymentPlanById(group, paymentPlanId)
@@ -2066,7 +2045,7 @@ func (h *Handler) UpdatePaymentPlan(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, responses.NewNotFound(lang))
 	}
 
-	isSender := bytes.Equal(user.Id[:], paymentPlan.SenderId[:])
+	isSender := user.Id == paymentPlan.SenderId
 	if !isSender {
 		isAdmin, err := h.groupStore.IsAdmin(group, user)
 		if err != nil {
@@ -2143,7 +2122,7 @@ func (h *Handler) UpdatePaymentPlan(c echo.Context) error {
 func (h *Handler) GetTotalMoney(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -2152,9 +2131,9 @@ func (h *Handler) GetTotalMoney(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	groupId, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	groupId := c.Param("id")
+	if groupId == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 	group, err := h.groupStore.GetById(groupId)
 	if err != nil {

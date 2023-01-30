@@ -1,30 +1,24 @@
 package handlers
 
 import (
-	"bytes"
-	"crypto/subtle"
-	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
-	"time"
 	"unicode/utf8"
+
+	"github.com/labstack/echo/v4"
 
 	"github.com/Bananenpro/hbank-api/bindings"
 	"github.com/Bananenpro/hbank-api/config"
 	"github.com/Bananenpro/hbank-api/models"
 	"github.com/Bananenpro/hbank-api/responses"
 	"github.com/Bananenpro/hbank-api/services"
-	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // /api/user?except=uuid,uuid,…&page=int&pageSize=int&descending=bool (GET)
 func (h *Handler) GetUsers(c echo.Context) error {
 	lang := c.Get("lang").(string)
-	authUserId := c.Get("userId").(uuid.UUID)
+	authUserId := c.Get("userId").(string)
 	authUser, err := h.userStore.GetById(authUserId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -55,13 +49,9 @@ func (h *Handler) GetUsers(c echo.Context) error {
 
 	descending := services.StrToBool(c.QueryParam("descending"))
 
-	ids := []uuid.UUID{}
-	for _, idStr := range strings.Split(c.QueryParams().Get("exclude"), ",") {
-		if idStr != "" {
-			id, err := uuid.Parse(idStr)
-			if err != nil {
-				return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid 'exclude' query parameter", lang))
-			}
+	ids := []string{}
+	for _, id := range strings.Split(c.QueryParams().Get("exclude"), ",") {
+		if id != "" {
 			ids = append(ids, id)
 		}
 	}
@@ -82,7 +72,7 @@ func (h *Handler) GetUsers(c echo.Context) error {
 // /api/user/:id (GET)
 func (h *Handler) GetUser(c echo.Context) error {
 	lang := c.Get("lang").(string)
-	authUserId := c.Get("userId").(uuid.UUID)
+	authUserId := c.Get("userId").(string)
 	authUser, err := h.userStore.GetById(authUserId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -91,9 +81,9 @@ func (h *Handler) GetUser(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	userId, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	userId := c.Param("id")
+	if userId == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 
 	user, err := h.userStore.GetById(userId)
@@ -104,7 +94,7 @@ func (h *Handler) GetUser(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, responses.NewNotFound(lang))
 	}
 
-	if bytes.Equal(authUserId[:], userId[:]) {
+	if authUserId == userId {
 		return c.JSON(http.StatusOK, responses.NewAuthUser(authUser))
 	}
 	return c.JSON(http.StatusOK, responses.NewUser(user))
@@ -112,279 +102,15 @@ func (h *Handler) GetUser(c echo.Context) error {
 
 // /api/user/delete (POST)
 func (h *Handler) DeleteUser(c echo.Context) error {
-	lang := c.Get("lang").(string)
-	userId := c.Get("userId").(uuid.UUID)
-	user, err := h.userStore.GetById(userId)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
-	}
-
-	var body bindings.DeleteUser
-	err = c.Bind(&body)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.NewInvalidRequestBody(lang))
-	}
-
-	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(body.Password)) != nil {
-		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials(lang))
-	}
-
-	twoFAToken, err := h.userStore.GetTwoFATokenByCode(user, body.TwoFAToken)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-	if twoFAToken == nil {
-		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials(lang))
-	}
-	if twoFAToken.ExpirationTime < time.Now().Unix() {
-		h.userStore.DeleteTwoFAToken(twoFAToken)
-		return c.JSON(http.StatusForbidden, responses.NewInvalidCredentials(lang))
-	}
-
-	groups, err := h.groupStore.GetAllByUser(user, -1, -1, false)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-
-	ids := make([]uuid.UUID, 0)
-	for _, g := range groups {
-		isAdmin, err := h.groupStore.IsAdmin(&g, user)
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-		}
-		if isAdmin {
-			userCount, err := h.groupStore.GetUserCount(&g)
-			if err != nil {
-				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-			}
-
-			admins, err := h.groupStore.GetAdmins(nil, "", &g, 0, 2, false)
-			if err != nil {
-				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-			}
-
-			if userCount > 1 && len(admins) == 1 {
-				ids = append(ids, g.Id)
-			} else if userCount == 1 {
-				h.groupStore.Delete(&g)
-			}
-		}
-	}
-	if len(ids) > 0 {
-		return c.JSON(http.StatusOK, responses.NewDeleteFailedBecauseOfSoleGroupAdmin(ids, lang))
-	}
-
-	h.userStore.DeleteTwoFAToken(twoFAToken)
-	h.userStore.Delete(user)
-
-	return c.JSON(http.StatusOK, responses.New(true, "Successfully deleted account", lang))
-}
-
-// /api/user/:id?token=string (DELETE)
-func (h *Handler) DeleteUserByDeleteToken(c echo.Context) error {
-	lang := c.Get("lang").(string)
-
-	userId, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
-	}
-
-	user, err := h.userStore.GetById(userId)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
-	}
-
-	token := c.QueryParam("token")
-
-	if subtle.ConstantTimeCompare([]byte(token), []byte(user.DeleteToken)) == 1 {
-		h.userStore.Delete(user)
-		return c.JSON(http.StatusOK, responses.New(true, "Successfully deleted account", lang))
-	}
-
-	return c.JSON(http.StatusUnauthorized, responses.NewInvalidCredentials(lang))
-}
-
-// /api/user/picture (POST)
-func (h *Handler) SetProfilePicture(c echo.Context) error {
-	lang := c.Get("lang").(string)
-
-	userId := c.Get("userId").(uuid.UUID)
-	user, err := h.userStore.GetById(userId)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
-	}
-
-	file, err := c.FormFile("profilePicture")
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing profile picture file", lang))
-	}
-
-	if file.Size > config.Data.MaxProfilePictureFileSize {
-		return c.JSON(http.StatusBadRequest, responses.New(false, fmt.Sprintf(services.Tr("File too big (max %s)", lang), services.SizeInBytesToStr(config.Data.MaxProfilePictureFileSize)), ""))
-	}
-
-	mimeType := file.Header.Get("Content-Type")
-	if !services.SupportedPictureMimeType(mimeType) {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Unsupported file type", lang))
-	}
-
-	src, err := file.Open()
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-	defer src.Close()
-
-	var buf bytes.Buffer
-	_, err = buf.ReadFrom(src)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-
-	pic, err := services.NewPicture(buf.Bytes(), mimeType)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-
-	user.ProfilePictureId = uuid.New()
-	err = h.userStore.UpdateProfilePicture(user, &models.ProfilePicture{
-		Tiny:   pic.Tiny,
-		Small:  pic.Small,
-		Medium: pic.Medium,
-		Large:  pic.Large,
-		Huge:   pic.Huge,
-	})
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-
-	return c.JSON(http.StatusOK, responses.Id{
-		Base: responses.Base{
-			Success: true,
-			Message: services.Tr("Successfully updated profile picture", lang),
-		},
-		Id: user.ProfilePictureId.String(),
-	})
-}
-
-// /api/user/picture (DELETE)
-func (h *Handler) RemoveProfilePicture(c echo.Context) error {
-	lang := c.Get("lang").(string)
-
-	userId := c.Get("userId").(uuid.UUID)
-	user, err := h.userStore.GetById(userId)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-	if user == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
-	}
-
-	user.ProfilePictureId = uuid.New()
-	err = h.userStore.UpdateProfilePicture(user, nil)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-
-	return c.JSON(http.StatusOK, responses.Id{
-		Base: responses.Base{
-			Success: true,
-			Message: services.Tr("Successfully updated profile picture", lang),
-		},
-		Id: user.ProfilePictureId.String(),
-	})
-}
-
-// /api/user/:id/picture?id=uuid&size=tiny/small/medium/large/huge (GET)
-func (h *Handler) GetProfilePicture(c echo.Context) error {
-	lang := c.Get("lang").(string)
-
-	authUserId := c.Get("userId").(uuid.UUID)
-	authUser, err := h.userStore.GetById(authUserId)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-	if authUser == nil {
-		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
-	}
-
-	userId, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
-	}
-
-	user, err := h.userStore.GetById(userId)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-	if user == nil {
-		return c.JSON(http.StatusNotFound, responses.NewNotFound(lang))
-	}
-
-	if user.Id.String() != authUser.Id.String() {
-		switch user.ProfilePicturePrivacy {
-		case models.ProfilePictureNobody:
-			data, err := os.ReadFile("assets/fallback-profile-picture.svg")
-			if err != nil {
-				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-			}
-			return c.Blob(http.StatusOK, "image/svg+xml", data)
-		case models.ProfilePictureGroup:
-			sameGroup, err := h.groupStore.AreInSameGroup(authUser.Id, user.Id)
-			if err != nil {
-				return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-			}
-			if !sameGroup {
-				data, err := os.ReadFile("assets/fallback-profile-picture.svg")
-				if err != nil {
-					return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-				}
-				return c.Blob(http.StatusOK, "image/svg+xml", data)
-			}
-		}
-	}
-
-	if c.QueryParam("id") != "" && c.QueryParam("id") != user.ProfilePictureId.String() {
-		return c.JSON(http.StatusNotFound, responses.New(false, "Wrong profile picture id", lang))
-	}
-
-	size := services.PictureSize(c.QueryParam("size"))
-	if c.QueryParam("size") != "" {
-		if !size.Validate() {
-			return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid 'size' query parameter", lang))
-		}
-	} else {
-		size = services.PictureHuge
-	}
-
-	profilePicture, err := h.userStore.GetProfilePicture(user, size)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-	}
-	if len(profilePicture) == 0 {
-		data, err := os.ReadFile("assets/fallback-profile-picture.svg")
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
-		}
-		return c.Blob(http.StatusOK, "image/svg+xml", data)
-	}
-
-	return c.Blob(http.StatusOK, "image/jpeg", profilePicture)
+	// TODO
+	return echo.ErrNotFound
 }
 
 // /api/user (PUT)
 func (h *Handler) UpdateUser(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -401,15 +127,6 @@ func (h *Handler) UpdateUser(c echo.Context) error {
 
 	user.DontSendInvitationEmail = body.DontSendInvitationEmail
 	user.PubliclyVisible = body.PubliclyVisible
-
-	body.ProfilePicturePrivacy = strings.ToLower(body.ProfilePicturePrivacy)
-	switch body.ProfilePicturePrivacy {
-	case models.ProfilePictureEverybody, models.ProfilePictureGroup, models.ProfilePictureNobody:
-		user.ProfilePicturePrivacy = body.ProfilePicturePrivacy
-	default:
-		return c.JSON(http.StatusOK, responses.New(false, "Invalid profile picture privacy", lang))
-	}
-
 	h.userStore.Update(user)
 
 	return c.JSON(http.StatusOK, responses.NewAuthUser(user))
@@ -419,7 +136,7 @@ func (h *Handler) UpdateUser(c echo.Context) error {
 func (h *Handler) GetCurrentCash(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -447,7 +164,7 @@ func (h *Handler) GetCurrentCash(c echo.Context) error {
 func (h *Handler) GetCashLogEntryById(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -456,9 +173,9 @@ func (h *Handler) GetCashLogEntryById(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, responses.NewUserNoLongerExists(lang))
 	}
 
-	id, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, responses.New(false, "Invalid or missing id parameter", lang))
+	id := c.Param("id")
+	if id == "" {
+		return c.JSON(http.StatusBadRequest, responses.New(false, "Missing id parameter", lang))
 	}
 
 	entry, err := h.userStore.GetCashLogEntryById(user, id)
@@ -476,7 +193,7 @@ func (h *Handler) GetCashLogEntryById(c echo.Context) error {
 func (h *Handler) GetCashLog(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
@@ -524,7 +241,7 @@ func (h *Handler) GetCashLog(c echo.Context) error {
 func (h *Handler) AddCashLogEntry(c echo.Context) error {
 	lang := c.Get("lang").(string)
 
-	userId := c.Get("userId").(uuid.UUID)
+	userId := c.Get("userId").(string)
 	user, err := h.userStore.GetById(userId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))

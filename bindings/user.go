@@ -6,9 +6,8 @@ type DeleteUser struct {
 }
 
 type UpdateUser struct {
-	PubliclyVisible         bool   `json:"publiclyVisible" form:"publiclyVisible"`
-	ProfilePicturePrivacy   string `json:"profilePicturePrivacy" form:"profilePicturePrivacy"`
-	DontSendInvitationEmail bool   `json:"dontSendInvitationEmail" form:"dontSendInvitationEmail"`
+	PubliclyVisible         bool `json:"publiclyVisible" form:"publiclyVisible"`
+	DontSendInvitationEmail bool `json:"dontSendInvitationEmail" form:"dontSendInvitationEmail"`
 }
 
 type AddCashLogEntry struct {

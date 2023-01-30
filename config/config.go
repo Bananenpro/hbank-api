@@ -15,6 +15,8 @@ type ConfigData struct {
 	SSLCertPath               string `json:"sslCertPath"`
 	SSLKeyPath                string `json:"sslKeyPath"`
 	DomainName                string `json:"domainName"`
+	BaseURL                   string `json:"baseURL"`
+	FrontendURL               string `json:"frontendURL"`
 	JWTSecret                 string `json:"jwtSecret"`
 	CaptchaEnabled            bool   `json:"captchaEnabled"`
 	CaptchaVerifyUrl          string `json:"captchaVerifyUrl"`
@@ -44,11 +46,16 @@ type ConfigData struct {
 	SendEmailTimeout          int64  `json:"sendEmailTimeout"`
 	MaxPageSize               int    `json:"maxPageSize"`
 	FrontendRoot              string `json:"frontendRoot"`
+	IDProvider                string `json:"idProvider"`
+	ClientID                  string `json:"clientID"`
+	ClientSecret              string `json:"clientSecret"`
 }
 
 var defaultData = ConfigData{
 	ServerPort:                80,
-	DomainName:                "hbank",
+	DomainName:                "",
+	BaseURL:                   "",
+	FrontendURL:               "https://hbank.julianh.de",
 	MinNameLength:             3,
 	MaxNameLength:             30,
 	MinDescriptionLength:      0,
@@ -67,6 +74,7 @@ var defaultData = ConfigData{
 	RefreshTokenLifetime:      1 * 365 * 24 * 60 * 60,
 	SendEmailTimeout:          2 * 60,
 	MaxPageSize:               100,
+	IDProvider:                "https://id.julianh.de",
 }
 
 var Data = defaultData
@@ -151,9 +159,27 @@ func verifyData() {
 
 	if strings.TrimSpace(Data.DomainName) == "" {
 		log.Println("WARNING: Empty domain name. Using default: hbank")
+		Data.DomainName = "hbank"
 	}
 
 	if len(Data.JWTSecret) < 10 {
 		log.Fatalln("ERROR: Please specify a jwt secret (>=10 characters)")
+	}
+
+	if Data.ClientID == "" {
+		log.Fatalln("ERROR: Empty OAuth client ID")
+	}
+	if Data.ClientSecret == "" {
+		log.Fatalln("ERROR: Empty OAuth client secret")
+	}
+
+	if Data.BaseURL == "" {
+		log.Fatalln("ERROR: No base URL specified. Using default: https://hbank.julianh.de")
+		Data.DomainName = "https://hbank.julianh.de"
+	}
+
+	if Data.FrontendURL == "" {
+		log.Println("WARNING: Empty frontend URL. Using default: https://hbank.julianh.de")
+		Data.FrontendURL = "https://hbank.julianh.de"
 	}
 }

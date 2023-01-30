@@ -1,32 +1,115 @@
 package middlewares
 
 import (
+	"errors"
 	"net/http"
+	"strings"
+	"time"
 
-	"github.com/Bananenpro/hbank-api/responses"
-	"github.com/Bananenpro/hbank-api/services"
 	"github.com/labstack/echo/v4"
+
+	"github.com/Bananenpro/oidc-client/oidc"
+
+	"github.com/Bananenpro/hbank-api/config"
+	"github.com/Bananenpro/hbank-api/models"
+	"github.com/Bananenpro/hbank-api/responses"
 )
 
-func JWT(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		lang := c.Get("lang").(string)
-		authToken, err := c.Cookie("Auth-Token")
-		if err != nil {
-			return c.JSON(http.StatusUnauthorized, responses.New(false, "Missing Auth-Token Cookie", lang))
-		}
-		authTokenSignature, err := c.Cookie("Auth-Token-Signature")
-		if err != nil {
-			return c.JSON(http.StatusUnauthorized, responses.New(false, "Missing Auth-Token-Signature Cookie", lang))
-		}
+func JWT(oidcClient *oidc.Client, userStore models.UserStore) func(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			lang := c.Get("lang").(string)
+			idToken := ""
+			idTokenCookie, err := c.Cookie("ID-Token")
+			if err == nil {
+				idToken = idTokenCookie.Value
+			}
+			idTokenSignature := ""
+			idTokenSignatureCookie, err := c.Cookie("ID-Token-Signature")
+			if err == nil {
+				idTokenSignature = idTokenSignatureCookie.Value
+			}
 
-		userId, valid := services.VerifyAuthToken(authToken.Value + "." + authTokenSignature.Value)
-		if !valid {
-			return c.JSON(http.StatusUnauthorized, responses.New(false, "Invalid JWT", lang))
+			token, err := oidcClient.VerifyIDToken(idToken + "." + idTokenSignature)
+			if err != nil {
+				if errors.Is(err, oidc.ErrExpiredToken) || idToken == "" || idTokenSignature == "" {
+					refreshToken, err := c.Cookie("Refresh-Token")
+					if err != nil {
+						return c.JSON(http.StatusUnauthorized, responses.New(false, "Expired ID-Token", lang))
+					}
+					userID, access, refresh, id, err := oidcClient.RefreshTokens(refreshToken.Value)
+					if err != nil {
+						return c.JSON(http.StatusUnauthorized, responses.New(false, "Expired ID-Token", lang))
+					}
+					info, err := oidcClient.FetchUserInfo(userID, access)
+					if err != nil {
+						return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+					}
+
+					user, err := userStore.GetById(userID)
+					if err != nil {
+						return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+					}
+					if user == nil {
+						return c.JSON(http.StatusUnauthorized, responses.New(false, "Expired ID-Token", lang))
+					}
+					user.Name = info.Name
+					user.Email = info.Email
+					err = userStore.Update(user)
+					if err != nil {
+						return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+					}
+
+					sameSite := http.SameSiteStrictMode
+
+					if config.Data.Debug {
+						sameSite = http.SameSiteNoneMode
+					}
+
+					c.SetCookie(&http.Cookie{
+						Name:     "Refresh-Token",
+						Value:    refresh,
+						MaxAge:   int((12 * 7 * 24 * time.Hour).Seconds()),
+						Secure:   true,
+						HttpOnly: true,
+						SameSite: sameSite,
+						Domain:   config.Data.DomainName,
+						Path:     "/",
+					})
+
+					idTokenParts := strings.Split(id, ".")
+
+					c.SetCookie(&http.Cookie{
+						Name:     "ID-Token",
+						Value:    strings.Join(idTokenParts[:2], "."),
+						MaxAge:   int((30 * time.Minute).Seconds()),
+						Secure:   true,
+						HttpOnly: false,
+						SameSite: sameSite,
+						Domain:   config.Data.DomainName,
+						Path:     "/",
+					})
+
+					c.SetCookie(&http.Cookie{
+						Name:     "ID-Token-Signature",
+						Value:    idTokenParts[2],
+						MaxAge:   int((30 * time.Minute).Seconds()),
+						Secure:   true,
+						HttpOnly: true,
+						SameSite: sameSite,
+						Domain:   config.Data.DomainName,
+						Path:     "/",
+					})
+
+					c.Set("userId", userID)
+				} else {
+					return c.JSON(http.StatusUnauthorized, responses.New(false, "Invalid JWT", lang))
+				}
+			} else {
+				c.Set("userId", token.Subject())
+			}
+
+			return next(c)
 		}
-
-		c.Set("userId", userId)
-
-		return next(c)
 	}
 }

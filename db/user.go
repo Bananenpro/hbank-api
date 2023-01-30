@@ -1,15 +1,9 @@
 package db
 
 import (
-	"errors"
-	"time"
-
-	"github.com/Bananenpro/hbank-api/config"
-	"github.com/Bananenpro/hbank-api/models"
-	"github.com/Bananenpro/hbank-api/services"
-	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+
+	"github.com/Bananenpro/hbank-api/models"
 )
 
 type UserStore struct {
@@ -22,7 +16,7 @@ func NewUserStore(db *gorm.DB) *UserStore {
 	}
 }
 
-func (us *UserStore) GetAll(exclude []uuid.UUID, searchInput string, page, pageSize int, descending bool) ([]models.User, error) {
+func (us *UserStore) GetAll(exclude []string, searchInput string, page, pageSize int, descending bool) ([]models.User, error) {
 	var users []models.User
 	var err error
 
@@ -46,9 +40,9 @@ func (us *UserStore) Count() (int64, error) {
 	return count, err
 }
 
-func (us *UserStore) GetById(id uuid.UUID) (*models.User, error) {
+func (us *UserStore) GetById(id string) (*models.User, error) {
 	var user models.User
-	err := us.db.First(&user, id).Error
+	err := us.db.First(&user, "id = ?", id).Error
 	if err != nil {
 		switch err {
 		case gorm.ErrRecordNotFound:
@@ -79,33 +73,17 @@ func (us *UserStore) Create(user *models.User) error {
 }
 
 func (us *UserStore) Update(user *models.User) error {
+	oldUser, err := us.GetById(user.Id)
+	if err != nil {
+		return err
+	}
+	if oldUser.Name != user.Name {
+		us.db.Model(models.GroupMembership{}).Where("user_id = ?", user.Id).Update("user_name", user.Name)
+	}
 	return us.db.Select("*").Updates(user).Error
 }
 
-func (us *UserStore) UpdateProfilePicture(user *models.User, pic *models.ProfilePicture) error {
-	err := us.db.Select("profile_picture_id").Updates(user).Error
-	if err != nil {
-		return err
-	}
-
-	var oldPic models.ProfilePicture
-	err = us.db.Model(user).Select("id").Association("ProfilePicture").Find(&oldPic)
-	if err != nil {
-		return err
-	}
-
-	us.db.Delete(&oldPic)
-
-	return us.db.Model(user).Association("ProfilePicture").Append(pic)
-}
-
 func (us *UserStore) Delete(user *models.User) error {
-	us.db.Delete(&models.ConfirmEmailLastSent{}, "email = ?", user.Email)
-	us.db.Delete(&models.ForgotPasswordEmailLastSent{}, "email = ?", user.Email)
-	us.db.Delete(&models.RefreshToken{}, "user_id = ?", user.Id)
-	us.db.Delete(&models.PasswordToken{}, "user_id = ?", user.Id)
-	us.db.Delete(&models.TwoFAToken{}, "user_id = ?", user.Id)
-	us.db.Delete(&models.RecoveryCode{}, "user_id = ?", user.Id)
 	us.db.Delete(&models.CashLogEntry{}, "user_id = ?", user.Id)
 	us.db.Delete(&models.GroupInvitation{}, "user_id = ?", user.Id)
 	us.db.Delete(&models.GroupMembership{}, "user_id = ?", user.Id)
@@ -113,7 +91,7 @@ func (us *UserStore) Delete(user *models.User) error {
 	return us.db.Delete(user).Error
 }
 
-func (us *UserStore) DeleteById(id uuid.UUID) error {
+func (us *UserStore) DeleteById(id string) error {
 	user, err := us.GetById(id)
 	if err != nil {
 		return err
@@ -137,321 +115,6 @@ func (us *UserStore) DeleteByEmail(email string) error {
 	}
 
 	return nil
-}
-
-func (us *UserStore) RemoveDeleteToken(user *models.User) error {
-	return us.db.Model(user).Update("delete_token", "").Error
-}
-func (us *UserStore) GetProfilePicture(user *models.User, size services.PictureSize) ([]byte, error) {
-	var pic models.ProfilePicture
-	err := us.db.Model(user).Select(string(size)).Association("ProfilePicture").Find(&pic)
-	if err != nil {
-		switch err {
-		case gorm.ErrRecordNotFound:
-			return nil, nil
-		default:
-			return nil, err
-		}
-	}
-
-	switch size {
-	case services.PictureTiny:
-		return pic.Tiny, nil
-	case services.PictureSmall:
-		return pic.Small, nil
-	case services.PictureMedium:
-		return pic.Medium, nil
-	case services.PictureLarge:
-		return pic.Large, nil
-	case services.PictureHuge:
-		return pic.Huge, nil
-	default:
-		return nil, errors.New("invalid picture size")
-	}
-}
-
-func (us *UserStore) GetConfirmEmailCode(user *models.User) (*models.ConfirmEmailCode, error) {
-	var emailCode models.ConfirmEmailCode
-	err := us.db.First(&emailCode, "user_id = ?", user.Id).Error
-	if err != nil {
-		switch err {
-		case gorm.ErrRecordNotFound:
-			return nil, nil
-		default:
-			return nil, err
-		}
-	}
-
-	return &emailCode, nil
-}
-
-func (us *UserStore) DeleteConfirmEmailCode(emailCode *models.ConfirmEmailCode) error {
-	return us.db.Delete(emailCode).Error
-}
-
-func (us *UserStore) GetResetPasswordCode(user *models.User) (*models.ResetPasswordCode, error) {
-	var emailCode models.ResetPasswordCode
-	err := us.db.First(&emailCode, "user_id = ?", user.Id).Error
-	if err != nil {
-		switch err {
-		case gorm.ErrRecordNotFound:
-			return nil, nil
-		default:
-			return nil, err
-		}
-	}
-
-	return &emailCode, nil
-}
-
-func (us *UserStore) DeleteResetPasswordCode(emailCode *models.ResetPasswordCode) error {
-	return us.db.Delete(emailCode).Error
-}
-
-func (us *UserStore) GetChangeEmailCode(user *models.User) (*models.ChangeEmailCode, error) {
-	var emailCode models.ChangeEmailCode
-	err := us.db.First(&emailCode, "user_id = ?", user.Id).Error
-	if err != nil {
-		switch err {
-		case gorm.ErrRecordNotFound:
-			return nil, nil
-		default:
-			return nil, err
-		}
-	}
-
-	return &emailCode, nil
-}
-
-func (us *UserStore) DeleteChangeEmailCode(emailCode *models.ChangeEmailCode) error {
-	return us.db.Delete(emailCode).Error
-}
-
-func (us *UserStore) GetRefreshToken(user *models.User, id uuid.UUID) (*models.RefreshToken, error) {
-	var token models.RefreshToken
-	err := us.db.First(&token, "user_id = ? AND id = ?", user.Id, id).Error
-	if err != nil {
-		switch err {
-		case gorm.ErrRecordNotFound:
-			return nil, nil
-		default:
-			return nil, err
-		}
-	}
-
-	return &token, nil
-}
-
-func (us *UserStore) GetRefreshTokens(user *models.User) ([]models.RefreshToken, error) {
-	var tokens []models.RefreshToken
-	err := us.db.Find(&tokens, "user_id = ?", user.Id).Error
-	return tokens, err
-}
-
-func (us *UserStore) AddRefreshToken(user *models.User, refreshToken *models.RefreshToken) error {
-	return us.db.Model(&user).Association("RefreshTokens").Append(refreshToken)
-}
-
-func (us *UserStore) RotateRefreshToken(user *models.User, oldRefreshToken *models.RefreshToken) (*models.RefreshToken, string, error) {
-	if oldRefreshToken.UserId.String() != user.Id.String() {
-		return nil, "", errors.New("refresh-token doesn't belong to user")
-	}
-	oldRefreshToken.Used = true
-	err := us.db.Model(oldRefreshToken).Select("used").Updates(oldRefreshToken).Error
-	if err != nil {
-		return nil, "", err
-	}
-
-	code := services.GenerateRandomString(64)
-	hash, err := bcrypt.GenerateFromPassword([]byte(code), config.Data.BcryptCost)
-	if err != nil {
-		return nil, "", err
-	}
-	newRefreshToken := &models.RefreshToken{
-		CodeHash:       hash,
-		ExpirationTime: time.Now().Unix() + config.Data.RefreshTokenLifetime,
-		UserId:         user.Id,
-	}
-
-	err = us.db.Create(newRefreshToken).Error
-
-	return newRefreshToken, code, err
-}
-
-func (us *UserStore) DeleteRefreshToken(refreshToken *models.RefreshToken) error {
-	return us.db.Delete(&refreshToken).Error
-}
-
-func (us *UserStore) DeleteRefreshTokens(user *models.User) error {
-	return us.db.Delete(models.RefreshToken{}, "user_id = ?", user.Id).Error
-}
-
-func (us *UserStore) GetPasswordTokenByCode(user *models.User, code string) (*models.PasswordToken, error) {
-	var token models.PasswordToken
-	err := us.db.First(&token, "user_id = ? AND code_hash = ?", user.Id, services.HashToken(code)).Error
-
-	if err != nil {
-		switch err {
-		case gorm.ErrRecordNotFound:
-			return nil, nil
-		default:
-			return nil, err
-		}
-	}
-
-	return &token, nil
-}
-
-func (us *UserStore) GetPasswordTokens(user *models.User) ([]models.PasswordToken, error) {
-	var tokens []models.PasswordToken
-	err := us.db.Find(&tokens, "user_id = ?", user.Id).Error
-	return tokens, err
-}
-
-func (us *UserStore) DeletePasswordToken(token *models.PasswordToken) error {
-	return us.db.Delete(&token).Error
-}
-
-func (us *UserStore) GetTwoFATokenByCode(user *models.User, code string) (*models.TwoFAToken, error) {
-	var token models.TwoFAToken
-	err := us.db.First(&token, "user_id = ? AND code_hash = ?", user.Id, services.HashToken(code)).Error
-
-	if err != nil {
-		switch err {
-		case gorm.ErrRecordNotFound:
-			return nil, nil
-		default:
-			return nil, err
-		}
-	}
-
-	return &token, nil
-}
-
-func (us *UserStore) GetTwoFATokens(user *models.User) ([]models.TwoFAToken, error) {
-	var tokens []models.TwoFAToken
-	err := us.db.Find(&tokens, "user_id = ?", user.Id).Error
-	return tokens, err
-}
-
-func (us *UserStore) DeleteTwoFAToken(token *models.TwoFAToken) error {
-	return us.db.Delete(&token).Error
-}
-
-func (us *UserStore) GetRecoveryCodeByCode(user *models.User, code string) (*models.RecoveryCode, error) {
-	var rCode models.RecoveryCode
-	err := us.db.First(&rCode, "user_id = ? AND code_hash = ?", user.Id, services.HashToken(code)).Error
-
-	if err != nil {
-		switch err {
-		case gorm.ErrRecordNotFound:
-			return nil, nil
-		default:
-			return nil, err
-		}
-	}
-
-	return &rCode, nil
-}
-
-func (us *UserStore) GetRecoveryCodes(user *models.User) ([]models.RecoveryCode, error) {
-	var codes []models.RecoveryCode
-	err := us.db.Find(&codes, "user_id = ?", user.Id).Error
-	return codes, err
-}
-
-func (us *UserStore) NewRecoveryCodes(user *models.User) ([]string, error) {
-	err := us.db.Where("user_id = ?", user.Id).Delete(&models.RecoveryCode{}).Error
-	if err != nil {
-		return []string{}, err
-	}
-
-	codes := make([]models.RecoveryCode, config.Data.RecoveryCodeCount)
-	codesStr := make([]string, config.Data.RecoveryCodeCount)
-
-	for i := range codes {
-		codesStr[i] = services.GenerateRandomString(32)
-		codes[i].CodeHash = services.HashToken(codesStr[i])
-	}
-
-	user.RecoveryCodes = codes
-	err = us.Update(user)
-
-	return codesStr, err
-}
-
-func (us *UserStore) DeleteRecoveryCode(code *models.RecoveryCode) error {
-	return us.db.Delete(code).Error
-}
-
-func (us *UserStore) GetConfirmEmailLastSent(email string) (int64, error) {
-	var lastSent models.ConfirmEmailLastSent
-	err := us.db.First(&lastSent, "email = ?", email).Error
-	if err != nil {
-		switch err {
-		case gorm.ErrRecordNotFound:
-			return 0, nil
-		default:
-			return 0, err
-		}
-	}
-
-	return lastSent.LastSent, nil
-}
-
-func (us *UserStore) SetConfirmEmailLastSent(email string, time int64) error {
-	var lastSent models.ConfirmEmailLastSent
-	err := us.db.First(&lastSent, "email = ?", email).Error
-	if err != nil {
-		switch err {
-		case gorm.ErrRecordNotFound:
-			us.db.Create(&models.ConfirmEmailLastSent{
-				Email:    email,
-				LastSent: time,
-			})
-			return nil
-		default:
-			return err
-		}
-	}
-
-	lastSent.LastSent = time
-	return us.db.Updates(&lastSent).Error
-}
-
-func (us *UserStore) GetForgotPasswordEmailLastSent(email string) (int64, error) {
-	var lastSent models.ForgotPasswordEmailLastSent
-	err := us.db.First(&lastSent, "email = ?", email).Error
-	if err != nil {
-		switch err {
-		case gorm.ErrRecordNotFound:
-			return 0, nil
-		default:
-			return 0, err
-		}
-	}
-
-	return lastSent.LastSent, nil
-}
-
-func (us *UserStore) SetForgotPasswordEmailLastSent(email string, time int64) error {
-	var lastSent models.ForgotPasswordEmailLastSent
-	err := us.db.First(&lastSent, "email = ?", email).Error
-	if err != nil {
-		switch err {
-		case gorm.ErrRecordNotFound:
-			us.db.Create(&models.ForgotPasswordEmailLastSent{
-				Email:    email,
-				LastSent: time,
-			})
-			return nil
-		default:
-			return err
-		}
-	}
-
-	lastSent.LastSent = time
-	return us.db.Updates(&lastSent).Error
 }
 
 func (us *UserStore) GetCashLog(user *models.User, searchInput string, page, pageSize int, oldestFirst bool) ([]models.CashLogEntry, error) {
@@ -495,7 +158,7 @@ func (us *UserStore) GetLastCashLogEntry(user *models.User) (*models.CashLogEntr
 	return &cashLog[0], nil
 }
 
-func (us *UserStore) GetCashLogEntryById(user *models.User, id uuid.UUID) (*models.CashLogEntry, error) {
+func (us *UserStore) GetCashLogEntryById(user *models.User, id string) (*models.CashLogEntry, error) {
 	var cashLogEntry models.CashLogEntry
 	err := us.db.First(&cashLogEntry, "id = ? AND user_id = ?", id, user.Id).Error
 	if err != nil {

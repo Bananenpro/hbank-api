@@ -2,17 +2,16 @@ package models
 
 import (
 	"github.com/Bananenpro/hbank-api/services"
-	"github.com/google/uuid"
 )
 
 type GroupStore interface {
 	GetAllByUser(user *User, page, pageSize int, descending bool) ([]Group, error)
 	Count(user *User) (int64, error)
-	GetById(id uuid.UUID) (*Group, error)
+	GetById(id string) (*Group, error)
 	Create(group *Group) error
 	Update(group *Group) error
 	Delete(group *Group) error
-	DeleteById(id uuid.UUID) error
+	DeleteById(id string) error
 
 	GetGroupPicture(group *Group, size services.PictureSize) ([]byte, error)
 	UpdateGroupPicture(group *Group, pic *GroupPicture) error
@@ -39,14 +38,14 @@ type GroupStore interface {
 	TransactionLogEntryCount(group *Group, user *User) (int64, error)
 	GetBankTransactionLog(group *Group, searchInput string, page, pageSize int, oldestFirst bool) ([]TransactionLogEntry, error)
 	BankTransactionLogEntryCount(group *Group) (int64, error)
-	GetTransactionLogEntryById(group *Group, id uuid.UUID) (*TransactionLogEntry, error)
+	GetTransactionLogEntryById(group *Group, id string) (*TransactionLogEntry, error)
 	GetLastTransactionLogEntry(group *Group, user *User) (*TransactionLogEntry, error)
 	GetUserBalance(group *Group, user *User) (int, error)
 	CreateTransaction(group *Group, senderIsBank, receiverIsBank bool, sender *User, receiver *User, title, description string, amount int) (*TransactionLogEntry, error)
-	CreateTransactionFromPaymentPlan(group *Group, senderIsBank, receiverIsBank bool, sender *User, receiver *User, title, description string, amount int, paymentPlanId uuid.UUID) (*TransactionLogEntry, error)
+	CreateTransactionFromPaymentPlan(group *Group, senderIsBank, receiverIsBank bool, sender *User, receiver *User, title, description string, amount int, paymentPlanId string) (*TransactionLogEntry, error)
 
 	CreateInvitation(group *Group, user *User, message string) (*GroupInvitation, error)
-	GetInvitationById(id uuid.UUID) (*GroupInvitation, error)
+	GetInvitationById(id string) (*GroupInvitation, error)
 	GetInvitationsByGroup(group *Group, page, pageSize int, oldestFirst bool) ([]GroupInvitation, error)
 	InvitationCountByGroup(group *Group) (int64, error)
 	GetInvitationsByUser(user *User, page, pageSize int, oldestFirst bool) ([]GroupInvitation, error)
@@ -59,14 +58,14 @@ type GroupStore interface {
 	GetBankPaymentPlans(group *Group, searchInput string, page, pageSize int, descending bool) ([]PaymentPlan, error)
 	BankPaymentPlanCount(group *Group) (int64, error)
 	GetPaymentPlansThatNeedToBeExecuted() ([]PaymentPlan, error)
-	GetPaymentPlanById(group *Group, id uuid.UUID) (*PaymentPlan, error)
+	GetPaymentPlanById(group *Group, id string) (*PaymentPlan, error)
 	CreatePaymentPlan(group *Group, senderIsBank, receiverIsBank bool, sender *User, receiver *User, name, description string, amount, repeats, schedule int, scheduleUnit string, firstPayment int64) (*PaymentPlan, error)
 	UpdatePaymentPlan(paymentPlan *PaymentPlan) error
 	DeletePaymentPlan(paymentPlan *PaymentPlan) error
 
 	GetTotalMoney(group *Group) (int, error)
 
-	AreInSameGroup(userId1, userId2 uuid.UUID) (bool, error)
+	AreInSameGroup(userId1, userId2 string) (bool, error)
 }
 
 type Group struct {
@@ -74,7 +73,7 @@ type Group struct {
 	Name           string
 	Description    string
 	GroupPicture   *GroupPicture `gorm:"constraint:OnDelete:CASCADE"`
-	GroupPictureId uuid.UUID     `gorm:"type:uuid"`
+	GroupPictureId string
 
 	Memberships []GroupMembership
 	Invitations []GroupInvitation
@@ -89,15 +88,15 @@ type GroupPicture struct {
 	Large  []byte
 	Huge   []byte
 
-	GroupId uuid.UUID `gorm:"type:uuid"`
+	GroupId string
 }
 
 type GroupMembership struct {
 	Base
+	GroupId   string
 	GroupName string
-	GroupId   uuid.UUID `gorm:"type:uuid"`
+	UserId    string
 	UserName  string
-	UserId    uuid.UUID `gorm:"type:uuid"`
 	IsMember  bool
 	IsAdmin   bool
 }
@@ -106,8 +105,8 @@ type GroupInvitation struct {
 	Base
 	GroupName string
 	Message   string
-	GroupId   uuid.UUID `gorm:"type:uuid"`
-	UserId    uuid.UUID `gorm:"type:uuid"`
+	GroupId   string
+	UserId    string
 }
 
 type TransactionLogEntry struct {
@@ -116,19 +115,19 @@ type TransactionLogEntry struct {
 	Description string
 	Amount      int
 
-	GroupId uuid.UUID `gorm:"type:uuid"`
+	GroupId string
 
 	SenderIsBank            bool
-	SenderId                uuid.UUID `gorm:"type:uuid"`
+	SenderId                string
 	NewBalanceSender        int
 	BalanceDifferenceSender int
 
 	ReceiverIsBank            bool
-	ReceiverId                uuid.UUID `gorm:"type:uuid"`
+	ReceiverId                string
 	NewBalanceReceiver        int
 	BalanceDifferenceReceiver int
 
-	PaymentPlanId uuid.UUID `gorm:"type:uuid"`
+	PaymentPlanId string
 }
 
 const (
@@ -153,10 +152,10 @@ type PaymentPlan struct {
 	ScheduleUnit string
 
 	SenderIsBank bool
-	SenderId     uuid.UUID `gorm:"type:uuid"`
+	SenderId     string
 
 	ReceiverIsBank bool
-	ReceiverId     uuid.UUID `gorm:"type:uuid"`
+	ReceiverId     string
 
-	GroupId uuid.UUID `gorm:"type:uuid"`
+	GroupId string
 }

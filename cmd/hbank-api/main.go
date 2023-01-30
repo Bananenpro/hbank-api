@@ -12,14 +12,16 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/Bananenpro/oidc-client/oidc"
+	"github.com/adrg/xdg"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+
 	"github.com/Bananenpro/hbank-api/config"
 	"github.com/Bananenpro/hbank-api/db"
 	"github.com/Bananenpro/hbank-api/handlers"
 	"github.com/Bananenpro/hbank-api/router"
 	"github.com/Bananenpro/hbank-api/services"
-	"github.com/adrg/xdg"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 )
 
 func serveFrontend(router *echo.Echo, path string) {
@@ -62,7 +64,17 @@ func main() {
 
 	us := db.NewUserStore(database)
 	gs := db.NewGroupStore(database)
-	handler := handlers.New(us, gs)
+
+	oidcClient, err := oidc.NewClient(config.Data.IDProvider, oidc.ClientConfig{
+		ClientID:     config.Data.ClientID,
+		ClientSecret: config.Data.ClientSecret,
+		RedirectURI:  config.Data.BaseURL + "/api/auth/callback",
+	})
+	if err != nil {
+		log.Fatalln("Couldn't create OIDC client:", err)
+	}
+
+	handler := handlers.New(us, gs, oidcClient)
 
 	api := r.Group("/api")
 	handler.RegisterApi(api)

@@ -1,11 +1,10 @@
 package responses
 
 import (
-	"bytes"
+	"github.com/google/uuid"
 
 	"github.com/Bananenpro/hbank-api/models"
 	"github.com/Bananenpro/hbank-api/services"
-	"github.com/google/uuid"
 )
 
 type Balance struct {
@@ -110,12 +109,12 @@ type groupUser struct {
 func NewInvitations(invitations []models.GroupInvitation, count int64) interface{} {
 	dtos := make([]invitation, len(invitations))
 	for i, in := range invitations {
-		dtos[i].Id = in.Id.String()
+		dtos[i].Id = in.Id
 		dtos[i].Created = in.Created
 		dtos[i].InvitationMessage = in.Message
-		dtos[i].UserId = in.UserId.String()
+		dtos[i].UserId = in.UserId
 		dtos[i].GroupName = in.GroupName
-		dtos[i].GroupId = in.GroupId.String()
+		dtos[i].GroupId = in.GroupId
 	}
 
 	type invitationsResp struct {
@@ -144,12 +143,12 @@ func NewInvitation(invitationModel *models.GroupInvitation) interface{} {
 			Success: true,
 		},
 		invitation: invitation{
-			Id:                invitationModel.Id.String(),
+			Id:                invitationModel.Id,
 			Created:           invitationModel.Created,
 			InvitationMessage: invitationModel.Message,
 			GroupName:         invitationModel.GroupName,
-			GroupId:           invitationModel.GroupId.String(),
-			UserId:            invitationModel.UserId.String(),
+			GroupId:           invitationModel.GroupId,
+			UserId:            invitationModel.UserId,
 		},
 	}
 }
@@ -157,10 +156,10 @@ func NewInvitation(invitationModel *models.GroupInvitation) interface{} {
 func NewGroups(groups []models.Group, count int64) interface{} {
 	groupDTOs := make([]group, len(groups))
 	for i, g := range groups {
-		groupDTOs[i].Id = g.Id.String()
+		groupDTOs[i].Id = g.Id
 		groupDTOs[i].Name = g.Name
 		groupDTOs[i].Description = g.Description
-		groupDTOs[i].GroupPictureId = g.GroupPictureId.String()
+		groupDTOs[i].GroupPictureId = g.GroupPictureId
 	}
 
 	type groupsResp struct {
@@ -189,10 +188,10 @@ func NewGroup(group *models.Group, isMember, isAdmin bool) interface{} {
 			Success: true,
 		},
 		groupDetailed: groupDetailed{
-			Id:             group.Id.String(),
+			Id:             group.Id,
 			Name:           group.Name,
 			Description:    group.Description,
-			GroupPictureId: group.GroupPictureId.String(),
+			GroupPictureId: group.GroupPictureId,
 			Member:         isMember,
 			Admin:          isAdmin,
 		},
@@ -205,7 +204,7 @@ func NewTransaction(transactionModel *models.TransactionLogEntry, user *models.U
 		transaction
 	}
 
-	isSender := bytes.Equal(user.Id[:], transactionModel.SenderId[:])
+	isSender := user.Id == transactionModel.SenderId
 
 	newBalance := transactionModel.NewBalanceReceiver
 	if isSender {
@@ -213,31 +212,28 @@ func NewTransaction(transactionModel *models.TransactionLogEntry, user *models.U
 	}
 
 	transactionDTO := transaction{
-		Id:          transactionModel.Id.String(),
+		Id:          transactionModel.Id,
 		Time:        transactionModel.Created,
 		Title:       transactionModel.Title,
 		Description: transactionModel.Description,
 		Amount:      transactionModel.Amount,
 		NewBalance:  newBalance,
-		GroupId:     transactionModel.GroupId.String(),
+		GroupId:     transactionModel.GroupId,
 	}
 
 	if transactionModel.ReceiverIsBank {
 		transactionDTO.ReceiverId = "bank"
 	} else {
-		transactionDTO.ReceiverId = transactionModel.ReceiverId.String()
+		transactionDTO.ReceiverId = transactionModel.ReceiverId
 	}
 
 	if transactionModel.SenderIsBank {
 		transactionDTO.SenderId = "bank"
 	} else {
-		transactionDTO.SenderId = transactionModel.SenderId.String()
+		transactionDTO.SenderId = transactionModel.SenderId
 	}
 
-	emptyId := uuid.UUID{}
-	if !bytes.Equal(transactionModel.PaymentPlanId[:], emptyId[:]) {
-		transactionDTO.PaymentPlanId = transactionModel.PaymentPlanId.String()
-	}
+	transactionDTO.PaymentPlanId = transactionModel.PaymentPlanId
 
 	return transactionResp{
 		Base: Base{
@@ -254,30 +250,27 @@ func NewBankTransaction(transactionModel *models.TransactionLogEntry) interface{
 	}
 
 	transactionDTO := bankTransaction{
-		Id:          transactionModel.Id.String(),
+		Id:          transactionModel.Id,
 		Time:        transactionModel.Created,
 		Title:       transactionModel.Title,
 		Description: transactionModel.Description,
 		Amount:      transactionModel.Amount,
-		GroupId:     transactionModel.GroupId.String(),
+		GroupId:     transactionModel.GroupId,
 	}
 
 	if transactionModel.ReceiverIsBank {
 		transactionDTO.ReceiverId = "bank"
 	} else {
-		transactionDTO.ReceiverId = transactionModel.ReceiverId.String()
+		transactionDTO.ReceiverId = transactionModel.ReceiverId
 	}
 
 	if transactionModel.SenderIsBank {
 		transactionDTO.SenderId = "bank"
 	} else {
-		transactionDTO.SenderId = transactionModel.SenderId.String()
+		transactionDTO.SenderId = transactionModel.SenderId
 	}
 
-	emptyId := uuid.UUID{}
-	if !bytes.Equal(transactionModel.PaymentPlanId[:], emptyId[:]) {
-		transactionDTO.PaymentPlanId = transactionModel.PaymentPlanId.String()
-	}
+	transactionDTO.PaymentPlanId = transactionModel.PaymentPlanId
 
 	return transactionResp{
 		Base: Base{
@@ -297,7 +290,7 @@ func NewTransactionLog(log []models.TransactionLogEntry, user *models.User, coun
 	transactionDTOs := make([]transaction, len(log))
 
 	for i, entry := range log {
-		isSender := bytes.Equal(user.Id[:], entry.SenderId[:])
+		isSender := user.Id == entry.SenderId
 
 		newBalance := entry.NewBalanceReceiver
 		if isSender {
@@ -305,30 +298,27 @@ func NewTransactionLog(log []models.TransactionLogEntry, user *models.User, coun
 		}
 
 		transactionDTO := transaction{
-			Id:         entry.Id.String(),
+			Id:         entry.Id,
 			Time:       entry.Created,
 			Title:      entry.Title,
 			Amount:     entry.Amount,
 			NewBalance: newBalance,
-			GroupId:    entry.GroupId.String(),
+			GroupId:    entry.GroupId,
 		}
 
 		if entry.ReceiverIsBank {
 			transactionDTO.ReceiverId = "bank"
 		} else {
-			transactionDTO.ReceiverId = entry.ReceiverId.String()
+			transactionDTO.ReceiverId = entry.ReceiverId
 		}
 
 		if entry.SenderIsBank {
 			transactionDTO.SenderId = "bank"
 		} else {
-			transactionDTO.SenderId = entry.SenderId.String()
+			transactionDTO.SenderId = entry.SenderId
 		}
 
-		emptyId := uuid.UUID{}
-		if !bytes.Equal(entry.PaymentPlanId[:], emptyId[:]) {
-			transactionDTO.PaymentPlanId = entry.PaymentPlanId.String()
-		}
+		transactionDTO.PaymentPlanId = entry.PaymentPlanId
 
 		transactionDTOs[i] = transactionDTO
 	}
@@ -353,29 +343,26 @@ func NewBankTransactionLog(log []models.TransactionLogEntry, count int64) interf
 
 	for i, entry := range log {
 		transactionDTO := bankTransaction{
-			Id:      entry.Id.String(),
+			Id:      entry.Id,
 			Time:    entry.Created,
 			Title:   entry.Title,
 			Amount:  entry.Amount,
-			GroupId: entry.GroupId.String(),
+			GroupId: entry.GroupId,
 		}
 
 		if entry.ReceiverIsBank {
 			transactionDTO.ReceiverId = "bank"
 		} else {
-			transactionDTO.ReceiverId = entry.ReceiverId.String()
+			transactionDTO.ReceiverId = entry.ReceiverId
 		}
 
 		if entry.SenderIsBank {
 			transactionDTO.SenderId = "bank"
 		} else {
-			transactionDTO.SenderId = entry.SenderId.String()
+			transactionDTO.SenderId = entry.SenderId
 		}
 
-		emptyId := uuid.UUID{}
-		if !bytes.Equal(entry.PaymentPlanId[:], emptyId[:]) {
-			transactionDTO.PaymentPlanId = entry.PaymentPlanId.String()
-		}
+		transactionDTO.PaymentPlanId = entry.PaymentPlanId
 
 		transactionDTOs[i] = transactionDTO
 	}
@@ -411,26 +398,26 @@ func NewPaymentPlan(paymentPlanModel *models.PaymentPlan) interface{} {
 	}
 
 	paymentPlanDTO := paymentPlan{
-		Id:           paymentPlanModel.Id.String(),
+		Id:           paymentPlanModel.Id,
 		NextExecute:  paymentPlanModel.NextExecute,
 		Name:         paymentPlanModel.Name,
 		Description:  paymentPlanModel.Description,
 		Schedule:     paymentPlanModel.Schedule,
 		ScheduleUnit: paymentPlanModel.ScheduleUnit,
 		Amount:       paymentPlanModel.Amount,
-		GroupId:      paymentPlanModel.GroupId.String(),
+		GroupId:      paymentPlanModel.GroupId,
 	}
 
 	if paymentPlanModel.ReceiverIsBank {
 		paymentPlanDTO.ReceiverId = "bank"
 	} else {
-		paymentPlanDTO.ReceiverId = paymentPlanModel.ReceiverId.String()
+		paymentPlanDTO.ReceiverId = paymentPlanModel.ReceiverId
 	}
 
 	if paymentPlanModel.SenderIsBank {
 		paymentPlanDTO.SenderId = "bank"
 	} else {
-		paymentPlanDTO.SenderId = paymentPlanModel.SenderId.String()
+		paymentPlanDTO.SenderId = paymentPlanModel.SenderId
 	}
 
 	return paymentPlanResp{
@@ -453,25 +440,25 @@ func NewPaymentPlans(paymentPlans []models.PaymentPlan, count int64) interface{}
 	for i, plan := range paymentPlans {
 
 		paymentPlanDTO := paymentPlan{
-			Id:           plan.Id.String(),
+			Id:           plan.Id,
 			NextExecute:  plan.NextExecute,
 			Name:         plan.Name,
 			Schedule:     plan.Schedule,
 			ScheduleUnit: plan.ScheduleUnit,
 			Amount:       plan.Amount,
-			GroupId:      plan.GroupId.String(),
+			GroupId:      plan.GroupId,
 		}
 
 		if plan.ReceiverIsBank {
 			paymentPlanDTO.ReceiverId = "bank"
 		} else {
-			paymentPlanDTO.ReceiverId = plan.ReceiverId.String()
+			paymentPlanDTO.ReceiverId = plan.ReceiverId
 		}
 
 		if plan.SenderIsBank {
 			paymentPlanDTO.SenderId = "bank"
 		} else {
-			paymentPlanDTO.SenderId = plan.SenderId.String()
+			paymentPlanDTO.SenderId = plan.SenderId
 		}
 
 		paymentPlanDTOs[i] = paymentPlanDTO

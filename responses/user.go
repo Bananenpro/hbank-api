@@ -6,19 +6,13 @@ type AuthUser struct {
 	Id                      string `json:"id"`
 	Name                    string `json:"name"`
 	Email                   string `json:"email"`
-	EmailConfirmed          bool   `json:"emailConfirmed"`
-	TwoFAOTPEnabled         bool   `json:"twoFAOTPEnabled"`
-	ProfilePictureId        string `json:"profilePictureId"`
-	ProfilePicturePrivacy   string `json:"profilePicturePrivacy"`
 	PubliclyVisible         bool   `json:"publiclyVisible"`
 	DontSendInvitationEmail bool   `json:"dontSendInvitationEmail"`
-	DeleteToken             string `json:"deleteToken,omitempty"`
 }
 
 type User struct {
-	Id               string `json:"id"`
-	Name             string `json:"name"`
-	ProfilePictureId string `json:"profilePictureId"`
+	Id   string `json:"id"`
+	Name string `json:"name"`
 }
 
 type CashLogEntryDetailed struct {
@@ -65,7 +59,7 @@ func NewCashLogEntry(entry *models.CashLogEntry) interface{} {
 			Success: true,
 		},
 		CashLogEntryDetailed: CashLogEntryDetailed{
-			Id:          entry.Id.String(),
+			Id:          entry.Id,
 			Time:        entry.Created,
 			Title:       entry.ChangeTitle,
 			Description: entry.ChangeDescription,
@@ -103,7 +97,7 @@ func NewCashLog(log []models.CashLogEntry, count int64) interface{} {
 
 	for i, entry := range log {
 		entries[i] = CashLogEntry{
-			Id:    entry.Id.String(),
+			Id:    entry.Id,
 			Time:  entry.Created,
 			Title: entry.ChangeTitle,
 
@@ -131,16 +125,11 @@ func NewAuthUser(user *models.User) interface{} {
 			Success: true,
 		},
 		AuthUser: AuthUser{
-			Id:                      user.Id.String(),
+			Id:                      user.Id,
 			Name:                    user.Name,
 			Email:                   user.Email,
-			EmailConfirmed:          user.EmailConfirmed,
-			TwoFAOTPEnabled:         user.TwoFaOTPEnabled,
-			ProfilePictureId:        user.ProfilePictureId.String(),
-			ProfilePicturePrivacy:   user.ProfilePicturePrivacy,
 			PubliclyVisible:         user.PubliclyVisible,
 			DontSendInvitationEmail: user.DontSendInvitationEmail,
-			DeleteToken:             user.DeleteToken,
 		},
 	}
 }
@@ -155,9 +144,8 @@ func NewUser(user *models.User) interface{} {
 			Success: true,
 		},
 		User: User{
-			Id:               user.Id.String(),
-			Name:             user.Name,
-			ProfilePictureId: user.ProfilePictureId.String(),
+			Id:   user.Id,
+			Name: user.Name,
 		},
 	}
 }
@@ -165,9 +153,8 @@ func NewUser(user *models.User) interface{} {
 func NewUsers(users []models.User, count int64) interface{} {
 	userDTOs := make([]User, len(users))
 	for i, u := range users {
-		userDTOs[i].Id = u.Id.String()
+		userDTOs[i].Id = u.Id
 		userDTOs[i].Name = u.Name
-		userDTOs[i].ProfilePictureId = u.ProfilePictureId.String()
 	}
 
 	type usersResp struct {

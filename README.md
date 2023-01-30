@@ -107,6 +107,8 @@ Example configuration:
 ```jsonc
 {
   "domainName": "hbank.example",
+  "baseURL": "https://hbank.example",
+  "frontendURL": "https://hbank.example",
   "jwtSecret": "&#aMv5g^m5fzon29eY!QVqkRLMqugFYz",
   "emailEnabled": true,
   "emailHost": "smtp.gmail.com",
@@ -116,7 +118,10 @@ Example configuration:
   "captchaEnabled": true,
   "captchaVerifyUrl": "https://hcaptcha.com/siteverify",
   "captchaSecret": "verysecretcaptchasecret",
-  "captchaSitekey": "my-sitekey-bla-bla-1234"
+  "captchaSitekey": "my-sitekey-bla-bla-1234",
+  "idProvider": "https://id.julianh.de",
+  "clientID": "asöldkfjasödkfljasdöfkljasdf",
+  "clientSecret": "asdfjkasdöfkljasdföklajsdföaslkdjf"
 }
 ```
 

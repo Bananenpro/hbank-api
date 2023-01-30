@@ -5,12 +5,13 @@ import (
 	"log"
 	"os"
 
-	"github.com/Bananenpro/hbank-api/config"
-	"github.com/Bananenpro/hbank-api/models"
 	"github.com/google/uuid"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"github.com/Bananenpro/hbank-api/config"
+	"github.com/Bananenpro/hbank-api/models"
 )
 
 func NewSqlite(filepath string) (*gorm.DB, error) {
@@ -44,16 +45,6 @@ func DeleteTestDB(id string) {
 func AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(
 		&models.User{},
-		&models.ProfilePicture{},
-		&models.ConfirmEmailLastSent{},
-		&models.ForgotPasswordEmailLastSent{},
-		&models.ConfirmEmailCode{},
-		&models.ResetPasswordCode{},
-		&models.ChangeEmailCode{},
-		&models.RefreshToken{},
-		&models.PasswordToken{},
-		&models.TwoFAToken{},
-		&models.RecoveryCode{},
 		&models.CashLogEntry{},
 
 		&models.Group{},

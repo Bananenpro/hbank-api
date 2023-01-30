@@ -3,23 +3,24 @@ package responses
 import "github.com/Bananenpro/hbank-api/config"
 
 type Config struct {
-	CaptchaEnabled            bool  `json:"captchaEnabled"`
-	EmailEnabled              bool  `json:"emailEnabled"`
-	MinNameLength             int   `json:"minNameLength"`
-	MaxNameLength             int   `json:"maxNameLength"`
-	MinDescriptionLength      int   `json:"minDescriptionLength"`
-	MaxDescriptionLength      int   `json:"maxDescriptionLength"`
-	MinPasswordLength         int   `json:"minPasswordLength"`
-	MaxPasswordLength         int   `json:"maxPasswordLength"`
-	MinEmailLength            int   `json:"minEmailLength"`
-	MaxEmailLength            int   `json:"maxEmailLength"`
-	MaxProfilePictureFileSize int64 `json:"maxProfilePictureFileSize"`
-	LoginTokenLifetime        int64 `json:"loginTokenLifetime"`
-	EmailCodeLifetime         int64 `json:"emailCodeLifetime"`
-	AuthTokenLifetime         int64 `json:"authTokenLifetime"`
-	RefreshTokenLifetime      int64 `json:"refreshTokenLifetime"`
-	SendEmailTimeout          int64 `json:"sendEmailTimeout"`
-	MaxPageSize               int   `json:"maxPageSize"`
+	CaptchaEnabled            bool   `json:"captchaEnabled"`
+	EmailEnabled              bool   `json:"emailEnabled"`
+	MinNameLength             int    `json:"minNameLength"`
+	MaxNameLength             int    `json:"maxNameLength"`
+	MinDescriptionLength      int    `json:"minDescriptionLength"`
+	MaxDescriptionLength      int    `json:"maxDescriptionLength"`
+	MinPasswordLength         int    `json:"minPasswordLength"`
+	MaxPasswordLength         int    `json:"maxPasswordLength"`
+	MinEmailLength            int    `json:"minEmailLength"`
+	MaxEmailLength            int    `json:"maxEmailLength"`
+	MaxProfilePictureFileSize int64  `json:"maxProfilePictureFileSize"`
+	LoginTokenLifetime        int64  `json:"loginTokenLifetime"`
+	EmailCodeLifetime         int64  `json:"emailCodeLifetime"`
+	AuthTokenLifetime         int64  `json:"authTokenLifetime"`
+	RefreshTokenLifetime      int64  `json:"refreshTokenLifetime"`
+	SendEmailTimeout          int64  `json:"sendEmailTimeout"`
+	MaxPageSize               int    `json:"maxPageSize"`
+	IDProvider                string `json:"idProvider"`
 }
 
 type Status struct {
@@ -51,6 +52,7 @@ func NewStatus() interface{} {
 			RefreshTokenLifetime:      config.Data.RefreshTokenLifetime,
 			SendEmailTimeout:          config.Data.SendEmailTimeout,
 			MaxPageSize:               config.Data.MaxPageSize,
+			IDProvider:                config.Data.IDProvider,
 		},
 	}
 }

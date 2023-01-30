@@ -4,10 +4,10 @@ import (
 	"errors"
 	"time"
 
+	"gorm.io/gorm"
+
 	"github.com/Bananenpro/hbank-api/models"
 	"github.com/Bananenpro/hbank-api/services"
-	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type GroupStore struct {
@@ -39,7 +39,7 @@ func (gs *GroupStore) GetAllByUser(user *models.User, page int, pageSize int, de
 		return nil, err
 	}
 
-	groupIds := make([]uuid.UUID, len(memberships))
+	groupIds := make([]string, len(memberships))
 	for i, m := range memberships {
 		groupIds[i] = m.GroupId
 	}
@@ -56,9 +56,9 @@ func (gs *GroupStore) Count(user *models.User) (int64, error) {
 	return count, err
 }
 
-func (gs *GroupStore) GetById(id uuid.UUID) (*models.Group, error) {
+func (gs *GroupStore) GetById(id string) (*models.Group, error) {
 	var group models.Group
-	err := gs.db.First(&group, id).Error
+	err := gs.db.First(&group, "id = ?", id).Error
 	if err != nil {
 		switch err {
 		case gorm.ErrRecordNotFound:
@@ -109,7 +109,7 @@ func (gs *GroupStore) Delete(group *models.Group) error {
 	return gs.db.Delete(group).Error
 }
 
-func (gs *GroupStore) DeleteById(id uuid.UUID) error {
+func (gs *GroupStore) DeleteById(id string) error {
 	group, err := gs.GetById(id)
 	if err != nil {
 		return err
@@ -172,7 +172,7 @@ func (gs *GroupStore) GetMembers(except *models.User, searchInput string, group 
 		return nil, err
 	}
 
-	userIds := make([]uuid.UUID, len(memberships))
+	userIds := make([]string, len(memberships))
 	for i, m := range memberships {
 		userIds[i] = m.UserId
 	}
@@ -209,8 +209,8 @@ func (gs *GroupStore) AddMember(group *models.Group, user *models.User) error {
 		err = gs.db.Model(group).Select("is_member").Association("Memberships").Append(&models.GroupMembership{
 			IsMember:  true,
 			GroupId:   group.Id,
-			GroupName: group.Name,
 			UserId:    user.Id,
+			GroupName: group.Name,
 			UserName:  user.Name,
 		})
 	} else if err == nil {
@@ -262,7 +262,7 @@ func (gs *GroupStore) GetAdmins(except *models.User, searchInput string, group *
 		return nil, err
 	}
 
-	userIds := make([]uuid.UUID, len(memberships))
+	userIds := make([]string, len(memberships))
 	for i, m := range memberships {
 		userIds[i] = m.UserId
 	}
@@ -327,8 +327,8 @@ func (gs *GroupStore) AddAdmin(group *models.Group, user *models.User) error {
 		err = gs.db.Model(group).Association("Memberships").Append(&models.GroupMembership{
 			IsAdmin:   true,
 			GroupId:   group.Id,
-			GroupName: group.Name,
 			UserId:    user.Id,
+			GroupName: group.Name,
 			UserName:  user.Name,
 		})
 	} else if err == nil {
@@ -423,7 +423,7 @@ func (gs *GroupStore) BankTransactionLogEntryCount(group *models.Group) (int64, 
 	return count, err
 }
 
-func (gs *GroupStore) GetTransactionLogEntryById(group *models.Group, id uuid.UUID) (*models.TransactionLogEntry, error) {
+func (gs *GroupStore) GetTransactionLogEntryById(group *models.Group, id string) (*models.TransactionLogEntry, error) {
 	var entry models.TransactionLogEntry
 	err := gs.db.First(&entry, "group_id = ? AND id = ?", group.Id, id).Error
 	if err != nil {
@@ -461,7 +461,7 @@ func (gs *GroupStore) GetUserBalance(group *models.Group, user *models.User) (in
 		return 0, nil
 	}
 
-	if lastLogEntry.SenderId.String() == user.Id.String() {
+	if lastLogEntry.SenderId == user.Id {
 		return lastLogEntry.NewBalanceSender, nil
 	} else {
 		return lastLogEntry.NewBalanceReceiver, nil
@@ -469,10 +469,10 @@ func (gs *GroupStore) GetUserBalance(group *models.Group, user *models.User) (in
 }
 
 func (gs *GroupStore) CreateTransaction(group *models.Group, senderIsBank, receiverIsBank bool, sender *models.User, receiver *models.User, title, description string, amount int) (*models.TransactionLogEntry, error) {
-	return gs.CreateTransactionFromPaymentPlan(group, senderIsBank, receiverIsBank, sender, receiver, title, description, amount, uuid.UUID{})
+	return gs.CreateTransactionFromPaymentPlan(group, senderIsBank, receiverIsBank, sender, receiver, title, description, amount, "")
 }
 
-func (gs *GroupStore) CreateTransactionFromPaymentPlan(group *models.Group, senderIsBank, receiverIsBank bool, sender *models.User, receiver *models.User, title, description string, amount int, paymentPlanId uuid.UUID) (*models.TransactionLogEntry, error) {
+func (gs *GroupStore) CreateTransactionFromPaymentPlan(group *models.Group, senderIsBank, receiverIsBank bool, sender *models.User, receiver *models.User, title, description string, amount int, paymentPlanId string) (*models.TransactionLogEntry, error) {
 	var err error
 
 	oldBalanceSender := 0
@@ -495,12 +495,12 @@ func (gs *GroupStore) CreateTransactionFromPaymentPlan(group *models.Group, send
 		newBalanceReceiver = oldBalanceReceiver + amount
 	}
 
-	senderId := uuid.UUID{}
+	senderId := ""
 	if !senderIsBank {
 		senderId = sender.Id
 	}
 
-	receiverId := uuid.UUID{}
+	receiverId := ""
 	if !receiverIsBank {
 		receiverId = receiver.Id
 	}
@@ -542,7 +542,7 @@ func (gs *GroupStore) CreateInvitation(group *models.Group, user *models.User, m
 	return invitation, err
 }
 
-func (gs *GroupStore) GetInvitationById(id uuid.UUID) (*models.GroupInvitation, error) {
+func (gs *GroupStore) GetInvitationById(id string) (*models.GroupInvitation, error) {
 	var invitation models.GroupInvitation
 	err := gs.db.First(&invitation, id).Error
 	if err != nil {
@@ -676,10 +676,9 @@ func (gs *GroupStore) GetPaymentPlansThatNeedToBeExecuted() ([]models.PaymentPla
 	return paymentPlans, err
 }
 
-func (gs *GroupStore) GetPaymentPlanById(group *models.Group, id uuid.UUID) (*models.PaymentPlan, error) {
+func (gs *GroupStore) GetPaymentPlanById(group *models.Group, id string) (*models.PaymentPlan, error) {
 	var paymentPlan models.PaymentPlan
 	err := gs.db.First(&paymentPlan, "group_id = ? AND id = ?", group.Id, id).Error
-
 	if err != nil {
 		switch err {
 		case gorm.ErrRecordNotFound:
@@ -724,7 +723,7 @@ func (gs *GroupStore) UpdatePaymentPlan(paymentPlan *models.PaymentPlan) error {
 }
 
 func (gs *GroupStore) DeletePaymentPlan(paymentPlan *models.PaymentPlan) error {
-	gs.db.Model(&models.TransactionLogEntry{}).Where("payment_plan_id = ?", paymentPlan.Id).Update("payment_plan_id", uuid.UUID{})
+	gs.db.Model(&models.TransactionLogEntry{}).Where("payment_plan_id = ?", paymentPlan.Id).Update("payment_plan_id", "")
 	return gs.db.Delete(paymentPlan).Error
 }
 
@@ -746,7 +745,7 @@ func (gs *GroupStore) GetTotalMoney(group *models.Group) (int, error) {
 	return total, nil
 }
 
-func (gs *GroupStore) AreInSameGroup(userId1, userId2 uuid.UUID) (bool, error) {
+func (gs *GroupStore) AreInSameGroup(userId1, userId2 string) (bool, error) {
 	var count int
 	err := gs.db.Raw("select count(*) from group_memberships where group_memberships.user_id = ? and group_memberships.group_id in (select group_memberships.group_id from group_memberships where group_memberships.user_id = ?)", userId1, userId2).Scan(&count).Error
 	if err != nil {
