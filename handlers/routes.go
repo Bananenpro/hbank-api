@@ -9,11 +9,14 @@ import (
 func (h *Handler) RegisterApi(api *echo.Group) {
 	api.GET("/status", h.Status)
 
+	jwt := middlewares.JWT(h.oidcClient, h.userStore)
+
 	auth := api.Group("/auth")
 	auth.GET("/login", h.Login)
 	auth.GET("/callback", h.LoginCallback)
-
-	jwt := middlewares.JWT(h.oidcClient, h.userStore)
+	auth.GET("/refresh", func(c echo.Context) error {
+		return nil
+	}, jwt)
 
 	api.GET("/user", h.GetUsers, jwt)
 	api.GET("/user/:id", h.GetUser, jwt)

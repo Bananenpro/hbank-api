@@ -35,11 +35,11 @@ func JWT(oidcClient *oidc.Client, userStore models.UserStore) func(next echo.Han
 				if errors.Is(err, oidc.ErrExpiredToken) || idToken == "" || idTokenSignature == "" {
 					refreshToken, err := c.Cookie("Refresh-Token")
 					if err != nil {
-						return c.JSON(http.StatusUnauthorized, responses.New(false, "Expired ID-Token", lang))
+						return c.JSON(http.StatusUnauthorized, responses.New(false, "Missing or expired ID token", lang))
 					}
 					userID, access, refresh, id, err := oidcClient.RefreshTokens(refreshToken.Value)
 					if err != nil {
-						return c.JSON(http.StatusUnauthorized, responses.New(false, "Expired ID-Token", lang))
+						return c.JSON(http.StatusUnauthorized, responses.New(false, "Invalid refresh token", lang))
 					}
 					info, err := oidcClient.FetchUserInfo(userID, access)
 					if err != nil {
@@ -51,7 +51,7 @@ func JWT(oidcClient *oidc.Client, userStore models.UserStore) func(next echo.Han
 						return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
 					}
 					if user == nil {
-						return c.JSON(http.StatusUnauthorized, responses.New(false, "Expired ID-Token", lang))
+						return c.JSON(http.StatusUnauthorized, responses.New(false, "The user does not longer exist", lang))
 					}
 					user.Name = info.Name
 					user.Email = info.Email
