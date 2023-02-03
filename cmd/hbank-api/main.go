@@ -77,7 +77,7 @@ func main() {
 	handler := handlers.New(us, gs, oidcClient)
 
 	api := r.Group("/api")
-	handler.RegisterApi(api)
+	handler.RegisterAPI(api)
 
 	go func() {
 		if config.Data.SSL {

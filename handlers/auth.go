@@ -18,6 +18,49 @@ func (h *Handler) Login(c echo.Context) error {
 	return nil
 }
 
+// /api/auth/logout (POST)
+func (h *Handler) Logout(c echo.Context) error {
+	sameSite := http.SameSiteStrictMode
+
+	if config.Data.Debug {
+		sameSite = http.SameSiteNoneMode
+	}
+
+	c.SetCookie(&http.Cookie{
+		Name:     "Refresh-Token",
+		Value:    "",
+		MaxAge:   -1,
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: sameSite,
+		Domain:   config.Data.DomainName,
+		Path:     "/",
+	})
+
+	c.SetCookie(&http.Cookie{
+		Name:     "ID-Token",
+		Value:    "",
+		MaxAge:   -1,
+		Secure:   true,
+		HttpOnly: false,
+		SameSite: sameSite,
+		Domain:   config.Data.DomainName,
+		Path:     "/",
+	})
+
+	c.SetCookie(&http.Cookie{
+		Name:     "ID-Token-Signature",
+		Value:    "",
+		MaxAge:   -1,
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: sameSite,
+		Domain:   config.Data.DomainName,
+		Path:     "/",
+	})
+	return nil
+}
+
 // /api/auth/login (GET)
 func (h *Handler) LoginCallback(c echo.Context) error {
 	lang := c.Get("lang").(string)

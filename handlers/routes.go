@@ -6,7 +6,7 @@ import (
 	"github.com/Bananenpro/hbank-api/router/middlewares"
 )
 
-func (h *Handler) RegisterApi(api *echo.Group) {
+func (h *Handler) RegisterAPI(api *echo.Group) {
 	api.GET("/status", h.Status)
 
 	jwt := middlewares.JWT(h.oidcClient, h.userStore)
@@ -17,6 +17,7 @@ func (h *Handler) RegisterApi(api *echo.Group) {
 	auth.GET("/refresh", func(c echo.Context) error {
 		return nil
 	}, jwt)
+	auth.POST("/logout", h.Logout)
 
 	api.GET("/user", h.GetUsers, jwt)
 	api.GET("/user/:id", h.GetUser, jwt)
