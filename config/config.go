@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"log"
+	"net/url"
 	"os"
 	"strings"
 )
@@ -55,7 +56,7 @@ var defaultData = ConfigData{
 	ServerPort:                80,
 	DomainName:                "",
 	BaseURL:                   "",
-	FrontendURL:               "https://hbank.julianh.de",
+	FrontendURL:               "",
 	MinNameLength:             3,
 	MaxNameLength:             30,
 	MinDescriptionLength:      0,
@@ -74,7 +75,7 @@ var defaultData = ConfigData{
 	RefreshTokenLifetime:      1 * 365 * 24 * 60 * 60,
 	SendEmailTimeout:          2 * 60,
 	MaxPageSize:               100,
-	IDProvider:                "https://id.julianh.de",
+	IDProvider:                "",
 }
 
 var Data = defaultData
@@ -157,11 +158,6 @@ func verifyData() {
 		log.Println("WARNING: Email disabled")
 	}
 
-	if strings.TrimSpace(Data.DomainName) == "" {
-		log.Println("WARNING: Empty domain name. Using default: hbank")
-		Data.DomainName = "hbank"
-	}
-
 	if len(Data.JWTSecret) < 10 {
 		log.Fatalln("ERROR: Please specify a jwt secret (>=10 characters)")
 	}
@@ -174,12 +170,24 @@ func verifyData() {
 	}
 
 	if Data.BaseURL == "" {
-		log.Fatalln("ERROR: No base URL specified. Using default: https://hbank.julianh.de")
-		Data.DomainName = "https://hbank.julianh.de"
+		log.Fatalln("ERROR: No base URL specified")
+	}
+
+	if strings.TrimSpace(Data.DomainName) == "" {
+		baseURL, err := url.Parse(Data.BaseURL)
+		if err != nil {
+			log.Fatalln("ERROR: Empty domain name")
+		}
+		log.Println("WARNING: Empty domain name. Using default:", baseURL.Hostname())
+		Data.DomainName = baseURL.Hostname()
 	}
 
 	if Data.FrontendURL == "" {
-		log.Println("WARNING: Empty frontend URL. Using default: https://hbank.julianh.de")
-		Data.FrontendURL = "https://hbank.julianh.de"
+		log.Println("WARNING: Empty frontend URL. Using default:", Data.BaseURL)
+		Data.FrontendURL = Data.BaseURL
+	}
+
+	if Data.IDProvider == "" {
+		log.Fatalln("ERROR: No ID provider specified")
 	}
 }

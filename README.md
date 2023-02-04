@@ -119,7 +119,7 @@ Example configuration:
   "captchaVerifyUrl": "https://hcaptcha.com/siteverify",
   "captchaSecret": "verysecretcaptchasecret",
   "captchaSitekey": "my-sitekey-bla-bla-1234",
-  "idProvider": "https://id.julianh.de",
+  "idProvider": "https://id.example.com",
   "clientID": "asöldkfjasödkfljasdöfkljasdf",
   "clientSecret": "asdfjkasdöfkljasdföklajsdföaslkdjf"
 }
@@ -217,6 +217,7 @@ HBank-API is looking for configuration in the following locations in order of de
   "sslCertPath": "", // Path to ssl cert file
   "sslKeyPath": "", // Path to ssl key file
   "domainName": "hbank", // Domain to use for cookies, name of totp, links in email
+  "baseURL": "https://hbank.example", // The URL the application is located at
   "jwtSecret": "", // !!SET TO SOMETHING SECURE!! Secret key to use for signing jwt tokens
   "captchaEnabled": false, // Enable CAPTCHA
   "captchaVerifyUrl": "", // URL to verify CAPTCHA response
@@ -244,8 +245,9 @@ HBank-API is looking for configuration in the following locations in order of de
   "authTokenLifetime": 600, // Time after which auth tokens expire in seconds
   "refreshTokenLifetime": 31536000, // Time after which refresh tokens expire in seconds
   "sendEmailTimeout": 180, // Timeout for sending the same email to the same address in seconds
-  "maxPageSize": 100 // Max allowed page size for lists
-  "frontendRoot": "" // Path to the web root of the frontend
+  "maxPageSize": 100, // Max allowed page size for lists
+  "frontendRoot": "", // Path to the web root of the frontend
+  "idProvider": "" // URL pointing to an OpenID Connect identity provider (must match the issuer value of the provider)
 }
 ```
 
