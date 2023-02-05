@@ -15,7 +15,7 @@ import (
 	"github.com/Bananenpro/hbank-api/responses"
 )
 
-func JWT(oidcClient *oidc.Client, userStore models.UserStore) func(next echo.HandlerFunc) echo.HandlerFunc {
+func Auth(oidcClient *oidc.Client, userStore models.UserStore) func(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			lang := c.Get("lang").(string)

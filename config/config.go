@@ -18,11 +18,6 @@ type ConfigData struct {
 	DomainName                string `json:"domainName"`
 	BaseURL                   string `json:"baseURL"`
 	FrontendURL               string `json:"frontendURL"`
-	JWTSecret                 string `json:"jwtSecret"`
-	CaptchaEnabled            bool   `json:"captchaEnabled"`
-	CaptchaVerifyUrl          string `json:"captchaVerifyUrl"`
-	CaptchaSecret             string `json:"captchaSecret"`
-	CaptchaSiteKey            string `json:"captchaSiteKey"`
 	EmailEnabled              bool   `json:"emailEnabled"`
 	EmailHost                 string `json:"emailHost"`
 	EmailPort                 int    `json:"emailPort"`
@@ -32,19 +27,7 @@ type ConfigData struct {
 	MaxNameLength             int    `json:"maxNameLength"`
 	MinDescriptionLength      int    `json:"minDescriptionLength"`
 	MaxDescriptionLength      int    `json:"maxDescriptionLength"`
-	MinPasswordLength         int    `json:"minPasswordLength"`
-	MaxPasswordLength         int    `json:"maxPasswordLength"`
-	MinEmailLength            int    `json:"minEmailLength"`
-	MaxEmailLength            int    `json:"maxEmailLength"`
 	MaxProfilePictureFileSize int64  `json:"maxProfilePictureFileSize"`
-	BcryptCost                int    `json:"bcryptCost"`
-	PBKDF2Iterations          int    `json:"pbkdf2Iterations"`
-	RecoveryCodeCount         uint   `json:"recoveryCodeCount"`
-	LoginTokenLifetime        int64  `json:"loginTokenLifetime"`
-	EmailCodeLifetime         int64  `json:"emailCodeLifetime"`
-	AuthTokenLifetime         int64  `json:"authTokenLifetime"`
-	RefreshTokenLifetime      int64  `json:"refreshTokenLifetime"`
-	SendEmailTimeout          int64  `json:"sendEmailTimeout"`
 	MaxPageSize               int    `json:"maxPageSize"`
 	FrontendRoot              string `json:"frontendRoot"`
 	IDProvider                string `json:"idProvider"`
@@ -61,19 +44,7 @@ var defaultData = ConfigData{
 	MaxNameLength:             30,
 	MinDescriptionLength:      0,
 	MaxDescriptionLength:      256,
-	MinPasswordLength:         6,
-	MinEmailLength:            3,
-	MaxPasswordLength:         64,
-	MaxEmailLength:            64,
 	MaxProfilePictureFileSize: 10000000, // 10 MB
-	BcryptCost:                10,
-	PBKDF2Iterations:          10000,
-	RecoveryCodeCount:         5,
-	LoginTokenLifetime:        5 * 60,
-	EmailCodeLifetime:         5 * 60,
-	AuthTokenLifetime:         10 * 60,
-	RefreshTokenLifetime:      1 * 365 * 24 * 60 * 60,
-	SendEmailTimeout:          2 * 60,
 	MaxPageSize:               100,
 	IDProvider:                "",
 }
@@ -127,17 +98,6 @@ func verifyData() {
 		}
 	}
 
-	if Data.CaptchaEnabled {
-		if Data.CaptchaSecret == "" {
-			log.Println("WARNING: No captcha secret specified. Disabling captcha.")
-			Data.CaptchaEnabled = false
-		}
-		if Data.CaptchaSiteKey == "" {
-			log.Println("WARNING: No captcha site key specified. Disabling captcha.")
-			Data.CaptchaEnabled = false
-		}
-	}
-
 	if Data.EmailEnabled {
 		if Data.EmailHost == "" {
 			log.Println("WARNING: No email host provided")
@@ -156,10 +116,6 @@ func verifyData() {
 		}
 	} else {
 		log.Println("WARNING: Email disabled")
-	}
-
-	if len(Data.JWTSecret) < 10 {
-		log.Fatalln("ERROR: Please specify a jwt secret (>=10 characters)")
 	}
 
 	if Data.ClientID == "" {

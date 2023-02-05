@@ -109,16 +109,11 @@ Example configuration:
   "domainName": "hbank.example",
   "baseURL": "https://hbank.example",
   "frontendURL": "https://hbank.example",
-  "jwtSecret": "&#aMv5g^m5fzon29eY!QVqkRLMqugFYz",
   "emailEnabled": true,
   "emailHost": "smtp.gmail.com",
   "emailPort": 587,
   "emailUsername": "example@gmail.com",
   "emailPassword": "verysecurepassword",
-  "captchaEnabled": true,
-  "captchaVerifyUrl": "https://hcaptcha.com/siteverify",
-  "captchaSecret": "verysecretcaptchasecret",
-  "captchaSitekey": "my-sitekey-bla-bla-1234",
   "idProvider": "https://id.example.com",
   "clientID": "asöldkfjasödkfljasdöfkljasdf",
   "clientSecret": "asdfjkasdöfkljasdföklajsdföaslkdjf"
@@ -216,13 +211,8 @@ HBank-API is looking for configuration in the following locations in order of de
   "ssl": false, // Enable ssl
   "sslCertPath": "", // Path to ssl cert file
   "sslKeyPath": "", // Path to ssl key file
-  "domainName": "hbank", // Domain to use for cookies, name of totp, links in email
+  "domainName": "hbank.example", // Domain to use for cookies, name of totp, links in email
   "baseURL": "https://hbank.example", // The URL the application is located at
-  "jwtSecret": "", // !!SET TO SOMETHING SECURE!! Secret key to use for signing jwt tokens
-  "captchaEnabled": false, // Enable CAPTCHA
-  "captchaVerifyUrl": "", // URL to verify CAPTCHA response
-  "captchaSecret": "", // Secret for CAPTCHA service
-  "captchaSiteKey": "", // CAPTCHA sitekey
   "emailEnabled": false, // !!ENABLE OR CORE FUNCTIONALITY WILL BE BROKEN!! Send emails
   "emailHost": "", // Host to use for sending emails
   "emailPort": 0, // Port to use for sending emails
@@ -232,19 +222,7 @@ HBank-API is looking for configuration in the following locations in order of de
   "maxNameLength": 30, // Max length of names like usernames, group names, transaction names, payment plan names, etc.
   "minDescriptionLength": 0, // Min length of descriptions like group descriptions, transaction descriptions, payment plan descriptions, etc.
   "maxDescriptionLength": 256, // Max length of names like group descriptions, transaction descriptions, payment plan descriptions, etc.
-  "minPasswordLength": 6, // Min password length
-  "maxPasswordLength": 64, // Max password length
-  "minEmailLength": 3, // Min allowed length of email addresses
-  "maxEmailLength": 64, // Max allowed length of email addresses
   "maxProfilePictureFileSize": 10000000, // Max size of uploaded profile pictures in bytes
-  "bcryptCost": 10, // Bcrypt cost to use for hashing passwords
-  "pbkdf2Iterations": 10000, // Number of iterations of PBKDF2 for hashing tokens
-  "recoveryCodeCount": 5, // Number of recovery codes to generate per user
-  "loginTokenLifetime": 300, // Time after which login tokens like password or two factor tokens expire in seconds
-  "emailCodeLifetime": 300, // Time after which codes sent via email like password reset codes expire in seconds
-  "authTokenLifetime": 600, // Time after which auth tokens expire in seconds
-  "refreshTokenLifetime": 31536000, // Time after which refresh tokens expire in seconds
-  "sendEmailTimeout": 180, // Timeout for sending the same email to the same address in seconds
   "maxPageSize": 100, // Max allowed page size for lists
   "frontendRoot": "", // Path to the web root of the frontend
   "idProvider": "" // URL pointing to an OpenID Connect identity provider (must match the issuer value of the provider)

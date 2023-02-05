@@ -9,7 +9,7 @@ import (
 func (h *Handler) RegisterAPI(api *echo.Group) {
 	api.GET("/status", h.Status)
 
-	jwt := middlewares.JWT(h.oidcClient, h.userStore)
+	jwt := middlewares.Auth(h.oidcClient, h.userStore)
 
 	auth := api.Group("/auth")
 	auth.GET("/login", h.Login)
