@@ -21,21 +21,20 @@ cd hbank-api
 
 ### Installing dependencies
 
-- Go 1.17+
-- C compatible compiler such as gcc 4.6+ or clang 3.0+
+- [Go](https://go.dev) 1.17+
 
 #### Windows
 
 Using [chocolatey](https://chocolatey.org/) as administrator:
 
 ```powershell
-choco install golang mingw
+choco install golang
 ```
 
 #### Arch Linux
 
 ```bash
-sudo pacman -S go gcc
+sudo pacman -S go
 ```
 
 ### Running
@@ -47,7 +46,7 @@ Make sure you are in the root directory of the project.
 The api and webserver application.
 
 ```bash
-go run ./cmd/hbank-api/main.go
+make run_api
 ```
 
 #### Payment plans
@@ -55,7 +54,7 @@ go run ./cmd/hbank-api/main.go
 The service that executes payment plans.
 
 ```bash
-go run ./cmd/hbank-payment-plans/main.go
+make run_payment_plans
 ```
 
 ### Building
@@ -63,7 +62,7 @@ go run ./cmd/hbank-payment-plans/main.go
 #### API
 
 ```bash
-go build -o bin/hbank-api ./cmd/hbank-api/main.go
+make build_api
 ```
 
 The resulting binary can be found at `bin/hbank-api`.
@@ -71,10 +70,22 @@ The resulting binary can be found at `bin/hbank-api`.
 #### Payment plans
 
 ```bash
-go build -o bin/hbank-payment-plans ./cmd/hbank-payment-plans/main.go
+make build_payment_plans
 ```
 
 The resulting binary can be found at `bin/hbank-payment-plans`.
+
+### Runt tests
+
+```bash
+make test
+```
+
+### Clean
+
+```bash
+make clean
+```
 
 ### Deploying
 
