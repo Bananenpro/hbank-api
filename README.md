@@ -242,7 +242,7 @@ HBank-API is looking for configuration in the following locations in order of de
 
 ## License
 
-Copyright © 2021-2022 Julian Hofmann
+Copyright © 2021-2023 Julian Hofmann
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published
