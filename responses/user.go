@@ -1,6 +1,6 @@
 package responses
 
-import "github.com/Bananenpro/hbank-api/models"
+import "github.com/juho05/hbank-api/models"
 
 type AuthUser struct {
 	Id                      string `json:"id"`

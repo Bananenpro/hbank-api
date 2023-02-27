@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Bananenpro/hbank-api/config"
-	"github.com/Bananenpro/hbank-api/services"
+	"github.com/juho05/hbank-api/config"
+	"github.com/juho05/hbank-api/services"
 	"github.com/labstack/echo/v4"
 )
 

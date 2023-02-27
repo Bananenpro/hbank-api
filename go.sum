@@ -1,5 +1,5 @@
-github.com/Bananenpro/oidc-client v0.0.0-20230130155327-00cec1e400e0 h1:SIQGE3uex2XPU6OOE7e/pmuksqZwggpxlF1er3gC6Kc=
-github.com/Bananenpro/oidc-client v0.0.0-20230130155327-00cec1e400e0/go.mod h1:nW62w420+2BnOm5EAQPFKbeCERLhG2lqEEx4c85gVso=
+github.com/juho05/oidc-client v0.0.0-20230130155327-00cec1e400e0 h1:SIQGE3uex2XPU6OOE7e/pmuksqZwggpxlF1er3gC6Kc=
+github.com/juho05/oidc-client v0.0.0-20230130155327-00cec1e400e0/go.mod h1:nW62w420+2BnOm5EAQPFKbeCERLhG2lqEEx4c85gVso=
 github.com/adrg/xdg v0.4.0 h1:RzRqFcjH4nE5C6oTAxhBtoE2IRyjBSa62SCbyPidvls=
 github.com/adrg/xdg v0.4.0/go.mod h1:N6ag73EX4wyxeaoeHctc1mas01KZgsj5tYiAIwqJE/E=
 github.com/chzyer/logex v1.2.0/go.mod h1:9+9sk7u7pGNWYMkh0hdiL++6OeibzJccyQU4p4MedaY=

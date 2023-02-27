@@ -1,9 +1,9 @@
-module github.com/Bananenpro/hbank-api
+module github.com/juho05/hbank-api
 
 go 1.17
 
 require (
-	github.com/Bananenpro/oidc-client v0.0.0-20230130155327-00cec1e400e0
+	github.com/juho05/oidc-client v0.0.0-20230130155327-00cec1e400e0
 	github.com/adrg/xdg v0.4.0
 	github.com/disintegration/imaging v1.6.2
 	github.com/glebarez/sqlite v1.6.0

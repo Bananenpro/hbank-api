@@ -5,9 +5,9 @@ import (
 
 	"github.com/adrg/xdg"
 
-	"github.com/Bananenpro/hbank-api/config"
-	"github.com/Bananenpro/hbank-api/db"
-	"github.com/Bananenpro/hbank-api/models"
+	"github.com/juho05/hbank-api/config"
+	"github.com/juho05/hbank-api/db"
+	"github.com/juho05/hbank-api/models"
 )
 
 func ExecutePaymentPlans(us models.UserStore, gs models.GroupStore) {

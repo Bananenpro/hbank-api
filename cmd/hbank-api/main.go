@@ -12,16 +12,16 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/Bananenpro/oidc-client/oidc"
+	"github.com/juho05/oidc-client/oidc"
 	"github.com/adrg/xdg"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
-	"github.com/Bananenpro/hbank-api/config"
-	"github.com/Bananenpro/hbank-api/db"
-	"github.com/Bananenpro/hbank-api/handlers"
-	"github.com/Bananenpro/hbank-api/router"
-	"github.com/Bananenpro/hbank-api/services"
+	"github.com/juho05/hbank-api/config"
+	"github.com/juho05/hbank-api/db"
+	"github.com/juho05/hbank-api/handlers"
+	"github.com/juho05/hbank-api/router"
+	"github.com/juho05/hbank-api/services"
 )
 
 func serveFrontend(router *echo.Echo, path string) {

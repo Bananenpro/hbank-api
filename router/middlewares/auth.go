@@ -8,11 +8,11 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/Bananenpro/oidc-client/oidc"
+	"github.com/juho05/oidc-client/oidc"
 
-	"github.com/Bananenpro/hbank-api/config"
-	"github.com/Bananenpro/hbank-api/models"
-	"github.com/Bananenpro/hbank-api/responses"
+	"github.com/juho05/hbank-api/config"
+	"github.com/juho05/hbank-api/models"
+	"github.com/juho05/hbank-api/responses"
 )
 
 func Auth(oidcClient *oidc.Client, userStore models.UserStore) func(next echo.HandlerFunc) echo.HandlerFunc {

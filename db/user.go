@@ -3,7 +3,7 @@ package db
 import (
 	"gorm.io/gorm"
 
-	"github.com/Bananenpro/hbank-api/models"
+	"github.com/juho05/hbank-api/models"
 )
 
 type UserStore struct {

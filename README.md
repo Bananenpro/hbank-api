@@ -8,14 +8,14 @@
 
 ## Description
 
-The API for the [H-Bank](https://github.com/Bananenpro/hbank-web) application.
+The API for the [H-Bank](https://github.com/juho05/hbank-web) application.
 
 ## Setup
 
 ### Cloning the repo
 
 ```bash
-git clone https://github.com/Bananenpro/hbank-api.git
+git clone https://github.com/juho05/hbank-api.git
 cd hbank-api
 ```
 

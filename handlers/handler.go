@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"github.com/Bananenpro/oidc-client/oidc"
+	"github.com/juho05/oidc-client/oidc"
 
-	"github.com/Bananenpro/hbank-api/models"
+	"github.com/juho05/hbank-api/models"
 )
 
 type Handler struct {

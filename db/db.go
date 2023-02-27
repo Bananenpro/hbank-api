@@ -10,8 +10,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
-	"github.com/Bananenpro/hbank-api/config"
-	"github.com/Bananenpro/hbank-api/models"
+	"github.com/juho05/hbank-api/config"
+	"github.com/juho05/hbank-api/models"
 )
 
 func NewSqlite(filepath string) (*gorm.DB, error) {

@@ -1,7 +1,7 @@
 package models
 
 import (
-	"github.com/Bananenpro/hbank-api/services"
+	"github.com/juho05/hbank-api/services"
 )
 
 type GroupStore interface {
