@@ -12,7 +12,6 @@ run_api:
 build_api:
 	CGO_ENABLED=0 go build -o ./bin/${API_BINARY_NAME} ${API_MAIN}
 
-
 run_payment_plans:
 	go run ${PAYMENT_PLANS_MAIN}
  

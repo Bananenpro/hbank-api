@@ -14,13 +14,13 @@ import (
 	"github.com/juho05/hbank-api/models"
 )
 
-func NewSqlite(filepath string) (*gorm.DB, error) {
+func NewSqlite(dsn string) (*gorm.DB, error) {
 	if config.Data.DBVerbose {
-		return gorm.Open(sqlite.Open(filepath), &gorm.Config{
+		return gorm.Open(sqlite.Open(dsn), &gorm.Config{
 			Logger: logger.Default.LogMode(logger.Info),
 		})
 	} else {
-		return gorm.Open(sqlite.Open(filepath), &gorm.Config{
+		return gorm.Open(sqlite.Open(dsn), &gorm.Config{
 			Logger: logger.Default.LogMode(logger.Silent),
 		})
 	}
@@ -29,7 +29,7 @@ func NewSqlite(filepath string) (*gorm.DB, error) {
 // returns db and the id of db file
 func NewTestDB() (*gorm.DB, string, error) {
 	id := uuid.NewString()
-	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("%s.sqlite", id)), &gorm.Config{
+	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("%s.sqlite?_pragma=foreign_keys(1)", id)), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	return db, id, err

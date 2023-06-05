@@ -10,10 +10,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
-	"github.com/juho05/oidc-client/oidc"
 	"github.com/adrg/xdg"
+	"github.com/juho05/oidc-client/oidc"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
@@ -24,7 +25,7 @@ import (
 	"github.com/juho05/hbank-api/services"
 )
 
-func serveFrontend(router *echo.Echo, path string) {
+func serveFrontend(router *echo.Echo) {
 	if _, err := os.Stat(config.Data.FrontendRoot); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			log.Fatalf("Couldn't find '%s'!", config.Data.FrontendRoot)
@@ -41,25 +42,23 @@ func serveFrontend(router *echo.Echo, path string) {
 	}))
 }
 
-func main() {
-	config.Load([]string{"config.json", xdg.ConfigHome + "/hbank/config.json"})
-	services.LoadTranslations()
-
-	services.EmailAuthenticate()
-
-	r := router.New()
-
+func run(r *echo.Echo) error {
 	if config.Data.FrontendRoot != "" {
-		serveFrontend(r, config.Data.FrontendRoot)
+		serveFrontend(r)
 	}
 
-	database, err := db.NewSqlite("database.sqlite")
+	database, err := db.NewSqlite("database.sqlite?_pragma=foreign_keys(1)&_pragma=busy_timeout(3000)&_pragma=journal_mode=WAL")
 	if err != nil {
-		log.Fatalln("Couldn't connect to database:", err)
+		return fmt.Errorf("Couldn't connect to database: %w", err)
 	}
+	sqlDB, err := database.DB()
+	if err != nil {
+		return fmt.Errorf("Failed to get generic SQL interface: %w", err)
+	}
+	defer sqlDB.Close()
 	err = db.AutoMigrate(database)
 	if err != nil {
-		log.Fatalln("Couldn't auto migrate database:", err)
+		return fmt.Errorf("Couldn't auto migrate database: %w", err)
 	}
 
 	us := db.NewUserStore(database)
@@ -71,7 +70,7 @@ func main() {
 		RedirectURI:  config.Data.BaseURL + "/api/auth/callback",
 	})
 	if err != nil {
-		log.Fatalln("Couldn't create OIDC client:", err)
+		return fmt.Errorf("Couldn't create OIDC client: %w", err)
 	}
 
 	handler := handlers.New(us, gs, oidcClient)
@@ -86,16 +85,29 @@ func main() {
 			err = r.Start(fmt.Sprintf(":%d", config.Data.ServerPort))
 		}
 		if err != nil && err != http.ErrServerClosed {
-			r.Logger.Fatal(err)
+			r.Logger.Error(err)
 		}
 	}()
 
 	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := r.Shutdown(ctx); err != nil {
+		return err
+	}
+	return nil
+}
+
+func main() {
+	config.Load([]string{"config.json", xdg.ConfigHome + "/hbank/config.json"})
+	services.LoadTranslations()
+
+	services.EmailAuthenticate()
+
+	r := router.New()
+	if err := run(r); err != nil {
 		r.Logger.Fatal(err)
 	}
 }
