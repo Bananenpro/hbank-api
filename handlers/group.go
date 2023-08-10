@@ -1996,7 +1996,13 @@ func (h *Handler) DeletePaymentPlan(c echo.Context) error {
 
 	isSender := user.Id == paymentPlan.SenderId
 	if !isSender {
-		return c.JSON(http.StatusForbidden, responses.New(false, "User not the sender of the payment plan", lang))
+		isAdmin, err := h.groupStore.IsAdmin(group, user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, responses.NewUnexpectedError(err, lang))
+		}
+		if !paymentPlan.SenderIsBank || !isAdmin {
+			return c.JSON(http.StatusForbidden, responses.New(false, "User not the sender of the payment plan", lang))
+		}
 	}
 
 	err = h.groupStore.DeletePaymentPlan(paymentPlan)
