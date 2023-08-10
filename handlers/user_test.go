@@ -209,17 +209,15 @@ func TestHandler_UpdateUser(t *testing.T) {
 		tName                   string
 		user                    *models.User
 		dontSendInvitationEmail bool
-		profilePicturePrivacy   string
 		wantCode                int
 		wantSuccess             bool
 		wantMessage             string
 	}{
-		{tName: "Success", user: user1, dontSendInvitationEmail: false, profilePicturePrivacy: "everybody", wantCode: http.StatusOK, wantSuccess: true},
-		{tName: "Invalid profilePicturePrivacy", user: user2, dontSendInvitationEmail: false, profilePicturePrivacy: "blablabla", wantCode: http.StatusOK, wantSuccess: false, wantMessage: "Invalid profile picture privacy"},
+		{tName: "Success", user: user1, dontSendInvitationEmail: false, wantCode: http.StatusOK, wantSuccess: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.tName, func(t *testing.T) {
-			jsonBody := fmt.Sprintf(`{"dontSendInvitationEmail": %t, "profilePicturePrivacy": "%s", "email": "bla@bla.bla", "password": "123456"}`, tt.dontSendInvitationEmail, tt.profilePicturePrivacy)
+			jsonBody := fmt.Sprintf(`{"dontSendInvitationEmail": %t, "email": "bla@bla.bla", "password": "123456"}`, tt.dontSendInvitationEmail)
 			req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(jsonBody))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()

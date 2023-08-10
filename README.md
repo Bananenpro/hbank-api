@@ -75,7 +75,7 @@ make build_payment_plans
 
 The resulting binary can be found at `bin/hbank-payment-plans`.
 
-### Runt tests
+### Run tests
 
 ```bash
 make test
