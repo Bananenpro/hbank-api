@@ -2,11 +2,7 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io/fs"
-	"log"
-	"mime"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,7 +12,8 @@ import (
 	"github.com/adrg/xdg"
 	"github.com/juho05/oidc-client/oidc"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+
+	"github.com/juho05/hbank-api"
 
 	"github.com/juho05/hbank-api/config"
 	"github.com/juho05/hbank-api/db"
@@ -25,27 +22,8 @@ import (
 	"github.com/juho05/hbank-api/services"
 )
 
-func serveFrontend(router *echo.Echo) {
-	if _, err := os.Stat(config.Data.FrontendRoot); err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			log.Fatalf("Couldn't find '%s'!", config.Data.FrontendRoot)
-		} else {
-			log.Fatalf("Couldn't open '%s': %s", config.Data.FrontendRoot, err)
-		}
-	}
-	mime.AddExtensionType(".html", "text/html")
-	mime.AddExtensionType(".css", "text/css")
-	mime.AddExtensionType(".js", "application/javascript")
-	router.Use(middleware.StaticWithConfig(middleware.StaticConfig{
-		Root:  config.Data.FrontendRoot,
-		HTML5: true,
-	}))
-}
-
 func run(r *echo.Echo) error {
-	if config.Data.FrontendRoot != "" {
-		serveFrontend(r)
-	}
+	hbank.Initialize()
 
 	database, err := db.NewSqlite("database.sqlite?_pragma=foreign_keys(1)&_pragma=busy_timeout(3000)&_pragma=journal_mode=WAL")
 	if err != nil {
@@ -73,6 +51,10 @@ func run(r *echo.Echo) error {
 		return fmt.Errorf("Couldn't create OIDC client: %w", err)
 	}
 
+	mux := http.NewServeMux()
+	mux.Handle("/api/", r)
+	mux.Handle("/", handlers.NewFrontendHandler())
+
 	handler := handlers.New(us, gs, oidcClient)
 
 	api := r.Group("/api")
@@ -80,9 +62,9 @@ func run(r *echo.Echo) error {
 
 	go func() {
 		if config.Data.SSL {
-			err = r.StartTLS(fmt.Sprintf(":%d", config.Data.ServerPort), config.Data.SSLCertPath, config.Data.SSLKeyPath)
+			err = http.ListenAndServeTLS(fmt.Sprintf(":%d", config.Data.ServerPort), config.Data.SSLCertPath, config.Data.SSLKeyPath, mux)
 		} else {
-			err = r.Start(fmt.Sprintf(":%d", config.Data.ServerPort))
+			err = http.ListenAndServe(fmt.Sprintf(":%d", config.Data.ServerPort), mux)
 		}
 		if err != nil && err != http.ErrServerClosed {
 			r.Logger.Error(err)

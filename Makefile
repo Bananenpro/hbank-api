@@ -1,28 +1,29 @@
-API_BINARY_NAME=hbank-api
-PAYMENT_PLANS_BINARY_NAME=hbank-payment-plans
+OUT_DIR=bin
+BIN_NAME=h-bank
 
-API_MAIN=./cmd/hbank-api
-PAYMENT_PLANS_MAIN=./cmd/hbank-payment-plans
+.PHONY: backend frontend run-backend run-frontend init clean
 
-make: build_api build_payment_plans
+backend: frontend
+	CGO_ENABLED=0 go build -o ${OUT_DIR}/${BIN_NAME} ./cmd/hbank-api
 
-run_api:
-	go run ${API_MAIN}
+frontend:
+	npm run --prefix frontend build
 
-build_api:
-	CGO_ENABLED=0 go build -o ./bin/${API_BINARY_NAME} ${API_MAIN}
+frontend/dist:
+	npm run --prefix frontend build
 
-run_payment_plans:
-	go run ${PAYMENT_PLANS_MAIN}
- 
-build_payment_plans:
-	CGO_ENABLED=0 go build -o ./bin/${PAYMENT_PLANS_BINARY_NAME} ${PAYMENT_PLANS_MAIN}
- 
-test:
-	go test ./...
+run-backend: frontend/dist
+	@which wgo &> /dev/null || (echo "Installing wgo..." && go install github.com/bokwoon95/wgo@latest)
+	wgo run -file config.json ./cmd/hbank-api
+
+run-frontend:
+	npm run --prefix frontend serve
+
+init:
+	go mod download
+	npm install --prefix frontend
  
 clean:
 	go clean
-	rm ./bin/${API_BINARY_NAME}
-	rm ./bin/${PAYMENT_PLANS_BINARY_NAME}
-	rmdir ./bin
+	rm -rf frontend/dist
+	rm ./${OUT_DIR}

@@ -15,9 +15,8 @@ type ConfigData struct {
 	SSL                       bool   `json:"ssl"`
 	SSLCertPath               string `json:"sslCertPath"`
 	SSLKeyPath                string `json:"sslKeyPath"`
-	DomainName                string `json:"domainName"`
 	BaseURL                   string `json:"baseURL"`
-	FrontendURL               string `json:"frontendURL"`
+	DomainName                string `json:"-"`
 	EmailEnabled              bool   `json:"emailEnabled"`
 	EmailHost                 string `json:"emailHost"`
 	EmailPort                 int    `json:"emailPort"`
@@ -29,17 +28,16 @@ type ConfigData struct {
 	MaxDescriptionLength      int    `json:"maxDescriptionLength"`
 	MaxProfilePictureFileSize int64  `json:"maxProfilePictureFileSize"`
 	MaxPageSize               int    `json:"maxPageSize"`
-	FrontendRoot              string `json:"frontendRoot"`
 	IDProvider                string `json:"idProvider"`
 	ClientID                  string `json:"clientID"`
 	ClientSecret              string `json:"clientSecret"`
+	DevFrontend               string `json:"devFrontend"`
+	FrontendDir               string `json:"frontendDir"`
 }
 
 var defaultData = ConfigData{
 	ServerPort:                80,
-	DomainName:                "",
 	BaseURL:                   "",
-	FrontendURL:               "",
 	MinNameLength:             3,
 	MaxNameLength:             30,
 	MinDescriptionLength:      0,
@@ -132,18 +130,17 @@ func verifyData() {
 	if strings.TrimSpace(Data.DomainName) == "" {
 		baseURL, err := url.Parse(Data.BaseURL)
 		if err != nil {
-			log.Fatalln("ERROR: Empty domain name")
+			log.Fatalln("ERROR: Invalid base URL")
 		}
-		log.Println("WARNING: Empty domain name. Using default:", baseURL.Hostname())
 		Data.DomainName = baseURL.Hostname()
-	}
-
-	if Data.FrontendURL == "" {
-		log.Println("WARNING: Empty frontend URL. Using default:", Data.BaseURL)
-		Data.FrontendURL = Data.BaseURL
 	}
 
 	if Data.IDProvider == "" {
 		log.Fatalln("ERROR: No ID provider specified")
+	}
+
+	if _, err := url.Parse(Data.DevFrontend); err != nil {
+		log.Println("WARNING: Invalid dev frontend URL:", err)
+		Data.DevFrontend = ""
 	}
 }

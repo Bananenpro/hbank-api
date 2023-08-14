@@ -1,0 +1,237 @@
+{
+  "back": "Zurück",
+  "login": "Anmelden",
+  "register": "Registrieren",
+  "name": "Name",
+  "email": "Email",
+  "password": "Passwort",
+  "repeat-password": "Passwort wiederholen",
+  "next": "Weiter",
+  "cannot-be-changed": "kann nicht geändert werden",
+  "min-password-chars": "min. 6 Zeichen",
+  "invalid-fields": "ungültige(s) Feld(er)",
+  "captcha-not-confirmed": "CAPTCHA nicht bestätigt",
+  "loading": "⧖ Laden…",
+  "send-new-email": "Erneut senden",
+  "code": "Code",
+  "recovery-code": "Recovery Code",
+  "wrong-code": "Falscher Code",
+  "from-the-auth-app": "aus der Authenticator-App",
+  "forgot-password-?": "Passwort vergessen?",
+  "done": "Fertig",
+  "generate": "Generieren",
+  "currency": "€",
+  "view": "Ansehen",
+  "log": "Verlauf",
+  "save": "Speichern",
+  "change": "Ändern",
+  "create": "Erstellen",
+  "title": "Titel",
+  "description": "Beschreibung",
+  "you": "Du",
+  "message": "Nachricht",
+  "invite": "Einladen",
+  "transfer": "Überweisen",
+  "amount": "Betrag",
+  "to-lbl": "An:",
+  "choose": "Auswählen",
+  "bank": "Bank",
+  "payment-plan": "Zahlungsplan",
+  "days": "Tage",
+  "weeks": "Wochen",
+  "months": "Monate",
+  "years": "Jahre",
+  "decimal": ",",
+  "balance-difference": "Differenz",
+  "sender": "Sender",
+  "receiver": "Empfänger",
+  "time": "Zeitpunkt",
+  "delete": "Löschen",
+  "update": "Speichern",
+  "are-you-sure": "Bist du dir sicher?",
+  "yes": "ja",
+  "no": "nein",
+  "uploading": "Hochladen…",
+  "edit": "Bearbeiten",
+  "submit": "Senden",
+  "home": {
+    "description": "Verwalte Geld in einer Gruppe digital mit der H-Bank.",
+    "description-long": "Nie wieder Taschengeld vergessen! Die H-Bank erlaubt es Taschengeld o. Ä. völlig bargeldlos zu verwalten. Überweise Geld an andere Nutzer in deiner Gruppe oder erstelle automatische Zahlungspläne und siehe dir deinen Verlauf noch Jahre später an.",
+    "lets-go": "Loslegen",
+    "more-details": "Mehr erfahren…",
+    "or-separator": "-- oder --"
+  },
+  "dashboard": {
+    "hello": "Hallo",
+    "cash-lbl": "Bargeld",
+    "invitations": "Du hast keine neue Einladung erhalten… | Du hast eine neue Einladung erhalten… | Du hast {count} neue Einladungen erhalten…",
+    "create-group": "Gruppe erstellen"
+  },
+  "confirm-email": {
+    "title": "Email bestätigen",
+    "instructions": "Wir haben dir einen Code per Email geschickt. Bitte sieh in deinem Postfach nach (auch im Spam) und gib ihn unten ein:"
+  },
+  "activate-two-fa": {
+    "title": "Zwei-Faktor-Auth einrichten",
+    "instructions-qr": "Bitte scanne den QR-Code mit einer Authenticator-App (z.B. Google Authenticator).",
+    "instructions-key": "Alternativ kannst du den oben angegebenen Code in die Authenticator-App manuell eintragen."
+  },
+  "two-factor-auth": {
+    "title": "Zwei-Faktor-Auth",
+    "use-recovery-code": "Recovery Code verwenden",
+    "use-normal-code": "Normalen Code verwenden"
+  },
+  "new-recovery-codes": {
+    "title": "Recovery Codes",
+    "instructions": "Bitte notiere dir die folgenden Codes und bewahre sie an einem sicheren Ort auf. Falls due Zugang zu deiner Authenticator-App verlierst, kannst du einen von ihnen verwenden, um den Zugriff auf deinen Account wieder herzustellen."
+  },
+  "group": {
+    "create": "Gruppe erstellen",
+    "only-admin": "Nur als Admin beitreten",
+    "balance": "Mein Kontostand",
+    "total": "Ausgegeben",
+    "transactions": "Überweisungen",
+    "members": "Mitglieder",
+    "payment-plans": "Zahlungspläne"
+  },
+  "group-settings": {
+    "title": "Gruppeneinstellungen",
+    "member": "Mitglied",
+    "admin": "Adminrechte",
+    "leave": "verlassen",
+    "join": "beitreten",
+    "remove": "entfernen",
+    "leave-description": "Dies beeinflusst nicht deinen Adminstatus. Alle Zahlungspläne werden gelöscht. Vergangene Überweisungen bleiben bestehen.",
+    "demote-description": "Du verlierst das Recht, die Bank und Mitglieder zu verwalten.",
+    "delete-description": "Die Gruppe wird unwiderrufbar gelöscht.",
+    "remove-picture-warning": "Das Gruppenbild wird gelöscht."
+  },
+  "transaction-log": {
+    "create": "Überweisen"
+  },
+  "payment-plans": {
+    "create": "Zahlungsplan erstellen"
+  },
+  "members": {
+    "invite": "Nutzer einladen"
+  },
+  "payment-plan-create": {
+    "first-execute": "Erste Zahlung",
+    "every": "Alle"
+  },
+  "payment-plan-update": {
+    "next-execute": "Nächste Zahlung"
+  },
+  "payment-plan-details": {
+    "title": "Details",
+    "next-payment": "Nächste Zahlung",
+    "recurrences": "Wiederholungen",
+    "next-payment-distance-day": "Niemals | Jeden Tag | Alle {count} Tage",
+    "next-payment-distance-week": "Niemals | Jede Woche | Alle {count} Wochen",
+    "next-payment-distance-month": "Niemals | Jeden Monat | Alle {count} Monate",
+    "next-payment-distance-year": "Niemals | Jedes Jahr | Alle {count} Jahre",
+    "delete-dialog-description": "Der Zahlungsplan wird unwiderrufbar gelöscht."
+  },
+  "members-list": {
+    "promotion-dialog-description": "Möchtest du diesen Nutzer befördern? Admins können die Bank verwalten und andere Nutzer einladen oder zu Admins machen."
+  },
+  "transaction": {
+    "transfer-from-bank": "Überweise von Bank",
+    "details": "Details",
+    "new-balance": "Kontostand nach der Überweisung"
+  },
+  "footer": {
+    "privacy-policy": "Datenschutzerklärung"
+  },
+  "placeholders": {
+    "search": "Suchen…"
+  },
+  "hamburger": {
+    "account": "Account",
+    "settings": "Einstellungen",
+    "logout": "Abmelden"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "sendInvitationEmail": "Sende Einladungen per Email",
+    "publiclyVisible": "Andere können mich einladen",
+    "profilePicturePrivacy": {
+      "label": "Profilbildsichtbarkeit",
+      "nobody": "Nur ich",
+      "group": "Gruppenmitglieder",
+      "everybody": "Jeder"
+    },
+    "theme": {
+      "label": "Thema",
+      "system": "System",
+      "light": "Hell",
+      "dark": "Dunkel"
+    },
+    "lang": {
+      "label": "Sprache",
+      "system": "System",
+      "en": "Englisch",
+      "de": "Deutsch"
+    }
+  },
+  "account": {
+    "title": "Accounteinstellungen",
+    "change-password": "Passwort ändern",
+    "new-otp": "2FA Gerät ändern",
+    "new-otp-warning": "Die Codes auf deinem jetzigen Gerät sind dann nicht mehr gültig.",
+    "new-recovery-codes": "Neue Recovery Codes",
+    "new-recovery-codes-warning": "Deine aktuellen Recovery Codes sind dann nicht mehr gültig.",
+    "delete-warning": "Der Account wird mit allen seinen Daten endgültig gelöscht!",
+    "change-email": "Email ändern",
+    "new-email": "Neue Email",
+    "change-email-success": "Wir haben dir eine Änderungsemail an die neue Adresse gesendet.",
+    "old-password": "Altes Passwort",
+    "new-password": "Neues Passwort",
+    "new-password-repeat": "Neues Passwort wiederholen",
+    "change-password-success": "Das Passwort wurde erfolgreich geändert.",
+    "delete": "Account löschen",
+    "delete-success": "Der Account wurde erfolgreich gelöscht.",
+    "remove-picture-warning": "Das Profilbild wird gelöscht."
+  },
+  "change-email": {
+    "success": "Email-Adresse erfolgreich geändert."
+  },
+  "forgot-password": {
+    "title": "Passwort vergessen",
+    "sent": "Eine Zurücksetzungsmail wurde an die angegebene Adresse gesendet."
+  },
+  "reset-password": {
+    "title": "Passwort zurücksetzen",
+    "success": "Passwort erfolgreich zurückgesetzt."
+  },
+  "cash-details": {
+    "title": "Details"
+  },
+  "pageTitles": {
+    "dashboard": "Übersicht",
+    "cash": "Bargeld",
+    "cash-log": "Bargeldverlauf",
+    "group-create": "Gruppe erstellen",
+    "privacy-policy": "Datenschutzerklärung",
+    "invitations": "Einladungen",
+    "transfer": "Überweisen",
+    "invite": "Einladen",
+    "transactions": "Überweisungen",
+    "payment-plan": "Zahlungsplan",
+    "payment-plans": "Zahlungspläne",
+    "transaction-details": "Überweisung",
+    "payment-plan-details": "Zahlungsplan",
+    "members": "Mitglieder",
+    "settings": "Einstellungen",
+    "account": "Account",
+    "cash-log-entry": "Bargeldeintrag"
+  },
+  "errors": {
+    "unknown": "Ein unbekannter Fehler ist aufgetreten.",
+    "offline": "Keine Internetverbindung.",
+    "404": "Die Seite konnte nicht gefunden werden.",
+    "403": "Aktion ist verboten.",
+    "401": "Nicht authentifiziert.",
+    "500": "Ein interner Fehler ist aufgetreten."
+  }
+}

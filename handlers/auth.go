@@ -138,6 +138,6 @@ func (h *Handler) LoginCallback(c echo.Context) error {
 		Path:     "/",
 	})
 
-	c.Redirect(http.StatusSeeOther, config.Data.FrontendURL+"/"+strings.TrimPrefix(data.(string), "/"))
+	c.Redirect(http.StatusSeeOther, config.Data.BaseURL+"/"+strings.TrimPrefix(data.(string), "/"))
 	return nil
 }

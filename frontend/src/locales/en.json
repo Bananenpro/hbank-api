@@ -1,0 +1,237 @@
+{
+  "back": "Back",
+  "login": "Login",
+  "register": "Register",
+  "name": "Name",
+  "email": "Email",
+  "password": "Password",
+  "repeat-password": "Repeat password",
+  "next": "Next",
+  "cannot-be-changed": "cannot be changed",
+  "min-password-chars": "min. 6 characters",
+  "invalid-fields": "invalid field(s)",
+  "captcha-not-confirmed": "CAPTCHA not confirmed",
+  "loading": "⧖ Loading…",
+  "send-new-email": "Send a new email",
+  "code": "Code",
+  "recovery-code": "Recovery code",
+  "wrong-code": "Wrong code",
+  "from-the-auth-app": "from the authenticator app",
+  "forgot-password-?": "Forgot password?",
+  "done": "Done",
+  "generate": "Generate",
+  "currency": "€",
+  "view": "View",
+  "log": "Log",
+  "save": "Save",
+  "change": "Change",
+  "create": "Create",
+  "title": "Title",
+  "description": "Description",
+  "you": "You",
+  "message": "Message",
+  "invite": "Invite",
+  "transfer": "Transfer",
+  "amount": "Amount",
+  "to-lbl": "To:",
+  "choose": "Choose",
+  "bank": "Bank",
+  "payment-plan": "Payment plan",
+  "days": "days",
+  "weeks": "weeks",
+  "months": "months",
+  "years": "years",
+  "decimal": ".",
+  "sender": "Sender",
+  "receiver": "Receiver",
+  "time": "Time",
+  "balance-difference": "Difference",
+  "delete": "Delete",
+  "update": "Update",
+  "are-you-sure": "Are you sure?",
+  "yes": "yes",
+  "no": "no",
+  "uploading": "Uploading…",
+  "edit": "Edit",
+  "submit": "Submit",
+  "home": {
+    "description": "Manage money digitally in a group with H-Bank.",
+    "description-long": "Never forget pocket money again! H-Bank allows you to manage pocket money and the like completely cashlessly. Transfer money to other users in your group or create automatic payment plans and view your payment history years later.",
+    "lets-go": "Let's go",
+    "more-details": "More details…",
+    "or-separator": "-- or --"
+  },
+  "dashboard": {
+    "hello": "Hello",
+    "cash-lbl": "Cash",
+    "invitations": "You received no new invitations… | You received one new invitation… | You received {count} new invitations…",
+    "create-group": "Create group"
+  },
+  "confirm-email": {
+    "title": "Confirm email",
+    "instructions": "We have sent you a code by email. Please check your inbox (spam too) and enter it below:"
+  },
+  "activate-two-fa": {
+    "title": "Activate two-factor-auth",
+    "instructions-qr": "Please scan the qr code with an authenticator app (e.g. Google Authenticator).",
+    "instructions-key": "Alternatively, you can manually enter the above code into the authenticator app."
+  },
+  "two-factor-auth": {
+    "title": "Two-factor-auth",
+    "use-recovery-code": "Use recovery code",
+    "use-normal-code": "Use normal code"
+  },
+  "new-recovery-codes": {
+    "title": "Recovery codes",
+    "instructions": "Please write down the following codes and keep them in a secure location. If you ever lose access to your authenticator app, you will be able to recover your account using one of the codes below."
+  },
+  "group": {
+    "create": "Create group",
+    "only-admin": "Only join as admin",
+    "balance": "My balance",
+    "total": "Issued",
+    "transactions": "Transactions",
+    "members": "Members",
+    "payment-plans": "Payment plans"
+  },
+  "group-settings": {
+    "title": "Group settings",
+    "member": "Member",
+    "admin": "Admin rights",
+    "leave": "leave",
+    "join": "join",
+    "remove": "remove",
+    "leave-description": "This doesn't change your admin status. All payment plans will be deleted. Your past transactions will be kept.",
+    "demote-description": "You will lose the right to control the bank and manage members.",
+    "delete-description": "The group will be irrevocably deleted.",
+    "remove-picture-warning": "The group picture will be removed."
+  },
+  "transaction-log": {
+    "create": "Create transaction"
+  },
+  "payment-plans": {
+    "create": "Create payment plan"
+  },
+  "members": {
+    "invite": "Invite user"
+  },
+  "payment-plan-create": {
+    "first-execute": "First payment",
+    "every": "Every"
+  },
+  "payment-plan-update": {
+    "next-execute": "Next payment"
+  },
+  "payment-plan-details": {
+    "title": "Details",
+    "next-payment": "Next payment",
+    "recurrences": "Recurrences",
+    "next-payment-distance-day": "Never | Every day | Every {count} days",
+    "next-payment-distance-week": "Never | Every week | Every {count} weeks",
+    "next-payment-distance-month": "Never | Every month | Every {count} months",
+    "next-payment-distance-year": "Never | Every year | Every {count} years",
+    "delete-dialog-description": "The payment plan will be irrevocably deleted."
+  },
+  "members-list": {
+    "promotion-dialog-description": "Do you want to promote this user? Admins can manage the bank and invite or promote other users."
+  },
+  "transaction": {
+    "transfer-from-bank": "Transfer from bank",
+    "details": "Details",
+    "new-balance": "Balance after transaction"
+  },
+  "footer": {
+    "privacy-policy": "Privacy Policy"
+  },
+  "placeholders": {
+    "search": "Search…"
+  },
+  "hamburger": {
+    "account": "Account",
+    "settings": "Settings",
+    "logout": "Logout"
+  },
+  "settings": {
+    "title": "Settings",
+    "sendInvitationEmail": "Send invitations via email",
+    "publiclyVisible": "Other people can invite me",
+    "profilePicturePrivacy": {
+      "label": "Profile picture visibility",
+      "nobody": "Just me",
+      "group": "Group members",
+      "everybody": "Everybody"
+    },
+    "theme": {
+      "label": "Theme",
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "lang": {
+      "label": "Language",
+      "system": "System",
+      "en": "English",
+      "de": "German"
+    }
+  },
+  "account": {
+    "title": "Account settings",
+    "change-password": "Change password",
+    "new-otp": "Change 2FA device",
+    "new-otp-warning": "The codes of your current device won't be valid anymore.",
+    "new-recovery-codes": "New recovery codes",
+    "new-recovery-codes-warning": "Your current recovery codes won't be valid anymore.",
+    "delete-warning": "The account and all of its data will be irrevocably deleted!",
+    "change-email": "Change email",
+    "new-email": "New email",
+    "change-email-success": "We sent a change email to the new address.",
+    "old-password": "Old password",
+    "new-password": "New password",
+    "new-password-repeat": "Repeat new password",
+    "change-password-success": "The password was changed successfully.",
+    "delete": "Delete account",
+    "delete-success": "The account was deleted successfully.",
+    "remove-picture-warning": "The profile picture will be removed."
+  },
+  "change-email": {
+    "success": "Successfully changed email address."
+  },
+  "forgot-password": {
+    "title": "Forgot password",
+    "sent": "A reset email was sent to the specified address."
+  },
+  "reset-password": {
+    "title": "Reset password",
+    "success": "Successfully reset password."
+  },
+  "cash-details": {
+    "title": "Details"
+  },
+  "pageTitles": {
+    "dashboard": "Dashboard",
+    "cash": "Cash",
+    "cash-log": "Cash log",
+    "group-create": "Create group",
+    "privacy-policy": "Privacy Policy",
+    "invitations": "Invitations",
+    "transfer": "Transfer",
+    "invite": "Invite",
+    "transactions": "Transactions",
+    "payment-plan": "Payment plan",
+    "payment-plans": "Payment plans",
+    "transaction-details": "Transaction",
+    "payment-plan-details": "Payment plan",
+    "members": "Members",
+    "settings": "Settings",
+    "account": "Account",
+    "cash-log-entry": "Cash entry"
+  },
+  "errors": {
+    "unknown": "An unknown error occured.",
+    "offline": "You are offline.",
+    "404": "Page not found.",
+    "403": "The action is forbidden.",
+    "401": "Not authenticated.",
+    "500": "An internal error occured."
+  }
+}
