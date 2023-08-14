@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -13,7 +14,7 @@ import (
 	"github.com/juho05/oidc-client/oidc"
 	"github.com/labstack/echo/v4"
 
-	"github.com/juho05/h-bank"
+	hbank "github.com/juho05/h-bank"
 
 	"github.com/juho05/h-bank/config"
 	"github.com/juho05/h-bank/db"
@@ -71,9 +72,14 @@ func run(r *echo.Echo) error {
 		}
 	}()
 
+	log.Printf("Listening on port %d", config.Data.ServerPort)
+
+	StartPaymentPlanTicker(us, gs)
+
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
+	close(StopPaymentPlanTicker)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := r.Shutdown(ctx); err != nil {

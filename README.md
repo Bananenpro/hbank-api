@@ -53,11 +53,11 @@ Child:
 
 ## Screenshots
 
-![Landing page](images/screenshots/landing-page.png)
-![Dashboard](images/screenshots/dashboard.png)
-![Group](images/screenshots/group.png)
-![Transactions](images/screenshots/transactions.png)
-![Payment plan](images/screenshots/payment-plan.png)
+![Landing page](assets/screenshots/landing-page.png)
+![Dashboard](assets/screenshots/dashboard.png)
+![Group](assets/screenshots/group.png)
+![Transactions](assets/screenshots/transactions.png)
+![Payment plan](assets/screenshots/payment-plan.png)
 
 ## Configuration
 

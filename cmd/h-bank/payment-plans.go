@@ -1,13 +1,53 @@
 package main
 
 import (
+	"log"
 	"time"
 
 	"github.com/juho05/h-bank/models"
 	"github.com/juho05/h-bank/services"
 )
 
-func ExecutePaymentPlan(userStore models.UserStore, groupStore models.GroupStore, paymentPlan *models.PaymentPlan) error {
+var StopPaymentPlanTicker = make(chan struct{})
+
+func StartPaymentPlanTicker(us models.UserStore, gs models.GroupStore) {
+	log.Println("[payment-plans] Starting ticker...")
+	ticker := time.NewTicker(time.Hour)
+	go func() {
+		for {
+			executePaymentPlans(us, gs)
+			select {
+			case <-ticker.C:
+				continue
+			case <-StopPaymentPlanTicker:
+				log.Println("[payment-plans] Stopping ticker...")
+				ticker.Stop()
+				return
+			}
+		}
+	}()
+}
+
+func executePaymentPlans(us models.UserStore, gs models.GroupStore) {
+	paymentPlans, err := gs.GetPaymentPlansThatNeedToBeExecuted()
+	if err != nil {
+		log.Println("[payment-plans] ERROR: Couldn't retrieve payment plans:", err)
+		return
+	}
+
+	log.Printf("[payment-plans] Executing %d payment plans...", len(paymentPlans))
+
+	for _, p := range paymentPlans {
+		err = executePaymentPlan(us, gs, &p)
+		if err != nil {
+			log.Printf("[payment-plans] ERROR: Couldn't execute payment plan with id '%s': %s", p.Id, err)
+		}
+	}
+
+	log.Println("[payment-plans] Done.")
+}
+
+func executePaymentPlan(userStore models.UserStore, groupStore models.GroupStore, paymentPlan *models.PaymentPlan) error {
 	for paymentPlan.NextExecute <= time.Now().Unix() {
 		group, err := groupStore.GetById(paymentPlan.GroupId)
 		if err != nil {
