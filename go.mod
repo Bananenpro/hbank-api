@@ -1,4 +1,4 @@
-module github.com/juho05/hbank-api
+module github.com/juho05/h-bank
 
 go 1.17
 

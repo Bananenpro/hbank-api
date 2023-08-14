@@ -6,8 +6,8 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/juho05/hbank-api/models"
-	"github.com/juho05/hbank-api/services"
+	"github.com/juho05/h-bank/models"
+	"github.com/juho05/h-bank/services"
 )
 
 type GroupStore struct {

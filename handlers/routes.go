@@ -3,7 +3,7 @@ package handlers
 import (
 	"github.com/labstack/echo/v4"
 
-	"github.com/juho05/hbank-api/router/middlewares"
+	"github.com/juho05/h-bank/router/middlewares"
 )
 
 func (h *Handler) RegisterAPI(api *echo.Group) {

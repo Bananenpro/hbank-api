@@ -13,11 +13,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 
-	"github.com/juho05/hbank-api/bindings"
-	"github.com/juho05/hbank-api/config"
-	"github.com/juho05/hbank-api/models"
-	"github.com/juho05/hbank-api/responses"
-	"github.com/juho05/hbank-api/services"
+	"github.com/juho05/h-bank/bindings"
+	"github.com/juho05/h-bank/config"
+	"github.com/juho05/h-bank/models"
+	"github.com/juho05/h-bank/responses"
+	"github.com/juho05/h-bank/services"
 )
 
 // /api/group?page=int&pageSize=int&descending=bool (GET)

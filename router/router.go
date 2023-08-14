@@ -3,8 +3,8 @@ package router
 import (
 	"net/http"
 
-	"github.com/juho05/hbank-api/responses"
-	"github.com/juho05/hbank-api/router/middlewares"
+	"github.com/juho05/h-bank/responses"
+	"github.com/juho05/h-bank/router/middlewares"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )

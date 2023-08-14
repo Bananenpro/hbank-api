@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/juho05/hbank-api/config"
+	"github.com/juho05/h-bank/config"
 )
 
 //go:embed all:frontend/dist

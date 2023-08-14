@@ -10,9 +10,9 @@ import (
 
 	"github.com/juho05/oidc-client/oidc"
 
-	"github.com/juho05/hbank-api/config"
-	"github.com/juho05/hbank-api/models"
-	"github.com/juho05/hbank-api/responses"
+	"github.com/juho05/h-bank/config"
+	"github.com/juho05/h-bank/models"
+	"github.com/juho05/h-bank/responses"
 )
 
 func Auth(oidcClient *oidc.Client, userStore models.UserStore) func(next echo.HandlerFunc) echo.HandlerFunc {

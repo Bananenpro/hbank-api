@@ -3,7 +3,7 @@ package middlewares
 import (
 	"strings"
 
-	"github.com/juho05/hbank-api/services"
+	"github.com/juho05/h-bank/services"
 	"github.com/labstack/echo/v4"
 )
 

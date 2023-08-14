@@ -4,7 +4,7 @@ BIN_NAME=h-bank
 .PHONY: backend frontend run-backend run-frontend init clean
 
 backend: frontend
-	CGO_ENABLED=0 go build -o ${OUT_DIR}/${BIN_NAME} ./cmd/hbank-api
+	CGO_ENABLED=0 go build -o ${OUT_DIR}/${BIN_NAME} ./cmd/h-bank
 
 frontend:
 	npm run --prefix frontend build
@@ -14,7 +14,7 @@ frontend/dist:
 
 run-backend: frontend/dist
 	@which wgo &> /dev/null || (echo "Installing wgo..." && go install github.com/bokwoon95/wgo@latest)
-	wgo run -file config.json ./cmd/hbank-api
+	wgo run -file config.json ./cmd/h-bank
 
 run-frontend:
 	npm run --prefix frontend serve
@@ -26,4 +26,4 @@ init:
 clean:
 	go clean
 	rm -rf frontend/dist
-	rm ./${OUT_DIR}
+	rm -rf ./${OUT_DIR}

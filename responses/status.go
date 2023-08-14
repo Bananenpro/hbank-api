@@ -1,6 +1,6 @@
 package responses
 
-import "github.com/juho05/hbank-api/config"
+import "github.com/juho05/h-bank/config"
 
 type Config struct {
 	EmailEnabled              bool   `json:"emailEnabled"`

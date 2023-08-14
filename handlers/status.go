@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/juho05/hbank-api/responses"
+	"github.com/juho05/h-bank/responses"
 	"github.com/labstack/echo/v4"
 )
 

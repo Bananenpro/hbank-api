@@ -13,12 +13,12 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/juho05/hbank-api/bindings"
-	"github.com/juho05/hbank-api/config"
-	"github.com/juho05/hbank-api/db"
-	"github.com/juho05/hbank-api/models"
-	"github.com/juho05/hbank-api/responses"
-	"github.com/juho05/hbank-api/router"
+	"github.com/juho05/h-bank/bindings"
+	"github.com/juho05/h-bank/config"
+	"github.com/juho05/h-bank/db"
+	"github.com/juho05/h-bank/models"
+	"github.com/juho05/h-bank/responses"
+	"github.com/juho05/h-bank/router"
 )
 
 func TestHandler_GetUsers(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 
 	"github.com/juho05/oidc-client/oidc"
 
-	"github.com/juho05/hbank-api/models"
+	"github.com/juho05/h-bank/models"
 )
 
 func init() {

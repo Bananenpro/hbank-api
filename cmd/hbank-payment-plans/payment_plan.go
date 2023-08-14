@@ -3,8 +3,8 @@ package main
 import (
 	"time"
 
-	"github.com/juho05/hbank-api/models"
-	"github.com/juho05/hbank-api/services"
+	"github.com/juho05/h-bank/models"
+	"github.com/juho05/h-bank/services"
 )
 
 func ExecutePaymentPlan(userStore models.UserStore, groupStore models.GroupStore, paymentPlan *models.PaymentPlan) error {

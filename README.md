@@ -1,10 +1,10 @@
 ![H-Bank](assets/banner.png)
-<h1 align="center">H-Bank API</h1>
+<h1 align="center">H-Bank</h1>
 
-![License](https://img.shields.io/github/license/Bananenpro/hbank-api)
-![Go Version](https://img.shields.io/github/go-mod/go-version/Bananenpro/hbank-api)
-![Issues](https://img.shields.io/github/issues/Bananenpro/hbank-api)
-![Stars](https://img.shields.io/github/stars/Bananenpro/hbank-api)
+![License](https://img.shields.io/github/license/juho05/h-bank)
+![Go Version](https://img.shields.io/github/go-mod/go-version/juho05/h-bank)
+![Issues](https://img.shields.io/github/issues/juho05/h-bank)
+![Stars](https://img.shields.io/github/stars/juho05/h-bank)
 
 ## Description
 

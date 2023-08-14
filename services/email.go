@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/smtp"
 
-	"github.com/juho05/hbank-api/config"
+	"github.com/juho05/h-bank/config"
 )
 
 var emailAuth smtp.Auth

@@ -7,9 +7,9 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/juho05/hbank-api/config"
-	"github.com/juho05/hbank-api/models"
-	"github.com/juho05/hbank-api/responses"
+	"github.com/juho05/h-bank/config"
+	"github.com/juho05/h-bank/models"
+	"github.com/juho05/h-bank/responses"
 )
 
 // /api/auth/login (GET)

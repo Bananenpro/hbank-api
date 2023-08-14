@@ -13,13 +13,13 @@ import (
 	"github.com/juho05/oidc-client/oidc"
 	"github.com/labstack/echo/v4"
 
-	"github.com/juho05/hbank-api"
+	"github.com/juho05/h-bank"
 
-	"github.com/juho05/hbank-api/config"
-	"github.com/juho05/hbank-api/db"
-	"github.com/juho05/hbank-api/handlers"
-	"github.com/juho05/hbank-api/router"
-	"github.com/juho05/hbank-api/services"
+	"github.com/juho05/h-bank/config"
+	"github.com/juho05/h-bank/db"
+	"github.com/juho05/h-bank/handlers"
+	"github.com/juho05/h-bank/router"
+	"github.com/juho05/h-bank/services"
 )
 
 func run(r *echo.Echo) error {

@@ -8,8 +8,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/juho05/hbank-api"
-	"github.com/juho05/hbank-api/config"
+	"github.com/juho05/h-bank"
+	"github.com/juho05/h-bank/config"
 )
 
 type FrontendHandler struct {
