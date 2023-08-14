@@ -1,0 +1,8 @@
+database.sqlite
+config.json
+localhost.crt
+localhost.key
+/bin
+/.vscode
+/.git
+.gitignore

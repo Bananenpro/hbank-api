@@ -10,6 +10,7 @@ import (
 
 type ConfigData struct {
 	Debug                     bool   `json:"debug"`
+	DBPath                    string `json:"dbPath"`
 	DBVerbose                 bool   `json:"dbVerbose"`
 	ServerPort                int    `json:"serverPort"`
 	SSL                       bool   `json:"ssl"`
@@ -38,6 +39,7 @@ type ConfigData struct {
 var defaultData = ConfigData{
 	ServerPort:                80,
 	BaseURL:                   "",
+	DBPath:                    "database.sqlite",
 	MinNameLength:             3,
 	MaxNameLength:             30,
 	MinDescriptionLength:      0,
@@ -73,7 +75,7 @@ func Load(filepaths []string) {
 }
 
 func verifyData() {
-	if Data.ServerPort <= 1023 || Data.ServerPort > 65353 {
+	if Data.ServerPort <= 0 || Data.ServerPort > 65353 {
 		log.Println("WARNING: Invalid port number. Using default port: ", defaultData.ServerPort)
 		Data.ServerPort = defaultData.ServerPort
 	}

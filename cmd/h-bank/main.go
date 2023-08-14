@@ -24,9 +24,7 @@ import (
 )
 
 func run(r *echo.Echo) error {
-	hbank.Initialize()
-
-	database, err := db.NewSqlite("database.sqlite?_pragma=foreign_keys(1)&_pragma=busy_timeout(3000)&_pragma=journal_mode=WAL")
+	database, err := db.NewSqlite(config.Data.DBPath)
 	if err != nil {
 		return fmt.Errorf("Couldn't connect to database: %w", err)
 	}
@@ -35,6 +33,14 @@ func run(r *echo.Echo) error {
 		return fmt.Errorf("Failed to get generic SQL interface: %w", err)
 	}
 	defer sqlDB.Close()
+	_, err = sqlDB.Exec("PRAGMA journal_mode = WAL")
+	if err != nil {
+		return fmt.Errorf("Failed to enable WAL mode: %w", err)
+	}
+	_, err = sqlDB.Exec("PRAGMA foreign_keys = 1")
+	if err != nil {
+		return fmt.Errorf("Failed to enable foreign keys: %w", err)
+	}
 	err = db.AutoMigrate(database)
 	if err != nil {
 		return fmt.Errorf("Couldn't auto migrate database: %w", err)
@@ -89,7 +95,8 @@ func run(r *echo.Echo) error {
 }
 
 func main() {
-	config.Load([]string{"config.json", xdg.ConfigHome + "/hbank/config.json"})
+	hbank.Initialize()
+	config.Load([]string{"config.json", xdg.ConfigHome + "/h-bank/config.json"})
 	services.LoadTranslations()
 
 	services.EmailAuthenticate()

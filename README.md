@@ -61,7 +61,7 @@ Child:
 
 ## Configuration
 
-H-Bank is looking for configuration in the following locations in order of decreasing precedence: `<working dir>/config.json`, `XDG_CONFIG_HOME/hbank/config.json`.
+H-Bank is looking for configuration in the following locations in order of decreasing precedence: `<working dir>/config.json`, `XDG_CONFIG_HOME/h-bank/config.json`.
 *Note:* The first config file to be found is used and all others are discarded.
 
 ### Default configuration
@@ -69,6 +69,7 @@ H-Bank is looking for configuration in the following locations in order of decre
 {
   "debug": false, // !!DO NOT USE IN PRODUCTION!! Disables SameSite for cookies. Returns error messages on HTTP-500 responses.
   "dbVerbose": false, // Prints all sql queries to stdout
+  "dbPath": "database.sqlite", // path to DB file
   "serverPort": 80, // The port to use for the webserver (if ssl: default = 443)
   "ssl": false, // Enable TLS
   "sslCertPath": "", // Path to TLS cert file
@@ -92,6 +93,31 @@ H-Bank is looking for configuration in the following locations in order of decre
   "frontendDir": "" // Path to static frontend which should be used instead of the default embedded files
 }
 ```
+
+## Running
+
+You can self-host H-Bank with Docker. Example `docker-compose.yml` with auto-updates using [Watchtower](https://containrrr.dev/watchtower/):
+
+```yaml
+version: "3.5"
+services:
+watchtower:
+  image: containrrr/watchtower:arm64v8-latest
+  restart: unless-stopped
+  volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+hbank:
+  image: ghcr.io/juho05/h-bank
+  restart: unless-stopped
+  ports:
+    - "80:80"
+  volumes:
+    - ~/h-bank/data:/data
+    - ~/h-bank/config.json:/config.json
+```
+
+Create your config in `~/h-bank/config.json` (make sure to set `dbPath` to `/data/database.sqlite`) and run the service with `docker compose up -d`.
+You should now be able to reach H-Bank on `http://localhost` (or HTTPS if configured).
 
 ## License
 

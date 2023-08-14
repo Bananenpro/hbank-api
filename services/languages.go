@@ -3,10 +3,12 @@ package services
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"log"
-	"os"
 	"strconv"
 	"strings"
+
+	hbank "github.com/juho05/h-bank"
 )
 
 var supportedTranslations []string
@@ -28,7 +30,7 @@ func Tr(text string, lang string) string {
 }
 
 func LoadTranslations() error {
-	files, err := os.ReadDir("translations/")
+	files, err := fs.ReadDir(hbank.TranslationsFS, ".")
 	if err != nil {
 		log.Println("Couldn't find translation files:", err)
 		return err
@@ -38,9 +40,9 @@ func LoadTranslations() error {
 	translations = make(map[string]map[string]string, len(files))
 
 	for _, f := range files {
-		bytes, err := os.ReadFile("translations/" + f.Name())
+		bytes, err := fs.ReadFile(hbank.TranslationsFS, f.Name())
 		if err != nil {
-			log.Printf("Couldn't open translation file '%s': %s", "translations/"+f.Name(), err)
+			log.Printf("Couldn't open translation file '%s': %s", f.Name(), err)
 			continue
 		}
 

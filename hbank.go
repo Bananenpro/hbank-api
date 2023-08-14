@@ -11,6 +11,10 @@ import (
 	"github.com/juho05/h-bank/config"
 )
 
+//go:embed all:translations
+var translationsFS embed.FS
+var TranslationsFS fs.FS
+
 //go:embed all:frontend/dist
 var frontendFS embed.FS
 var FrontendFS fs.FS
@@ -41,6 +45,11 @@ func Initialize() {
 	}
 
 	FrontendFS, err = fs.Sub(frontendFS, "frontend/dist")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	TranslationsFS, err = fs.Sub(translationsFS, "translations")
 	if err != nil {
 		log.Fatal(err)
 	}
