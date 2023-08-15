@@ -87,6 +87,7 @@ H-Bank is looking for configuration in the following locations in order of decre
   "maxProfilePictureFileSize": 10000000, // Max size of uploaded group pictures in bytes
   "maxPageSize": 100, // Max allowed page size for lists
   "idProvider": "", // URL pointing to an OpenID Connect identity provider (must match the issuer value of the provider)
+  "internalIDProvider": "", // URL to use for internal requests to the identity provider
   "clientID": "", // OpenID Connect client ID
   "clientSecret": "", // OpenID Connect client secret
   "devFrontend": "", // URL pointing to frontend dev server (frontend requests will be proxied)

@@ -49,7 +49,7 @@ func run(r *echo.Echo) error {
 	us := db.NewUserStore(database)
 	gs := db.NewGroupStore(database)
 
-	oidcClient, err := oidc.NewClient(config.Data.IDProvider, oidc.ClientConfig{
+	oidcClient, err := oidc.NewClient(config.Data.InternalIDProvider, oidc.ClientConfig{
 		ClientID:     config.Data.ClientID,
 		ClientSecret: config.Data.ClientSecret,
 		RedirectURI:  config.Data.BaseURL + "/api/auth/callback",

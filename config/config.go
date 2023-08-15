@@ -30,6 +30,7 @@ type ConfigData struct {
 	MaxProfilePictureFileSize int64  `json:"maxProfilePictureFileSize"`
 	MaxPageSize               int    `json:"maxPageSize"`
 	IDProvider                string `json:"idProvider"`
+	InternalIDProvider        string `json:"internalIDProvider"`
 	ClientID                  string `json:"clientID"`
 	ClientSecret              string `json:"clientSecret"`
 	DevFrontend               string `json:"devFrontend"`
@@ -139,6 +140,9 @@ func verifyData() {
 
 	if Data.IDProvider == "" {
 		log.Fatalln("ERROR: No ID provider specified")
+	}
+	if Data.InternalIDProvider == "" {
+		Data.InternalIDProvider = Data.IDProvider
 	}
 
 	if _, err := url.Parse(Data.DevFrontend); err != nil {
