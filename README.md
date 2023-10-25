@@ -68,8 +68,20 @@ H-Bank is looking for configuration in the following locations in order of decre
 ```jsonc
 {
   "debug": false, // !!DO NOT USE IN PRODUCTION!! Disables SameSite for cookies. Returns error messages on HTTP-500 responses.
-  "dbVerbose": false, // Prints all sql queries to stdout
+
+  "dbVerbose": false, // Prints all SQL queries to stdout
+  "dbEngine": "", // DB engine to use (either 'sqlite' or 'postgres')
+
+  // sqlite
   "dbPath": "database.sqlite", // path to DB file
+
+  //postgres
+  "dbHost": "", // DB host
+  "dbPort": 0, // DB port
+  "dbUser": "", // DB user
+  "dbPassword": "", // DB password
+  "dbName": "", // DB name
+
   "serverPort": 80, // The port to use for the webserver (if ssl: default = 443)
   "ssl": false, // Enable TLS
   "sslCertPath": "", // Path to TLS cert file
@@ -97,16 +109,11 @@ H-Bank is looking for configuration in the following locations in order of decre
 
 ## Running
 
-You can self-host H-Bank with Docker. Example `docker-compose.yml` with auto-updates using [Watchtower](https://containrrr.dev/watchtower/):
+You can self-host H-Bank with Docker. Example `docker-compose.yml`:
 
 ```yaml
 version: "3.5"
 services:
-watchtower:
-  image: containrrr/watchtower:arm64v8-latest
-  restart: unless-stopped
-  volumes:
-    - /var/run/docker.sock:/var/run/docker.sock
 hbank:
   image: ghcr.io/juho05/h-bank
   restart: unless-stopped

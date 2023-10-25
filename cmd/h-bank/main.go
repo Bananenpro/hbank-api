@@ -13,6 +13,7 @@ import (
 	"github.com/adrg/xdg"
 	"github.com/juho05/oidc-client/oidc"
 	"github.com/labstack/echo/v4"
+	"gorm.io/gorm"
 
 	hbank "github.com/juho05/h-bank"
 
@@ -24,7 +25,14 @@ import (
 )
 
 func run(r *echo.Echo) error {
-	database, err := db.NewSqlite(config.Data.DBPath)
+	var database *gorm.DB
+	var err error
+	switch config.Data.DBEngine {
+	case config.DBSqlite:
+		database, err = db.NewSqlite(config.Data.DBPath)
+	case config.DBPostgres:
+		database, err = db.NewPostgres(fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s", config.Data.DBHost, config.Data.DBPort, config.Data.DBUser, config.Data.DBPassword, config.Data.DBName))
+	}
 	if err != nil {
 		return fmt.Errorf("Couldn't connect to database: %w", err)
 	}
@@ -33,13 +41,15 @@ func run(r *echo.Echo) error {
 		return fmt.Errorf("Failed to get generic SQL interface: %w", err)
 	}
 	defer sqlDB.Close()
-	_, err = sqlDB.Exec("PRAGMA journal_mode = WAL")
-	if err != nil {
-		return fmt.Errorf("Failed to enable WAL mode: %w", err)
-	}
-	_, err = sqlDB.Exec("PRAGMA foreign_keys = 1")
-	if err != nil {
-		return fmt.Errorf("Failed to enable foreign keys: %w", err)
+	if config.Data.DBEngine == config.DBSqlite {
+		_, err = sqlDB.Exec("PRAGMA journal_mode = WAL")
+		if err != nil {
+			return fmt.Errorf("Failed to enable WAL mode: %w", err)
+		}
+		_, err = sqlDB.Exec("PRAGMA foreign_keys = 1")
+		if err != nil {
+			return fmt.Errorf("Failed to enable foreign keys: %w", err)
+		}
 	}
 	err = db.AutoMigrate(database)
 	if err != nil {

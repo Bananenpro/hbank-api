@@ -8,33 +8,46 @@ import (
 	"strings"
 )
 
+type DBEngine string
+
+const (
+	DBSqlite   DBEngine = "sqlite"
+	DBPostgres DBEngine = "postgres"
+)
+
 type ConfigData struct {
-	Debug                     bool   `json:"debug"`
-	DBPath                    string `json:"dbPath"`
-	DBVerbose                 bool   `json:"dbVerbose"`
-	ServerPort                int    `json:"serverPort"`
-	SSL                       bool   `json:"ssl"`
-	SSLCertPath               string `json:"sslCertPath"`
-	SSLKeyPath                string `json:"sslKeyPath"`
-	BaseURL                   string `json:"baseURL"`
-	DomainName                string `json:"-"`
-	EmailEnabled              bool   `json:"emailEnabled"`
-	EmailHost                 string `json:"emailHost"`
-	EmailPort                 int    `json:"emailPort"`
-	EmailUsername             string `json:"emailUsername"`
-	EmailPassword             string `json:"emailPassword"`
-	MinNameLength             int    `json:"minNameLength"`
-	MaxNameLength             int    `json:"maxNameLength"`
-	MinDescriptionLength      int    `json:"minDescriptionLength"`
-	MaxDescriptionLength      int    `json:"maxDescriptionLength"`
-	MaxProfilePictureFileSize int64  `json:"maxProfilePictureFileSize"`
-	MaxPageSize               int    `json:"maxPageSize"`
-	IDProvider                string `json:"idProvider"`
+	Debug                     bool     `json:"debug"`
+	DBEngine                  DBEngine `json:"dbEngine"`
+	DBPath                    string   `json:"dbPath"`
+	DBHost                    string   `json:"dbHost"`
+	DBPort                    int      `json:"dbPort"`
+	DBUser                    string   `json:"dbUser"`
+	DBPassword                string   `json:"dbPassword"`
+	DBName                    string   `json:"dbName"`
+	DBVerbose                 bool     `json:"dbVerbose"`
+	ServerPort                int      `json:"serverPort"`
+	SSL                       bool     `json:"ssl"`
+	SSLCertPath               string   `json:"sslCertPath"`
+	SSLKeyPath                string   `json:"sslKeyPath"`
+	BaseURL                   string   `json:"baseURL"`
+	DomainName                string   `json:"-"`
+	EmailEnabled              bool     `json:"emailEnabled"`
+	EmailHost                 string   `json:"emailHost"`
+	EmailPort                 int      `json:"emailPort"`
+	EmailUsername             string   `json:"emailUsername"`
+	EmailPassword             string   `json:"emailPassword"`
+	MinNameLength             int      `json:"minNameLength"`
+	MaxNameLength             int      `json:"maxNameLength"`
+	MinDescriptionLength      int      `json:"minDescriptionLength"`
+	MaxDescriptionLength      int      `json:"maxDescriptionLength"`
+	MaxProfilePictureFileSize int64    `json:"maxProfilePictureFileSize"`
+	MaxPageSize               int      `json:"maxPageSize"`
+	IDProvider                string   `json:"idProvider"`
 	InternalIDProvider        string `json:"internalIDProvider"`
-	ClientID                  string `json:"clientID"`
-	ClientSecret              string `json:"clientSecret"`
-	DevFrontend               string `json:"devFrontend"`
-	FrontendDir               string `json:"frontendDir"`
+	ClientID                  string   `json:"clientID"`
+	ClientSecret              string   `json:"clientSecret"`
+	DevFrontend               string   `json:"devFrontend"`
+	FrontendDir               string   `json:"frontendDir"`
 }
 
 var defaultData = ConfigData{
@@ -77,8 +90,37 @@ func Load(filepaths []string) {
 
 func verifyData() {
 	if Data.ServerPort <= 0 || Data.ServerPort > 65353 {
-		log.Println("WARNING: Invalid port number. Using default port: ", defaultData.ServerPort)
+		if Data.ServerPort != 0 {
+			log.Println("WARNING: Invalid port number. Using default port: ", defaultData.ServerPort)
+		}
 		Data.ServerPort = defaultData.ServerPort
+	}
+
+	switch Data.DBEngine {
+	case DBSqlite:
+		if Data.DBPath == "" {
+			log.Fatalln("ERROR: dbPath is required when using SQLite as DB engine")
+		}
+	case DBPostgres:
+		if Data.DBHost == "" {
+			log.Fatalln("ERROR: dbHost is required when using Postgres as DB engine")
+		}
+		if Data.DBPort == 0 {
+			log.Fatalln("ERROR: dbPort is required when using Postgres as DB engine")
+		}
+		if Data.DBUser == "" {
+			log.Fatalln("ERROR: dbUser is required when using Postgres as DB engine")
+		}
+		if Data.DBPassword == "" {
+			log.Fatalln("ERROR: dbPassword is required when using Postgres as DB engine")
+		}
+		if Data.DBName == "" {
+			log.Fatalln("ERROR: dbName is required when using Postgres as DB engine")
+		}
+	case "":
+		log.Fatalln("ERROR: dbEngine config option is required.")
+	default:
+		log.Fatalf("ERROR: Invalid dbEngine value. Supported values: %s, %s", DBSqlite, DBPostgres)
 	}
 
 	if Data.SSL {

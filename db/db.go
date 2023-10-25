@@ -7,12 +7,25 @@ import (
 
 	"github.com/glebarez/sqlite"
 	"github.com/google/uuid"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
 	"github.com/juho05/h-bank/config"
 	"github.com/juho05/h-bank/models"
 )
+
+func NewPostgres(dsn string) (*gorm.DB, error) {
+	if config.Data.DBVerbose {
+		return gorm.Open(postgres.Open(dsn), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Info),
+		})
+	} else {
+		return gorm.Open(postgres.Open(dsn), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Silent),
+		})
+	}
+}
 
 func NewSqlite(dsn string) (*gorm.DB, error) {
 	if config.Data.DBVerbose {
