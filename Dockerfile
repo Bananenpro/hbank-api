@@ -1,5 +1,5 @@
 # Login: docker login ghcr.io -u juho05
-# Build and deploy: docker buildx build --platform linux/arm64,linux/amd64 --tag ghcr.io/juho05/h-bank:latest --push b.
+# Build and deploy: docker buildx build --platform linux/arm64,linux/amd64 --tag ghcr.io/juho05/h-bank:latest --push .
 
 # Build frontend
 FROM --platform=$BUILDPLATFORM node:18 AS frontend-build
