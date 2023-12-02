@@ -52,7 +52,6 @@ export default defineComponent({
       membersPage: 0,
       pageSize: 5,
       loadingGroups: false,
-      baseUrl: api.defaults.baseURL,
       onScrollInterval: 0,
     };
   },

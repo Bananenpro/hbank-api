@@ -76,7 +76,6 @@ export default defineComponent({
       page: 0,
       pageSize: 10,
       groupId: this.$route.params.id,
-      baseUrl: api.defaults.baseURL,
       message: "",
       memberIds: [] as string[],
       onScrollInterval: 0,

@@ -141,7 +141,6 @@ export default defineComponent({
       receiverName: "",
       paymentPlanId: "",
       paymentPlanName: "",
-      baseUrl: api.defaults.baseURL,
       isAdmin: false,
       userId: "",
     };

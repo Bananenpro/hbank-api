@@ -156,7 +156,7 @@ export default defineComponent({
   computed: {
     membersUrl(): string {
       return (
-        api.defaults.baseURL + "group/" + this.$route.params.id + "/member"
+        "/group/" + this.$route.params.id + "/member"
       );
     },
     validName(): boolean {

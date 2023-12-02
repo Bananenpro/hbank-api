@@ -544,7 +544,7 @@ func (gs *GroupStore) CreateInvitation(group *models.Group, user *models.User, m
 
 func (gs *GroupStore) GetInvitationById(id string) (*models.GroupInvitation, error) {
 	var invitation models.GroupInvitation
-	err := gs.db.First(&invitation, id).Error
+	err := gs.db.First(&invitation, "id = ?", id).Error
 	if err != nil {
 		switch err {
 		case gorm.ErrRecordNotFound:

@@ -55,7 +55,6 @@ export default defineComponent({
   data() {
     return {
       members: [] as User[],
-      baseUrl: api.defaults.baseURL,
       memberCount: 0,
     };
   },

@@ -140,7 +140,6 @@ export default defineComponent({
       senderName: "",
       receiverId: "",
       receiverName: "",
-      baseUrl: api.defaults.baseURL,
       showDeleteDialog: false,
       isAdmin: false,
       userId: "",

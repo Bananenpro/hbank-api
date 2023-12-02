@@ -69,7 +69,6 @@ export default defineComponent({
       searchTimeout: 0,
       page: 0,
       pageSize: 10,
-      baseUrl: api.defaults.baseURL,
       onScrollInterval: 0,
       loading: false,
     }
